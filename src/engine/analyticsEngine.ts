@@ -15,15 +15,17 @@ interface CohortStats {
   min: number;
   max: number;
   values: number[];
+  sorted: number[]; // pre-sorted for O(log n) percentile lookup
 }
 
 function calcStats(values: number[]): CohortStats {
   const n = values.length;
-  if (n === 0) return { mean: 0, std: 1, min: 0, max: 0, values };
+  if (n === 0) return { mean: 0, std: 1, min: 0, max: 0, values, sorted: [] };
   const mean = values.reduce((a, b) => a + b, 0) / n;
   const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / n;
   const std = Math.sqrt(variance) || 1;
-  return { mean, std, min: Math.min(...values), max: Math.max(...values), values };
+  const sorted = [...values].sort((a, b) => a - b);
+  return { mean, std, min: sorted[0], max: sorted[n - 1], values, sorted };
 }
 
 export function buildCohortStats(
