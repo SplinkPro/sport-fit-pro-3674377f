@@ -52,7 +52,7 @@ const IMPORT_HISTORY = [
 
 export default function ImportPage() {
   const { t } = useTranslation();
-  const { datasetMeta, setDatasetMeta } = useAthletes();
+  const { datasetMeta, setDatasetMeta, addDataset } = useAthletes();
   const navigate = useNavigate();
   const [step, setStep] = useState<ImportStep>(1);
   const [dragging, setDragging] = useState(false);
@@ -99,14 +99,17 @@ export default function ImportPage() {
   };
 
   const handleConfirmImport = () => {
-    // Update global dataset metadata so Explorer shows the right label
-    setDatasetMeta({
-      name: uploadedFile?.name ?? "Imported dataset",
-      version: `v${IMPORT_HISTORY.length + 1}`,
-      count: validCount + warningCount,
-      importedAt: new Date().toISOString().slice(0, 10),
-      source: "import",
-    });
+    // Register as a new saved dataset so Explorer dropdown lists it
+    addDataset(
+      {
+        name: uploadedFile?.name ?? "Imported dataset",
+        version: `v${IMPORT_HISTORY.length + 1}`,
+        count: validCount + warningCount,
+        importedAt: new Date().toISOString().slice(0, 10),
+        source: "import",
+      },
+      [] // No parsed rows yet — future: pass enriched athletes here
+    );
     setStep(5);
   };
 
