@@ -235,6 +235,9 @@ export default function ExplorerPage() {
           }
         />
 
+        {/* Active Dataset Banner */}
+        <ActiveDatasetBanner meta={datasetMeta} />
+
         {/* KPI Cards */}
         <div className="grid grid-cols-4 gap-3 mb-4">
           <KPICard label={e.totalAthletes} value={summary.total} icon={Users} iconColor="#1E3A5F" />
