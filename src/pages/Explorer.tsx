@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useAthletes } from "@/hooks/useAthletes";
+import { DatasetMeta } from "@/hooks/useAthletes";
 import { useT } from "@/i18n/useTranslation";
 import { Language } from "@/i18n/useTranslation";
 import { EnrichedAthlete } from "@/engine/analyticsEngine";
@@ -20,9 +21,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   Users, Star, AlertTriangle, CheckCircle2, Search, SlidersHorizontal,
   ChevronDown, ChevronUp, X, ArrowUpDown, ChevronRight, Upload,
-  BarChart3, GitCompare, ChevronLeft, Eye, EyeOff,
+  BarChart3, GitCompare, ChevronLeft, Eye, EyeOff, Database, FolderOpen, Plus,
 } from "lucide-react";
-import { Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Helper: translate sport name
@@ -33,25 +33,66 @@ function getSportName(topSport: string | undefined, language: Language): string 
   return language === "hi" ? cfg.nameHi : cfg.nameEn;
 }
 
-// ─── Active Dataset Banner ──────────────────────────────────────────────────
-function ActiveDatasetBanner({ meta }: { meta: import("@/hooks/useAthletes").DatasetMeta }) {
+// ─── Dataset Switcher ───────────────────────────────────────────────────────
+function DatasetSwitcher({
+  current,
+  datasets,
+  onSwitch,
+}: {
+  current: DatasetMeta;
+  datasets: DatasetMeta[];
+  onSwitch: (id: string) => void;
+}) {
   return (
-    <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-sm">
-      <Database size={14} className="text-primary shrink-0" />
-      <span className="font-medium text-foreground">{meta.name}</span>
-      <span className="text-muted-foreground">·</span>
-      <span className="text-muted-foreground">{meta.count} athletes</span>
-      <span className="text-muted-foreground">·</span>
-      <span className="text-muted-foreground">{meta.version}</span>
-      {meta.source === "seed" && (
-        <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">DEMO DATA</span>
-      )}
-      {meta.source === "import" && (
-        <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-success/10 text-success font-medium">IMPORTED {meta.importedAt}</span>
-      )}
-      <Link to="/import" className="ml-auto text-xs text-primary hover:underline shrink-0">
-        Manage data →
-      </Link>
+    <div className="flex items-center gap-3 mb-4 px-3 py-2.5 rounded-xl border border-border bg-muted/40">
+      {/* Icon */}
+      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+        <Database size={15} className="text-primary" />
+      </div>
+
+      {/* Label + meta */}
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide leading-none mb-0.5">
+          Active Dataset
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-sm text-foreground truncate">{current.name}</span>
+          <span className="text-xs text-muted-foreground">{current.count} athletes · {current.version}</span>
+          {current.source === "seed" ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 font-semibold tracking-wide">DEMO</span>
+          ) : (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700 font-semibold tracking-wide">IMPORTED {current.importedAt}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Dropdown to switch */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {datasets.length > 1 && (
+          <Select value={current.id} onValueChange={onSwitch}>
+            <SelectTrigger className="h-8 text-xs w-48 border-border bg-background">
+              <FolderOpen size={13} className="mr-1.5 text-muted-foreground" />
+              <SelectValue placeholder="Switch dataset" />
+            </SelectTrigger>
+            <SelectContent>
+              {datasets.map((ds) => (
+                <SelectItem key={ds.id} value={ds.id}>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate max-w-[140px]">{ds.name}</span>
+                    <span className="text-muted-foreground text-[11px] ml-auto pl-2">{ds.count}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <Link to="/import">
+          <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
+            <Plus size={12} />
+            Load new
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }
