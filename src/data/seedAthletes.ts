@@ -139,9 +139,9 @@ function getAgeBand(age: number): keyof (typeof metricParams)["M"] {
 }
 
 function sampleNormal(mean: number, std: number): number {
-  // Box-Muller
-  const u = Math.random(), v = Math.random();
-  const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  // Box-Muller — uses deterministic PRNG
+  const u = mulberry32(), v = mulberry32();
+  const z = Math.sqrt(-2 * Math.log(u + 1e-10)) * Math.cos(2 * Math.PI * v);
   return mean + z * std;
 }
 
