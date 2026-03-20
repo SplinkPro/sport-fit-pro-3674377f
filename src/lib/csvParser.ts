@@ -51,12 +51,14 @@ const COLUMN_MAP: Record<string, InternalField> = {
   "30 m sprint": "sprint30m", "30m": "sprint30m",
   "thirty m flying starts": "sprint30m",
 
-  // ── Broad Jump — Bihar column ──
+  // ── Broad Jump — Bihar columns (note the typo/space in real file) ──
   "standinggbroadjump": "broadJump",
+  "standin gbroadjump": "broadJump",       // exact Bihar file header
   "standing broad jump": "broadJump", "standingt broad jump": "broadJump",
   "broad jump": "broadJump", "broadjump": "broadJump",
   "broad_jump": "broadJump", "bj": "broadJump",
   "broad jump (cm)": "broadJump", "standinggbroadjump (cm)": "broadJump",
+
 
   // ── Shuttle Run — Bihar column ──
   "shuttlerun10mx6": "shuttleRun",
