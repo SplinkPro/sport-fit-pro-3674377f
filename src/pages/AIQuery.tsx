@@ -49,12 +49,12 @@ const FOLLOW_UP = [
 type QueryState = "idle" | "interpreting" | "results";
 
 export default function AIQueryPage() {
-  const { t, lang } = useTranslation();
+  const { t, language } = useTranslation();
   const [query, setQuery] = useState("");
   const [state, setState] = useState<QueryState>("idle");
   const [interpretedFilters, setInterpretedFilters] = useState<string[]>([]);
 
-  const examples = lang === "hi" ? EXAMPLE_QUERIES_HI : EXAMPLE_QUERIES_EN;
+  const examples = language === "hi" ? EXAMPLE_QUERIES_HI : EXAMPLE_QUERIES_EN;
 
   const handleQuery = (q: string) => {
     if (!q.trim()) return;
