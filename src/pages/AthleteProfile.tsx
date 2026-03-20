@@ -496,8 +496,6 @@ function InsightsTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
   );
 }
 
-// Import Star for JSX
-import { Star } from "lucide-react";
 
 // ─── Tab 4: Sport Fit ─────────────────────────────────────────────────────
 function SportFitTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnType<typeof useT>["dict"] }) {
