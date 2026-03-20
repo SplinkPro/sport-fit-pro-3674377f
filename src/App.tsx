@@ -6,7 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/layout/AppShell";
-import { AthleteProvider } from "@/hooks/useAthletes";
+import { AthleteProvider } from "@/hooks/AthleteProvider";
 
 // ─── Lazy-loaded pages (each becomes its own chunk) ────────────────────────
 const LandingPage       = lazy(() => import("./pages/Landing"));
