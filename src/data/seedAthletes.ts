@@ -49,11 +49,22 @@ const schools = [
   { name: "Muzaffarpur Central School", district: "Muzaffarpur" },
 ];
 
+// ─── Deterministic seeded PRNG (Mulberry32) ────────────────────────────────
+// Ensures the same 82 athletes are generated on every page load / hot reload.
+let _seed = 0x9E3779B9;
+function mulberry32(): number {
+  _seed |= 0; _seed = _seed + 0x6D2B79F5 | 0;
+  let t = Math.imul(_seed ^ (_seed >>> 15), 1 | _seed);
+  t = t + Math.imul(t ^ (t >>> 7), 61 | t) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function resetSeed() { _seed = 0x9E3779B9; }
+
 function randFloat(min: number, max: number, dp = 1): number {
-  return parseFloat((Math.random() * (max - min) + min).toFixed(dp));
+  return parseFloat((mulberry32() * (max - min) + min).toFixed(dp));
 }
 function randInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return Math.floor(mulberry32() * (max - min + 1)) + min;
 }
 
 const maleNames = [
@@ -128,9 +139,9 @@ function getAgeBand(age: number): keyof (typeof metricParams)["M"] {
 }
 
 function sampleNormal(mean: number, std: number): number {
-  // Box-Muller
-  const u = Math.random(), v = Math.random();
-  const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  // Box-Muller — uses deterministic PRNG
+  const u = mulberry32(), v = mulberry32();
+  const z = Math.sqrt(-2 * Math.log(u + 1e-10)) * Math.cos(2 * Math.PI * v);
   return mean + z * std;
 }
 
@@ -141,7 +152,7 @@ function generateMetric(mean: number, std: number, dp = 1, missing = false): num
 }
 
 export function generateSeedAthletes(): Athlete[] {
-  // Use seeded random (reset via fixed seed emulation)
+  resetSeed(); // always start from the same seed = deterministic output
   const athletes: Athlete[] = [];
   let id = 1;
 
@@ -166,14 +177,14 @@ export function generateSeedAthletes(): Athlete[] {
 
     const verticalJump = isOutlier && isMale
       ? 95
-      : generateMetric(params.vj[0], params.vj[1], 1, isMissingData && Math.random() < 0.4);
-    const broadJump = generateMetric(params.bj[0], params.bj[1], 1, isMissingData && Math.random() < 0.3);
+      : generateMetric(params.vj[0], params.vj[1], 1, isMissingData && mulberry32() < 0.4);
+    const broadJump = generateMetric(params.bj[0], params.bj[1], 1, isMissingData && mulberry32() < 0.3);
     const sprint30m = isOutlier && !isMale
       ? 3.2
-      : generateMetric(params.s30[0], params.s30[1], 2, isMissingData && Math.random() < 0.3);
-    const run800m = generateMetric(params.r800[0], params.r800[1], 0, isMissingData && Math.random() < 0.4);
-    const shuttleRun = Math.random() > 0.35 ? generateMetric(params.shuttle[0], params.shuttle[1], 2) : undefined;
-    const footballThrow = Math.random() > 0.4 ? generateMetric(params.ft[0], params.ft[1], 1) : undefined;
+      : generateMetric(params.s30[0], params.s30[1], 2, isMissingData && mulberry32() < 0.3);
+    const run800m = generateMetric(params.r800[0], params.r800[1], 0, isMissingData && mulberry32() < 0.4);
+    const shuttleRun = mulberry32() > 0.35 ? generateMetric(params.shuttle[0], params.shuttle[1], 2) : undefined;
+    const footballThrow = mulberry32() > 0.4 ? generateMetric(params.ft[0], params.ft[1], 1) : undefined;
 
     const nameList = isMale ? maleNames : femaleNames;
     const name = nameList[Math.floor(i % nameList.length)];
