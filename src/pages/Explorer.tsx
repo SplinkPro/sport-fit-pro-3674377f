@@ -265,7 +265,7 @@ export default function ExplorerPage() {
                     });
                   }}
                 >
-                  <Checkbox checked={!hiddenCols.has(col.key)} className="h-3.5 w-3.5" readOnly />
+                  <Checkbox checked={!hiddenCols.has(col.key)} className="h-3.5 w-3.5" onCheckedChange={() => {}} />
                   <span className="text-xs">{col.label}</span>
                 </div>
               ))}

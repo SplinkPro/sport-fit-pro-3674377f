@@ -448,7 +448,7 @@ function InsightsTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
       </div>
 
       {/* Coach talking points */}
-      <SectionCard title={p.coachTalkingPoints} icon={Target}>
+      <SectionCard title={p.coachTalkingPoints}>
         <ul className="space-y-1.5">
           {insights.coachPoints.map((pt, i) => (
             <li key={i} className="flex items-start gap-2 text-xs">
