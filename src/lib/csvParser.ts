@@ -179,9 +179,8 @@ export interface ParseResult {
   detectedColumns: string[]; // for debug / field-map display
 }
 
-let _idCounter = 1;
-
 export function rowsToAthletes(rows: Record<string, string>[]): ParseResult {
+  let _idCounter = 1;
   const athletes: Athlete[] = [];
   const warnings: ParseResult["warnings"] = [];
   const errors:   ParseResult["errors"]   = [];
