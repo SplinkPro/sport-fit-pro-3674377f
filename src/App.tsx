@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +8,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AthleteProvider } from "@/hooks/useAthletes";
 
 // ─── Lazy-loaded pages (each becomes its own chunk) ────────────────────────
+const LandingPage       = lazy(() => import("./pages/Landing"));
 const ExplorerPage      = lazy(() => import("./pages/Explorer"));
 const AthleteProfilePage = lazy(() => import("./pages/AthleteProfile"));
 const AnalyticsPage     = lazy(() => import("./pages/Analytics"));
@@ -49,7 +50,9 @@ const App = () => (
         <AthleteProvider>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/" element={<Navigate to="/explorer" replace />} />
+              {/* Landing page — no AppShell chrome */}
+              <Route path="/" element={<LandingPage />} />
+              {/* App shell wraps all internal pages */}
               <Route element={<AppShell />}>
                 <Route path="/explorer"     element={<ExplorerPage />} />
                 <Route path="/athlete/:id"  element={<AthleteProfilePage />} />
