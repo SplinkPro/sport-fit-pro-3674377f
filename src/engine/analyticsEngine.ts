@@ -1,5 +1,5 @@
-import { Athlete } from "./seedAthletes";
-import { SPORTS_CONFIG, SportConfig } from "./sportsConfig";
+import { Athlete } from "../data/seedAthletes";
+import { SPORTS_CONFIG, SportConfig } from "../data/sportsConfig";
 
 // ─── Z-SCORE ENGINE ────────────────────────────────────────────────────────
 

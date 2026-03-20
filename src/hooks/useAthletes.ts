@@ -1,5 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import React from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { getSeedAthletes } from "../data/seedAthletes";
 import { enrichAthletes, EnrichedAthlete } from "../engine/analyticsEngine";
 
