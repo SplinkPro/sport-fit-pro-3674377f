@@ -52,6 +52,8 @@ const IMPORT_HISTORY = [
 
 export default function ImportPage() {
   const { t } = useTranslation();
+  const { datasetMeta, setDatasetMeta } = useAthletes();
+  const navigate = useNavigate();
   const [step, setStep] = useState<ImportStep>(1);
   const [dragging, setDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -69,7 +71,6 @@ export default function ImportPage() {
   const processFile = (file: File) => {
     if (!file) return;
     setUploadedFile(file);
-    // Parse CSV to get row/col count
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
@@ -95,6 +96,18 @@ export default function ImportPage() {
 
   const handleZoneClick = () => {
     if (!fileUploaded) fileInputRef.current?.click();
+  };
+
+  const handleConfirmImport = () => {
+    // Update global dataset metadata so Explorer shows the right label
+    setDatasetMeta({
+      name: uploadedFile?.name ?? "Imported dataset",
+      version: `v${IMPORT_HISTORY.length + 1}`,
+      count: validCount + warningCount,
+      importedAt: new Date().toISOString().slice(0, 10),
+      source: "import",
+    });
+    setStep(5);
   };
 
   return (
