@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Upload, FileText, CheckCircle, AlertTriangle, Download, ChevronRight, RotateCcw, Database } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,21 +52,47 @@ export default function ImportPage() {
   const { t } = useTranslation();
   const [step, setStep] = useState<ImportStep>(1);
   const [dragging, setDragging] = useState(false);
-  const [fileUploaded, setFileUploaded] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [rowCount, setRowCount] = useState(0);
+  const [colCount, setColCount] = useState(0);
   const [importMode, setImportMode] = useState<"append" | "replace">("append");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fileUploaded = uploadedFile !== null;
 
   const validCount = DEMO_VALIDATION.filter(r => r.status === "valid").length;
   const warningCount = DEMO_VALIDATION.filter(r => r.status === "warning").length;
   const errorCount = DEMO_VALIDATION.filter(r => r.status === "error").length;
 
+  const processFile = (file: File) => {
+    if (!file) return;
+    setUploadedFile(file);
+    // Parse CSV to get row/col count
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.trim().split("\n").filter(Boolean);
+      const headers = lines[0]?.split(",") ?? [];
+      setRowCount(Math.max(0, lines.length - 1));
+      setColCount(headers.length);
+    };
+    reader.readAsText(file);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    setFileUploaded(true);
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
   };
 
-  const handleFileInput = () => {
-    setFileUploaded(true);
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleZoneClick = () => {
+    if (!fileUploaded) fileInputRef.current?.click();
   };
 
   return (
@@ -113,6 +139,14 @@ export default function ImportPage() {
               <CardDescription>Drag & drop a CSV or Excel file, or click to browse. Download the template for the correct format.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Hidden real file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+                onChange={handleFileInput}
+              />
               <div
                 onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                 onDragLeave={() => setDragging(false)}
@@ -121,16 +155,16 @@ export default function ImportPage() {
                   "border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer",
                   dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"
                 )}
-                onClick={handleFileInput}
+                onClick={handleZoneClick}
               >
                 {fileUploaded ? (
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-14 h-14 bg-success/10 rounded-full flex items-center justify-center">
                       <CheckCircle className="w-8 h-8 text-success" />
                     </div>
-                    <p className="font-semibold text-foreground">athletes_batch_demo.csv</p>
-                    <p className="text-muted-foreground text-sm">8 rows detected · 11 columns</p>
-                    <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setFileUploaded(false); }}>
+                    <p className="font-semibold text-foreground">{uploadedFile?.name}</p>
+                    <p className="text-muted-foreground text-sm">{rowCount} rows detected · {colCount} columns</p>
+                    <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setUploadedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
                       <RotateCcw className="w-3 h-3 mr-1" /> Change file
                     </Button>
                   </div>
