@@ -259,7 +259,7 @@ function calcCompleteness(athlete: Athlete): number {
 
 // ─── FLAG DETECTION ─────────────────────────────────────────────────────────
 
-import type { AthleteFlag } from "../data/seedAthletes";
+
 
 function calcFlags(athlete: Athlete, cohortStats: Partial<Record<MetricKey, CohortStats>>): AthleteFlag[] {
   const flags: AthleteFlag[] = [];
