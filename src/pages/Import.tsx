@@ -25,22 +25,25 @@ const STEPS = [
   { id: 5, label: "Done" },
 ];
 
-/** All possible column → platform field mappings shown to the user */
+/** Column mapping reference — matches Bihar assessment format exactly */
 const FIELD_MAP = [
-  { detected: "Name", platform: "Athlete Name", required: true },
-  { detected: "Gender", platform: "Gender (M/F)", required: true },
-  { detected: "Age", platform: "Age (years)", required: true },
-  { detected: "Height_cm", platform: "Height (cm)", required: true },
-  { detected: "Weight_kg", platform: "Weight (kg)", required: true },
-  { detected: "V_Jump", platform: "Vertical Jump (cm)", required: false },
-  { detected: "Broad_Jump", platform: "Broad Jump (cm)", required: false },
-  { detected: "Sprint_30m", platform: "30m Sprint (sec)", required: false },
-  { detected: "Run_800m", platform: "800m Run (sec)", required: false },
-  { detected: "Shuttle_Run", platform: "Shuttle Run (sec)", required: false },
-  { detected: "Football_Throw", platform: "Football Throw (m)", required: false },
-  { detected: "School", platform: "School Name", required: false },
-  { detected: "District", platform: "District", required: false },
+  // ── Standard template names (left) + Bihar format names (right) ──
+  { detected: "studentId", altName: "ID (optional)", platform: "Athlete ID", required: false },
+  { detected: "Athlete Name", altName: "name", platform: "Athlete Name", required: true },
+  { detected: "Height", altName: "Height_cm", platform: "Height (cm)", required: true },
+  { detected: "Weight", altName: "Weight_kg", platform: "Weight (kg)", required: true },
+  { detected: "Gender", altName: "M or F", platform: "Gender — defaults to M if absent", required: false },
+  { detected: "Age", altName: "years", platform: "Age — defaults to 14 if absent", required: false },
+  { detected: "Thirty mflingstarts", altName: "Sprint_30m", platform: "30m Sprint (seconds)", required: false },
+  { detected: "Standinggbroadjump", altName: "Broad_Jump", platform: "Broad Jump (cm)", required: false },
+  { detected: "Shuttlerun10Mx6", altName: "Shuttle_Run", platform: "Shuttle Run (seconds)", required: false },
+  { detected: "Verticaljump", altName: "V_Jump", platform: "Vertical Jump (cm)", required: false },
+  { detected: "Footballballthrow5No", altName: "Football_Throw", platform: "Football Throw (m)", required: false },
+  { detected: "Eighthundredmetersrun", altName: "Run_800m", platform: "800m Run — accepts H:MM:SS or seconds", required: false },
+  { detected: "School", altName: "school name", platform: "School Name", required: false },
+  { detected: "District", altName: "district", platform: "District", required: false },
 ];
+
 
 const IMPORT_HISTORY_KEY = "pratibha_import_history";
 
