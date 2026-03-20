@@ -49,12 +49,31 @@ export function calcZScore(value: number, stats: CohortStats): number {
 }
 
 export function calcPercentile(value: number, stats: CohortStats, lowerIsBetter = false): number {
-  // Use pre-sorted values from stats — avoid re-sorting on every call
-  const sorted = [...stats.values].sort((a, b) => a - b);
+  const sorted = stats.sorted;
   const n = sorted.length;
   if (n === 0) return 50;
-  const rank = sorted.filter((v) => (lowerIsBetter ? v > value : v < value)).length;
-  return Math.round((rank / n) * 100);
+
+  // Binary search: count how many values are strictly less than (or greater than) value
+  let lo = 0, hi = n;
+  if (lowerIsBetter) {
+    // count values > value (better = fewer > you)
+    lo = 0; hi = n;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (sorted[mid] <= value) lo = mid + 1;
+      else hi = mid;
+    }
+    const rank = n - lo;
+    return Math.round((rank / n) * 100);
+  } else {
+    // count values < value
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (sorted[mid] < value) lo = mid + 1;
+      else hi = mid;
+    }
+    return Math.round((lo / n) * 100);
+  }
 }
 
 // ─── BENCHMARK BANDS ───────────────────────────────────────────────────────
