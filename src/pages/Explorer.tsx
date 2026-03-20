@@ -22,17 +22,33 @@ import {
   ChevronDown, ChevronUp, X, ArrowUpDown, ChevronRight, Upload,
   BarChart3, GitCompare, ChevronLeft, Eye, EyeOff,
 } from "lucide-react";
+import { Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Helper: translate sport name
-function getSportName(topSport: string | undefined, language: Language): string {
-  if (!topSport) return "—";
-  const cfg = SPORTS_CONFIG.find((s) => s.nameEn === topSport || s.key === topSport?.toLowerCase());
-  if (!cfg) return topSport;
-  return language === "hi" ? cfg.nameHi : cfg.nameEn;
+// ─── Active Dataset Banner ──────────────────────────────────────────────────
+function ActiveDatasetBanner({ meta }: { meta: import("@/hooks/useAthletes").DatasetMeta }) {
+  return (
+    <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-sm">
+      <Database size={14} className="text-primary shrink-0" />
+      <span className="font-medium text-foreground">{meta.name}</span>
+      <span className="text-muted-foreground">·</span>
+      <span className="text-muted-foreground">{meta.count} athletes</span>
+      <span className="text-muted-foreground">·</span>
+      <span className="text-muted-foreground">{meta.version}</span>
+      {meta.source === "seed" && (
+        <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">DEMO DATA</span>
+      )}
+      {meta.source === "import" && (
+        <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-success/10 text-success font-medium">IMPORTED {meta.importedAt}</span>
+      )}
+      <Link to="/import" className="ml-auto text-xs text-primary hover:underline shrink-0">
+        Manage data →
+      </Link>
+    </div>
+  );
 }
 
-// ─── Types ─────────────────────────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────
 interface Filters {
   search: string;
   dataset: "all" | "male" | "female";
