@@ -470,7 +470,7 @@ export default function ExplorerPage() {
       {totalPages > 1 && (
         <div className="px-6 py-3 border-t bg-card flex items-center justify-between shrink-0">
           <span className="text-xs text-muted-foreground">
-            Page {page + 1} {dict.common.of} {totalPages}
+            {language === "hi" ? "पृष्ठ" : "Page"} {page + 1} {dict.common.of} {totalPages}
           </span>
           <div className="flex items-center gap-1">
             <Button
