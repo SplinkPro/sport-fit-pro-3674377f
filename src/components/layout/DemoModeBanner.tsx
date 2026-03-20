@@ -1,11 +1,16 @@
 import React, { useState } from "react";
 import { X, Zap, Database, BarChart3, Globe } from "lucide-react";
 import { CLIENT_CONFIG } from "@/config/clientConfig";
+import { useAthletes } from "@/hooks/useAthletes";
 import { cn } from "@/lib/utils";
 
 export function DemoModeBanner() {
   const [dismissed, setDismissed] = useState(false);
-  if (!CLIENT_CONFIG.demoMode || dismissed) return null;
+  const { datasetMeta } = useAthletes();
+  const isRealData = datasetMeta.source === "import";
+
+  // Hide if: demo mode is off, user dismissed it, or real data has been loaded
+  if (!CLIENT_CONFIG.demoMode || dismissed || isRealData) return null;
 
   return (
     <div className="bg-accent text-accent-foreground px-4 py-2 flex items-center gap-3 text-xs font-medium shrink-0 border-b border-accent/30">
@@ -15,7 +20,7 @@ export function DemoModeBanner() {
       </div>
       <span className="text-accent-foreground/80">·</span>
       <span className="text-accent-foreground/90">
-        {CLIENT_CONFIG.demoAthleteCount} sample Bihar athletes loaded
+        {datasetMeta.count} sample Bihar athletes loaded
       </span>
 
       <div className="hidden sm:flex items-center gap-3 ml-2 text-accent-foreground/70">
