@@ -76,34 +76,34 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  /** Register a freshly imported dataset and make it active */
+  /** Register a freshly imported dataset and immediately make it active */
   const addDataset = useCallback(
-    (meta: Omit<DatasetMeta, "id">, athletes: EnrichedAthlete[]) => {
+    (meta: Omit<DatasetMeta, "id">, newAthletes: EnrichedAthlete[]) => {
       const newId = `import_${Date.now()}`;
-      const full: DatasetMeta = { ...meta, id: newId, athletes };
+      const full: DatasetMeta = { ...meta, id: newId, count: newAthletes.length, athletes: newAthletes };
       setSavedDatasets((prev) => {
-        // Avoid duplicates by name
         const filtered = prev.filter((d) => d.name !== meta.name);
-        return [...filtered, full];
+        return [full, ...filtered]; // put new one first
       });
-      setRawAthletes(athletes);
+      setRawAthletes(newAthletes);
       setDatasetMeta(full);
     },
     []
   );
 
-  /** Switch to an already-saved dataset */
+  /** Switch the active dataset by id */
   const loadDataset = useCallback(
     (id: string) => {
+      const ds = savedDatasets.find((d) => d.id === id);
+      if (!ds) return;
       if (id === "seed") {
         setRawAthletes(seedAthletes);
-        setDatasetMeta((prev) => savedDatasets.find((d) => d.id === "seed") ?? prev);
+        setDatasetMeta({ ...ds, athletes: undefined }); // strip athletes from meta to save memory
         return;
       }
-      const ds = savedDatasets.find((d) => d.id === id);
-      if (!ds || !ds.athletes) return;
+      if (!ds.athletes || ds.athletes.length === 0) return;
       setRawAthletes(ds.athletes);
-      setDatasetMeta(ds);
+      setDatasetMeta({ ...ds, athletes: undefined });
     },
     [savedDatasets, seedAthletes]
   );
