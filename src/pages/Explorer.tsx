@@ -2,7 +2,9 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useT } from "@/i18n/useTranslation";
+import { Language } from "@/i18n/useTranslation";
 import { EnrichedAthlete } from "@/engine/analyticsEngine";
+import { SPORTS_CONFIG } from "@/data/sportsConfig";
 import {
   KPICard, DataQualityBadge, BenchmarkBadge, FlagBadge, EmptyState, PageHeader,
 } from "@/components/shared";
@@ -20,6 +22,14 @@ import {
   BarChart3, GitCompare, ChevronLeft, Eye, EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Helper: translate sport name
+function getSportName(topSport: string | undefined, language: Language): string {
+  if (!topSport) return "—";
+  const cfg = SPORTS_CONFIG.find((s) => s.nameEn === topSport || s.key === topSport?.toLowerCase());
+  if (!cfg) return topSport;
+  return language === "hi" ? cfg.nameHi : cfg.nameEn;
+}
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface Filters {
@@ -342,7 +352,7 @@ export default function ExplorerPage() {
       {/* Results bar */}
       <div className="px-6 py-1.5 border-b bg-muted/30 flex items-center justify-between shrink-0">
         <span className="text-xs text-muted-foreground">
-          {filtered.length} {dict.common.of} {athletes.length} athletes
+          {filtered.length} {dict.common.of} {athletes.length} {dict.explorer.totalAthletes.split(" ").at(-1) ?? "athletes"}
         </span>
         {selected.size > 0 && (
           <div className="flex items-center gap-2">
@@ -438,7 +448,7 @@ export default function ExplorerPage() {
                       className="px-2 py-2 text-xs"
                       onClick={() => navigate(`/athlete/${athlete.id}`)}
                     >
-                      {renderCell(col.key, athlete)}
+                      {renderCell(col.key, athlete, dict, language)}
                     </td>
                   ))}
                   <td className="px-2 py-2">
@@ -460,7 +470,7 @@ export default function ExplorerPage() {
       {totalPages > 1 && (
         <div className="px-6 py-3 border-t bg-card flex items-center justify-between shrink-0">
           <span className="text-xs text-muted-foreground">
-            Page {page + 1} {dict.common.of} {totalPages}
+            {language === "hi" ? "पृष्ठ" : "Page"} {page + 1} {dict.common.of} {totalPages}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -505,7 +515,7 @@ export default function ExplorerPage() {
               {dict.explorer.comparisonDrawer.title}
             </SheetTitle>
           </SheetHeader>
-          <ComparisonPanel athletes={compareAthletes} dict={dict} />
+          <ComparisonPanel athletes={compareAthletes} dict={dict} language={language} />
         </SheetContent>
       </Sheet>
     </div>
@@ -513,17 +523,22 @@ export default function ExplorerPage() {
 }
 
 // ─── Cell Renderer ─────────────────────────────────────────────────────────
-function renderCell(key: string, a: EnrichedAthlete): React.ReactNode {
+function renderCell(
+  key: string,
+  a: EnrichedAthlete,
+  dict: ReturnType<typeof useT>["dict"],
+  language: Language
+): React.ReactNode {
   switch (key) {
     case "id": return <span className="font-mono text-[10px] text-muted-foreground">{a.id}</span>;
     case "name": return <span className="font-medium text-xs">{a.name}</span>;
     case "gender":
       return (
         <span className={cn("font-semibold", a.gender === "M" ? "text-blue-600" : "text-pink-600")}>
-          {a.gender === "M" ? "♂ M" : "♀ F"}
+          {a.gender === "M" ? `♂ ${dict.common.male}` : `♀ ${dict.common.female}`}
         </span>
       );
-    case "age": return <span>{a.age}y</span>;
+    case "age": return <span>{a.age}{dict.common.years[0]}</span>;
     case "height": return <span>{a.height}</span>;
     case "weight": return <span>{a.weight}</span>;
     case "bmi": return <span>{a.bmi?.toFixed(1) ?? "—"}</span>;
@@ -543,14 +558,16 @@ function renderCell(key: string, a: EnrichedAthlete): React.ReactNode {
     case "topSport":
       return (
         <span className="inline-flex items-center gap-1 bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded text-[10px] font-medium">
-          {a.topSport}
+          {getSportName(a.topSport, language)}
         </span>
       );
     case "completeness": return <DataQualityBadge score={a.completeness ?? 0} />;
     case "flags":
       return (
         <div className="flex flex-wrap gap-0.5">
-          {(a.flags ?? []).slice(0, 2).map((f, i) => <FlagBadge key={i} type={f.type} />)}
+          {(a.flags ?? []).slice(0, 2).map((f, i) => (
+            <FlagBadge key={i} type={f.type} label={dict.explorer.flagTypes[f.type as keyof typeof dict.explorer.flagTypes]} />
+          ))}
         </div>
       );
     default: return null;
@@ -558,21 +575,22 @@ function renderCell(key: string, a: EnrichedAthlete): React.ReactNode {
 }
 
 // ─── Comparison Panel ─────────────────────────────────────────────────────
-function ComparisonPanel({ athletes, dict }: { athletes: EnrichedAthlete[]; dict: ReturnType<typeof useT>["dict"] }) {
+function ComparisonPanel({ athletes, dict, language }: { athletes: EnrichedAthlete[]; dict: ReturnType<typeof useT>["dict"]; language: Language }) {
   if (athletes.length === 0) return (
-    <div className="text-sm text-muted-foreground text-center py-8">Select athletes from the table to compare</div>
+    <div className="text-sm text-muted-foreground text-center py-8">{dict.explorer.comparisonDrawer.subtitle}</div>
   );
 
+  const m = dict.metrics;
   const metrics: Array<{ key: keyof EnrichedAthlete; label: string; unit: string }> = [
-    { key: "age", label: "Age", unit: "y" },
-    { key: "height", label: "Height", unit: "cm" },
-    { key: "weight", label: "Weight", unit: "kg" },
-    { key: "bmi", label: "BMI", unit: "" },
-    { key: "verticalJump", label: "V. Jump", unit: "cm" },
-    { key: "broadJump", label: "B. Jump", unit: "cm" },
-    { key: "sprint30m", label: "30m Sprint", unit: "s" },
-    { key: "run800m", label: "800m Run", unit: "s" },
-    { key: "compositeScore", label: "Composite Score", unit: "" },
+    { key: "age", label: dict.common.age, unit: dict.common.years.slice(0, 1) },
+    { key: "height", label: m.height, unit: m.units.cm },
+    { key: "weight", label: m.weight, unit: m.units.kg },
+    { key: "bmi", label: m.bmi, unit: "" },
+    { key: "verticalJump", label: m.verticalJump, unit: m.units.cm },
+    { key: "broadJump", label: m.broadJump, unit: m.units.cm },
+    { key: "sprint30m", label: m.sprint30m, unit: m.units.sec },
+    { key: "run800m", label: m.run800m, unit: m.units.min },
+    { key: "compositeScore", label: dict.explorer.comparisonDrawer.score, unit: "" },
   ];
 
   return (

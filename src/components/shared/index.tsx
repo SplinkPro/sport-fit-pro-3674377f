@@ -155,17 +155,24 @@ export function MetricChip({
 }
 
 // ─── Flag Badge ────────────────────────────────────────────────────────────
-export function FlagBadge({ type }: { type: "outlier" | "missing" | "underweight" | "overweight" }) {
-  const configs = {
-    outlier: { label: "⚡ Outlier", className: "bg-orange-100 text-orange-700 border-orange-200" },
-    missing: { label: "◻ Missing", className: "bg-gray-100 text-gray-600 border-gray-200" },
-    underweight: { label: "⬇ Underweight", className: "bg-blue-100 text-blue-700 border-blue-200" },
-    overweight: { label: "⬆ Overweight", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+export function FlagBadge({ type, label }: { type: "outlier" | "missing" | "underweight" | "overweight"; label?: string }) {
+  const defaultLabels = {
+    outlier: "⚡ Outlier",
+    missing: "◻ Missing",
+    underweight: "⬇ Underweight",
+    overweight: "⬆ Overweight",
   };
-  const c = configs[type];
+  const classNames = {
+    outlier: "bg-orange-100 text-orange-700 border-orange-200",
+    missing: "bg-gray-100 text-gray-600 border-gray-200",
+    underweight: "bg-blue-100 text-blue-700 border-blue-200",
+    overweight: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  };
+  const icons = { outlier: "⚡", missing: "◻", underweight: "⬇", overweight: "⬆" };
+  const displayLabel = label ? `${icons[type]} ${label}` : defaultLabels[type];
   return (
-    <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border", c.className)}>
-      {c.label}
+    <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border", classNames[type])}>
+      {displayLabel}
     </span>
   );
 }
