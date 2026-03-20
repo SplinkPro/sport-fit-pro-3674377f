@@ -1,4 +1,4 @@
-import { Athlete } from "../data/seedAthletes";
+import { Athlete, AthleteFlag } from "../data/seedAthletes";
 import { SPORTS_CONFIG, SportConfig } from "../data/sportsConfig";
 
 // ─── Z-SCORE ENGINE ────────────────────────────────────────────────────────
