@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, CheckCircle, AlertTriangle, Download, ChevronRight, RotateCcw, Database } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Upload, FileText, CheckCircle, AlertTriangle, Download, ChevronRight, RotateCcw, Database, Users, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useAthletes } from "@/hooks/useAthletes";
 import { cn } from "@/lib/utils";
 
 type ImportStep = 1 | 2 | 3 | 4 | 5;
@@ -50,6 +52,8 @@ const IMPORT_HISTORY = [
 
 export default function ImportPage() {
   const { t } = useTranslation();
+  const { datasetMeta, setDatasetMeta } = useAthletes();
+  const navigate = useNavigate();
   const [step, setStep] = useState<ImportStep>(1);
   const [dragging, setDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -67,7 +71,6 @@ export default function ImportPage() {
   const processFile = (file: File) => {
     if (!file) return;
     setUploadedFile(file);
-    // Parse CSV to get row/col count
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
@@ -93,6 +96,18 @@ export default function ImportPage() {
 
   const handleZoneClick = () => {
     if (!fileUploaded) fileInputRef.current?.click();
+  };
+
+  const handleConfirmImport = () => {
+    // Update global dataset metadata so Explorer shows the right label
+    setDatasetMeta({
+      name: uploadedFile?.name ?? "Imported dataset",
+      version: `v${IMPORT_HISTORY.length + 1}`,
+      count: validCount + warningCount,
+      importedAt: new Date().toISOString().slice(0, 10),
+      source: "import",
+    });
+    setStep(5);
   };
 
   return (
@@ -347,7 +362,7 @@ export default function ImportPage() {
           </Card>
           <div className="flex justify-between">
             <Button variant="outline" onClick={() => setStep(3)}>Back</Button>
-            <Button onClick={() => setStep(5)} className="gap-2 bg-primary">
+            <Button onClick={handleConfirmImport} className="gap-2 bg-primary">
               <Database className="w-4 h-4" /> Confirm Import
             </Button>
           </div>
@@ -363,16 +378,35 @@ export default function ImportPage() {
               </div>
               <h2 className="text-xl font-bold text-foreground">Import Complete</h2>
               <p className="text-muted-foreground text-sm max-w-sm">
-                7 athletes were imported successfully. 1 row was skipped due to errors.
+                <span className="font-semibold text-foreground">{validCount + warningCount} athletes</span> loaded
+                from <span className="font-semibold text-foreground">{uploadedFile?.name ?? "your file"}</span>.{" "}
+                {errorCount > 0 && `${errorCount} row${errorCount > 1 ? "s" : ""} skipped.`}
               </p>
               <div className="grid grid-cols-3 gap-4 mt-2 w-full max-w-sm">
-                <div className="bg-success/10 rounded-lg p-2 text-center"><div className="text-lg font-bold text-success">7</div><div className="text-xs text-muted-foreground">Imported</div></div>
-                <div className="bg-warning/10 rounded-lg p-2 text-center"><div className="text-lg font-bold text-warning">2</div><div className="text-xs text-muted-foreground">Warnings</div></div>
-                <div className="bg-destructive/10 rounded-lg p-2 text-center"><div className="text-lg font-bold text-destructive">1</div><div className="text-xs text-muted-foreground">Skipped</div></div>
+                <div className="bg-success/10 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-success">{validCount + warningCount}</div>
+                  <div className="text-xs text-muted-foreground">Imported</div>
+                </div>
+                <div className="bg-warning/10 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-warning">{warningCount}</div>
+                  <div className="text-xs text-muted-foreground">Warnings</div>
+                </div>
+                <div className="bg-destructive/10 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-destructive">{errorCount}</div>
+                  <div className="text-xs text-muted-foreground">Skipped</div>
+                </div>
               </div>
-              <div className="flex gap-3 mt-2">
-                <Button variant="outline" size="sm" className="gap-2"><Download className="w-4 h-4" /> Export Import Log</Button>
-                <Button size="sm" onClick={() => setStep(1)} className="gap-2"><RotateCcw className="w-4 h-4" /> New Import</Button>
+              {/* Primary CTA — take user to Explorer to see the loaded data */}
+              <Button className="gap-2 mt-1 w-full max-w-sm" onClick={() => navigate("/explorer")}>
+                <Users className="w-4 h-4" /> View Athletes in Explorer <ArrowRight className="w-4 h-4 ml-auto" />
+              </Button>
+              <div className="flex gap-3">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Download className="w-4 h-4" /> Export Import Log
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="gap-2">
+                  <RotateCcw className="w-4 h-4" /> New Import
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -381,27 +415,46 @@ export default function ImportPage() {
 
       {/* Import History */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Import History</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center justify-between">
+            Import History
+            <span className="text-xs font-normal text-muted-foreground">Currently active dataset is highlighted</span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="divide-y">
-            {IMPORT_HISTORY.map((h) => (
-              <div key={h.id} className="py-3 flex items-center gap-4 text-sm">
-                <div className="flex-1">
-                  <div className="font-medium">{h.file}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{h.date} · {h.rows} rows · {h.version}</div>
+            {IMPORT_HISTORY.map((h, idx) => {
+              const isActive = datasetMeta.name === h.file || (idx === 0 && datasetMeta.source === "seed");
+              return (
+                <div key={h.id} className={cn(
+                  "py-3 flex items-center gap-4 text-sm rounded-md px-2 -mx-2",
+                  isActive && "bg-primary/5 border border-primary/20 rounded-lg"
+                )}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">{h.file}</span>
+                      {isActive && (
+                        <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0 shrink-0">
+                          ● Active
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{h.date} · {h.rows} rows · {h.version}</div>
+                  </div>
+                  <div className="flex gap-2 text-xs shrink-0">
+                    <span className="text-success">{h.valid} valid</span>
+                    <span className="text-warning">{h.warnings} warn</span>
+                    <span className="text-destructive">{h.errors} err</span>
+                  </div>
+                  <Badge variant={h.status === "success" ? "default" : "outline"} className="text-xs shrink-0">
+                    {h.status === "success" ? "✓ Success" : "⚠ Partial"}
+                  </Badge>
+                  {!isActive && (
+                    <Button variant="ghost" size="sm" className="text-xs h-7 shrink-0">Load</Button>
+                  )}
                 </div>
-                <div className="flex gap-2 text-xs">
-                  <span className="text-success">{h.valid} valid</span>
-                  <span className="text-warning">{h.warnings} warn</span>
-                  <span className="text-destructive">{h.errors} err</span>
-                </div>
-                <Badge variant={h.status === "success" ? "default" : "outline"} className="text-xs">
-                  {h.status === "success" ? "✓ Success" : "⚠ Partial"}
-                </Badge>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useT } from "@/i18n/useTranslation";
@@ -21,6 +22,7 @@ import {
   ChevronDown, ChevronUp, X, ArrowUpDown, ChevronRight, Upload,
   BarChart3, GitCompare, ChevronLeft, Eye, EyeOff,
 } from "lucide-react";
+import { Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Helper: translate sport name
@@ -31,7 +33,30 @@ function getSportName(topSport: string | undefined, language: Language): string 
   return language === "hi" ? cfg.nameHi : cfg.nameEn;
 }
 
-// ─── Types ─────────────────────────────────────────────────────────────────
+// ─── Active Dataset Banner ──────────────────────────────────────────────────
+function ActiveDatasetBanner({ meta }: { meta: import("@/hooks/useAthletes").DatasetMeta }) {
+  return (
+    <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-sm">
+      <Database size={14} className="text-primary shrink-0" />
+      <span className="font-medium text-foreground">{meta.name}</span>
+      <span className="text-muted-foreground">·</span>
+      <span className="text-muted-foreground">{meta.count} athletes</span>
+      <span className="text-muted-foreground">·</span>
+      <span className="text-muted-foreground">{meta.version}</span>
+      {meta.source === "seed" && (
+        <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">DEMO DATA</span>
+      )}
+      {meta.source === "import" && (
+        <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-success/10 text-success font-medium">IMPORTED {meta.importedAt}</span>
+      )}
+      <Link to="/import" className="ml-auto text-xs text-primary hover:underline shrink-0">
+        Manage data →
+      </Link>
+    </div>
+  );
+}
+
+// ─── Types ──────────────────────────────────────────────────────────────────
 interface Filters {
   search: string;
   dataset: "all" | "male" | "female";
@@ -50,7 +75,7 @@ const PAGE_SIZE = 20;
 
 // ─── Component ─────────────────────────────────────────────────────────────
 export default function ExplorerPage() {
-  const { athletes, loading } = useAthletes();
+  const { athletes, loading, datasetMeta } = useAthletes();
   const { dict, language } = useT();
   const navigate = useNavigate();
 
@@ -209,6 +234,9 @@ export default function ExplorerPage() {
             </Select>
           }
         />
+
+        {/* Active Dataset Banner */}
+        <ActiveDatasetBanner meta={datasetMeta} />
 
         {/* KPI Cards */}
         <div className="grid grid-cols-4 gap-3 mb-4">
