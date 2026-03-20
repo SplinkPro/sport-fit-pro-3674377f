@@ -25,22 +25,25 @@ const STEPS = [
   { id: 5, label: "Done" },
 ];
 
-/** All possible column → platform field mappings shown to the user */
+/** Column mapping reference — matches Bihar assessment format exactly */
 const FIELD_MAP = [
-  { detected: "Name", platform: "Athlete Name", required: true },
-  { detected: "Gender", platform: "Gender (M/F)", required: true },
-  { detected: "Age", platform: "Age (years)", required: true },
-  { detected: "Height_cm", platform: "Height (cm)", required: true },
-  { detected: "Weight_kg", platform: "Weight (kg)", required: true },
-  { detected: "V_Jump", platform: "Vertical Jump (cm)", required: false },
-  { detected: "Broad_Jump", platform: "Broad Jump (cm)", required: false },
-  { detected: "Sprint_30m", platform: "30m Sprint (sec)", required: false },
-  { detected: "Run_800m", platform: "800m Run (sec)", required: false },
-  { detected: "Shuttle_Run", platform: "Shuttle Run (sec)", required: false },
-  { detected: "Football_Throw", platform: "Football Throw (m)", required: false },
-  { detected: "School", platform: "School Name", required: false },
-  { detected: "District", platform: "District", required: false },
+  // ── Standard template names (left) + Bihar format names (right) ──
+  { detected: "studentId", altName: "ID (optional)", platform: "Athlete ID", required: false },
+  { detected: "Athlete Name", altName: "name", platform: "Athlete Name", required: true },
+  { detected: "Height", altName: "Height_cm", platform: "Height (cm)", required: true },
+  { detected: "Weight", altName: "Weight_kg", platform: "Weight (kg)", required: true },
+  { detected: "Gender", altName: "M or F", platform: "Gender — defaults to M if absent", required: false },
+  { detected: "Age", altName: "years", platform: "Age — defaults to 14 if absent", required: false },
+  { detected: "Thirty mflingstarts", altName: "Sprint_30m", platform: "30m Sprint (seconds)", required: false },
+  { detected: "Standinggbroadjump", altName: "Broad_Jump", platform: "Broad Jump (cm)", required: false },
+  { detected: "Shuttlerun10Mx6", altName: "Shuttle_Run", platform: "Shuttle Run (seconds)", required: false },
+  { detected: "Verticaljump", altName: "V_Jump", platform: "Vertical Jump (cm)", required: false },
+  { detected: "Footballballthrow5No", altName: "Football_Throw", platform: "Football Throw (m)", required: false },
+  { detected: "Eighthundredmetersrun", altName: "Run_800m", platform: "800m Run — accepts H:MM:SS or seconds", required: false },
+  { detected: "School", altName: "school name", platform: "School Name", required: false },
+  { detected: "District", altName: "district", platform: "District", required: false },
 ];
+
 
 const IMPORT_HISTORY_KEY = "pratibha_import_history";
 
@@ -290,13 +293,14 @@ export default function ImportPage() {
               {/* Format hint */}
               <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-sm">
                 <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                <p className="text-blue-700">
-                  Your file needs at least: <strong>Name, Gender, Age, Height_cm, Weight_kg</strong>.
-                  Optional metrics: V_Jump, Broad_Jump, Sprint_30m, Run_800m, School, District.
-                </p>
+                <div className="text-blue-700 space-y-0.5">
+                  <p><strong>Accepted format:</strong> Same as the Bihar assessment spreadsheet.</p>
+                  <p>Columns: <code className="bg-blue-100 px-1 rounded text-xs">Athlete Name, Height, Weight, Thirty mflingstarts, Standinggbroadjump, Shuttlerun10Mx6, Verticaljump, Footballballthrow5No, Eighthundredmetersrun</code></p>
+                  <p className="text-xs mt-1">800m run accepts <strong>H:MM:SS</strong> time format or plain seconds. Gender and Age default to M / 14 if not present.</p>
+                </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <Button
                   variant="outline"
                   size="sm"
@@ -305,7 +309,13 @@ export default function ImportPage() {
                 >
                   <Download className="w-4 h-4" /> Download CSV Template
                 </Button>
+                <a href="/sample_data.xlsx" download="Sample_data_12.xlsx">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Download className="w-4 h-4" /> Download Sample Excel
+                  </Button>
+                </a>
               </div>
+
             </CardContent>
           </Card>
           <div className="flex justify-end">
@@ -327,8 +337,8 @@ export default function ImportPage() {
             <CardHeader>
               <CardTitle>Field Mapping</CardTitle>
               <CardDescription>
-                These are the column names the platform recognises. As long as your CSV uses
-                these names (case-insensitive), fields map automatically.
+                The platform auto-detects column names. Both the Bihar assessment format
+                and the standard template names are accepted — case-insensitive.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -336,18 +346,22 @@ export default function ImportPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 pr-4 font-medium text-muted-foreground">CSV Column Name</th>
-                      <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Platform Field</th>
+                      <th className="text-left py-2 pr-3 font-medium text-muted-foreground">Bihar Format Column</th>
+                      <th className="text-left py-2 pr-3 font-medium text-muted-foreground">Alt Name</th>
+                      <th className="text-left py-2 pr-3 font-medium text-muted-foreground">Mapped To</th>
                       <th className="text-left py-2 font-medium text-muted-foreground">Required</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {FIELD_MAP.map((f) => (
-                      <tr key={f.detected}>
-                        <td className="py-2 pr-4">
-                          <code className="bg-muted/40 px-2 py-0.5 rounded text-xs font-mono">{f.detected}</code>
+                      <tr key={f.detected} className="hover:bg-muted/20">
+                        <td className="py-2 pr-3">
+                          <code className="bg-muted/50 px-2 py-0.5 rounded text-xs font-mono">{f.detected}</code>
                         </td>
-                        <td className="py-2 pr-4 text-foreground">{f.platform}</td>
+                        <td className="py-2 pr-3 text-muted-foreground text-xs">
+                          <code className="bg-muted/30 px-1.5 py-0.5 rounded font-mono">{f.altName}</code>
+                        </td>
+                        <td className="py-2 pr-3 text-foreground">{f.platform}</td>
                         <td className="py-2">
                           {f.required
                             ? <Badge className="text-xs bg-primary/10 text-primary border-primary/20">Required</Badge>
@@ -369,6 +383,7 @@ export default function ImportPage() {
           </div>
         </div>
       )}
+
 
       {/* ── Step 3: Validate ── */}
       {step === 3 && (
