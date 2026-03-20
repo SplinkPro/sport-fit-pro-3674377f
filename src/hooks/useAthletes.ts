@@ -2,25 +2,44 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from "
 import { getSeedAthletes } from "../data/seedAthletes";
 import { enrichAthletes, EnrichedAthlete } from "../engine/analyticsEngine";
 
+export interface DatasetMeta {
+  name: string;       // e.g. "athletes_batch_3.csv"
+  version: string;    // e.g. "v3"
+  count: number;
+  importedAt: string; // ISO date string
+  source: "seed" | "import";
+}
+
 interface AthleteContextValue {
   athletes: EnrichedAthlete[];
   loading: boolean;
-  /** Replace full dataset (used by Import wizard) */
+  datasetMeta: DatasetMeta;
   setAthletes: React.Dispatch<React.SetStateAction<EnrichedAthlete[]>>;
+  setDatasetMeta: React.Dispatch<React.SetStateAction<DatasetMeta>>;
 }
+
+const SEED_META: DatasetMeta = {
+  name: "Bihar Demo Dataset",
+  version: "v3",
+  count: 82,
+  importedAt: "2024-03-10",
+  source: "seed",
+};
 
 const AthleteContext = createContext<AthleteContextValue>({
   athletes: [],
   loading: true,
+  datasetMeta: SEED_META,
   setAthletes: () => {},
+  setDatasetMeta: () => {},
 });
 
 export function AthleteProvider({ children }: { children: React.ReactNode }) {
   const [rawAthletes, setRawAthletes] = useState<EnrichedAthlete[]>([]);
   const [loading, setLoading] = useState(true);
+  const [datasetMeta, setDatasetMeta] = useState<DatasetMeta>(SEED_META);
 
   useEffect(() => {
-    // Move heavy computation off the main thread render cycle
     const id = requestIdleCallback
       ? requestIdleCallback(() => {
           const enriched = enrichAthletes(getSeedAthletes());
@@ -40,8 +59,8 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ athletes: rawAthletes, loading, setAthletes: setRawAthletes }),
-    [rawAthletes, loading]
+    () => ({ athletes: rawAthletes, loading, datasetMeta, setAthletes: setRawAthletes, setDatasetMeta }),
+    [rawAthletes, loading, datasetMeta]
   );
 
   return React.createElement(AthleteContext.Provider, { value }, children);
