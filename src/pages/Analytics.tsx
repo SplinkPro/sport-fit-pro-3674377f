@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
 
 export default function AnalyticsPage() {
-  const { athletes, loading } = useAthletes();
+  const { athletes, loading, datasetMeta } = useAthletes();
   const { dict } = useT();
   const [view, setView] = useState<"executive" | "analyst">("executive");
 
