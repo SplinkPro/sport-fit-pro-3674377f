@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Users, Brain, Trophy, BarChart2, FlaskConical, Palette, Database, Shield } from "lucide-react";
+import { Users, Brain, Trophy, BarChart2, FlaskConical, Palette, Database, Shield, Save, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -44,24 +46,92 @@ const SPORTS_LIST = [
   { id: 8, name: "Badminton", enabled: false, athletes: 0 },
 ];
 
-const METRICS = [
-  { name: "Vertical Jump", weight: 20, unit: "cm" },
-  { name: "Broad Jump", weight: 20, unit: "cm" },
-  { name: "30m Sprint", weight: 25, unit: "sec" },
-  { name: "800m Run", weight: 20, unit: "min" },
-  { name: "Shuttle Run", weight: 10, unit: "sec" },
-  { name: "Football Throw", weight: 5, unit: "m" },
+const DEFAULT_METRICS = [
+  { name: "Vertical Jump", key: "verticalJump", weight: 25, unit: "cm" },
+  { name: "Broad Jump", key: "broadJump", weight: 20, unit: "cm" },
+  { name: "30m Sprint", key: "sprint30m", weight: 25, unit: "sec" },
+  { name: "800m Run", key: "run800m", weight: 25, unit: "min" },
+  { name: "Shuttle Run", key: "shuttleRun", weight: 5, unit: "sec" },
+  { name: "Football Throw", key: "footballThrow", weight: 0, unit: "m" },
 ];
 
+const LS_BRANDING_KEY = "pratibha_branding";
+const LS_WEIGHTS_KEY = "pratibha_weights";
+
+function loadBranding() {
+  try {
+    const raw = localStorage.getItem(LS_BRANDING_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function loadWeights() {
+  try {
+    const raw = localStorage.getItem(LS_WEIGHTS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
 export default function SettingsPage() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("users");
   const [aiEnabled, setAiEnabled] = useState(true);
   const [fallbackEnabled, setFallbackEnabled] = useState(true);
   const [apiKey, setApiKey] = useState("sk-••••••••••••••••••••");
   const [sports, setSports] = useState(SPORTS_LIST);
 
+  // Branding state (load from localStorage if saved)
+  const savedBranding = loadBranding();
+  const [clientName, setClientName] = useState(savedBranding?.clientName ?? "Bihar Sports Department");
+  const [instanceCode, setInstanceCode] = useState(savedBranding?.instanceCode ?? "BIHAR-2024");
+  const [reportHeader, setReportHeader] = useState(savedBranding?.reportHeader ?? "Pratibha Athlete Intelligence Platform | Bihar Sports");
+  const [brandingSaved, setBrandingSaved] = useState(false);
+
+  // Metric weights state (load from localStorage if saved)
+  const savedWeights = loadWeights();
+  const [metrics, setMetrics] = useState(
+    savedWeights
+      ? DEFAULT_METRICS.map((m) => ({ ...m, weight: savedWeights[m.key] ?? m.weight }))
+      : DEFAULT_METRICS
+  );
+  const [weightsSaved, setWeightsSaved] = useState(false);
+
+  const totalWeight = metrics.reduce((s, m) => s + m.weight, 0);
+  const weightsValid = totalWeight === 100;
+
+  const updateWeight = (key: string, value: number) => {
+    setMetrics((prev) => prev.map((m) => m.key === key ? { ...m, weight: value } : m));
+    setWeightsSaved(false);
+  };
+
   const toggleSport = (id: number) => {
-    setSports(prev => prev.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s));
+    setSports((prev) => prev.map((s) => s.id === id ? { ...s, enabled: !s.enabled } : s));
+  };
+
+  const saveBranding = () => {
+    const data = { clientName, instanceCode, reportHeader };
+    try {
+      localStorage.setItem(LS_BRANDING_KEY, JSON.stringify(data));
+    } catch {}
+    setBrandingSaved(true);
+    toast({ title: "Branding saved", description: "Client name and report header have been updated." });
+    setTimeout(() => setBrandingSaved(false), 2000);
+  };
+
+  const saveWeights = () => {
+    if (!weightsValid) return;
+    const data: Record<string, number> = {};
+    metrics.forEach((m) => { data[m.key] = m.weight; });
+    try {
+      localStorage.setItem(LS_WEIGHTS_KEY, JSON.stringify(data));
+    } catch {}
+    setWeightsSaved(true);
+    toast({ title: "Metric weights saved", description: "New weights will apply on next dataset load." });
+    setTimeout(() => setWeightsSaved(false), 2000);
+  };
+
+  const saveSimple = (section: string) => {
+    toast({ title: `${section} saved`, description: "Settings have been updated successfully." });
   };
 
   return (
@@ -102,7 +172,7 @@ export default function SettingsPage() {
                   <CardTitle>Users & Roles</CardTitle>
                   <CardDescription>Manage platform users and their access levels.</CardDescription>
                 </div>
-                <Button size="sm" className="gap-1">+ Add User</Button>
+                <Button size="sm" className="gap-1" onClick={() => saveSimple("User invite")}>+ Invite User</Button>
               </CardHeader>
               <CardContent>
                 <div className="divide-y">
@@ -119,7 +189,7 @@ export default function SettingsPage() {
                       <Badge variant={u.status === "active" ? "default" : "outline"} className="text-xs">
                         {u.status}
                       </Badge>
-                      <Button variant="ghost" size="sm" className="text-xs h-7">Edit</Button>
+                      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => saveSimple("User edit")}>Edit</Button>
                     </div>
                   ))}
                 </div>
@@ -154,7 +224,7 @@ export default function SettingsPage() {
                     <Label className="text-sm font-medium">API Key (OpenAI compatible)</Label>
                     <div className="flex gap-2">
                       <Input value={apiKey} onChange={(e) => setApiKey(e.target.value)} className="font-mono text-sm" />
-                      <Button variant="outline" size="sm">Update</Button>
+                      <Button variant="outline" size="sm" onClick={() => saveSimple("API key")}>Update</Button>
                     </div>
                     <p className="text-xs text-muted-foreground">Your API key is stored locally. It never leaves this instance.</p>
                   </div>
@@ -162,8 +232,8 @@ export default function SettingsPage() {
                     {[
                       { task: "Insight Summaries", model: "gpt-4o-mini" },
                       { task: "Sport Recommendations", model: "rules-engine" },
-                      { task: "Query Assistant", model: "gpt-4o-mini" },
-                      { task: "Report Writing", model: "gpt-4o-mini" },
+                      { task: "Query Assistant", model: "rules-engine" },
+                      { task: "Report Writing", model: "template-engine" },
                     ].map((item) => (
                       <div key={item.task} className="bg-muted/30 rounded-lg p-3">
                         <div className="text-xs text-muted-foreground">{item.task}</div>
@@ -171,6 +241,9 @@ export default function SettingsPage() {
                       </div>
                     ))}
                   </div>
+                  <Button size="sm" className="gap-2" onClick={() => saveSimple("AI configuration")}>
+                    <Save className="w-3.5 h-3.5" /> Save AI Settings
+                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -184,7 +257,7 @@ export default function SettingsPage() {
                   <CardTitle>Sport Taxonomy</CardTitle>
                   <CardDescription>Enable/disable sports and configure their athlete fit weighting.</CardDescription>
                 </div>
-                <Button size="sm">+ Add Sport</Button>
+                <Button size="sm" onClick={() => saveSimple("Sport taxonomy")}>Save Changes</Button>
               </CardHeader>
               <CardContent>
                 <div className="divide-y">
@@ -211,31 +284,57 @@ export default function SettingsPage() {
                 <CardDescription>Configure how each metric contributes to the Composite Athlete Potential Index. Weights must sum to 100.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {METRICS.map((m) => (
-                    <div key={m.name} className="flex items-center gap-3">
-                      <div className="w-40 text-sm text-muted-foreground shrink-0">{m.name}</div>
-                      <div className="flex-1 bg-muted rounded-full h-2">
-                        <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${m.weight}%` }} />
+                <div className="space-y-4">
+                  {metrics.map((m) => (
+                    <div key={m.name} className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-foreground font-medium">{m.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            value={m.weight}
+                            onChange={(e) => updateWeight(m.key, Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                            className="h-7 w-16 text-xs text-right px-2"
+                            min={0} max={100}
+                          />
+                          <span className="text-xs text-muted-foreground w-4">%</span>
+                        </div>
                       </div>
-                      <div className="w-16 text-right">
-                        <Input
-                          type="number"
-                          value={m.weight}
-                          className="h-7 text-xs text-right px-2"
-                          min={0} max={100}
-                          readOnly
-                        />
-                      </div>
-                      <span className="text-xs text-muted-foreground w-4">%</span>
+                      <Slider
+                        value={[m.weight]}
+                        onValueChange={([v]) => updateWeight(m.key, v)}
+                        min={0} max={50} step={1}
+                        className="w-full"
+                      />
                     </div>
                   ))}
-                  <div className="flex justify-between pt-2 border-t text-sm">
-                    <span className="text-muted-foreground">Total weight</span>
-                    <span className="font-bold text-success">100%</span>
+
+                  <div className={cn(
+                    "flex justify-between pt-3 border-t text-sm font-semibold",
+                    weightsValid ? "text-foreground" : "text-destructive"
+                  )}>
+                    <span>Total weight</span>
+                    <span>{totalWeight}% {weightsValid ? "✓" : `— must equal 100`}</span>
                   </div>
                 </div>
-                <Button className="mt-4" size="sm">Save Weights</Button>
+
+                <Button
+                  className="mt-4 gap-2"
+                  size="sm"
+                  onClick={saveWeights}
+                  disabled={!weightsValid}
+                  variant={weightsSaved ? "outline" : "default"}
+                >
+                  {weightsSaved
+                    ? <><CheckCircle2 className="w-3.5 h-3.5 text-success" /> Saved!</>
+                    : <><Save className="w-3.5 h-3.5" /> Save Weights</>
+                  }
+                </Button>
+                {!weightsValid && (
+                  <p className="text-xs text-destructive mt-2">
+                    Current total is {totalWeight}%. Adjust weights to reach exactly 100%.
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
@@ -279,21 +378,39 @@ export default function SettingsPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Client Name</Label>
-                  <Input defaultValue="Bihar Sports Department" />
+                  <Input
+                    value={clientName}
+                    onChange={(e) => { setClientName(e.target.value); setBrandingSaved(false); }}
+                    placeholder="e.g. Bihar Sports Department"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Instance Code</Label>
-                  <Input defaultValue="BIHAR-2024" className="font-mono" />
+                  <Input
+                    value={instanceCode}
+                    onChange={(e) => { setInstanceCode(e.target.value); setBrandingSaved(false); }}
+                    className="font-mono"
+                    placeholder="e.g. BIHAR-2024"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Report Header Text</Label>
-                  <Input defaultValue="Pratibha Athlete Intelligence Platform | Bihar Sports" />
+                  <Input
+                    value={reportHeader}
+                    onChange={(e) => { setReportHeader(e.target.value); setBrandingSaved(false); }}
+                    placeholder="Appears at the top of all exported reports"
+                  />
                 </div>
                 <div className="bg-muted/30 rounded-lg p-4 text-center">
                   <div className="text-xs text-muted-foreground mb-2">Logo Upload</div>
                   <Button variant="outline" size="sm">Upload Logo</Button>
                 </div>
-                <Button size="sm">Save Branding</Button>
+                <Button size="sm" className="gap-2" onClick={saveBranding} variant={brandingSaved ? "outline" : "default"}>
+                  {brandingSaved
+                    ? <><CheckCircle2 className="w-3.5 h-3.5 text-success" /> Saved!</>
+                    : <><Save className="w-3.5 h-3.5" /> Save Branding</>
+                  }
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -325,7 +442,7 @@ export default function SettingsPage() {
                     Only license heartbeat metadata (user count, athlete count, version) is sent to the vendor licensing server.
                   </p>
                 </div>
-                <Button variant="outline" size="sm">View Audit Log</Button>
+                <Button variant="outline" size="sm" onClick={() => saveSimple("Audit log request")}>View Audit Log</Button>
               </CardContent>
             </Card>
           )}

@@ -1,15 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { getSeedAthletes } from "../data/seedAthletes";
 import { enrichAthletes, EnrichedAthlete } from "../engine/analyticsEngine";
+import { toast } from "@/hooks/use-toast";
 
 export interface DatasetMeta {
-  id: string;         // unique key, e.g. "seed" or timestamp
-  name: string;       // e.g. "athletes_batch_3.csv"
-  version: string;    // e.g. "v3"
+  id: string;
+  name: string;
+  version: string;
   count: number;
-  importedAt: string; // ISO date string
+  importedAt: string;
   source: "seed" | "import";
-  athletes?: EnrichedAthlete[]; // stored athletes for this dataset
+  athletes?: EnrichedAthlete[];
 }
 
 interface AthleteContextValue {
@@ -32,6 +33,61 @@ const SEED_META: DatasetMeta = {
   source: "seed",
 };
 
+const LS_DATASETS_KEY = "pratibha_datasets";
+const LS_ACTIVE_KEY = "pratibha_active_dataset";
+const MAX_DATASETS = 5;
+const MAX_ATHLETES_PER_DATASET = 500;
+
+/** Persist saved datasets (without athletes array — stored separately) + athlete blobs */
+function persistDatasets(datasets: DatasetMeta[]) {
+  try {
+    // Store meta without athletes array (athletes stored under separate keys)
+    const metas = datasets.map(({ athletes: _, ...m }) => m);
+    localStorage.setItem(LS_DATASETS_KEY, JSON.stringify(metas));
+    // Store athletes per dataset id
+    datasets.forEach((ds) => {
+      if (ds.athletes && ds.id !== "seed") {
+        localStorage.setItem(`pratibha_athletes_${ds.id}`, JSON.stringify(ds.athletes));
+      }
+    });
+  } catch (e) {
+    console.warn("[Pratibha] localStorage write failed:", e);
+  }
+}
+
+/** Load persisted datasets from localStorage, rehydrating athletes */
+function loadPersistedDatasets(): DatasetMeta[] {
+  try {
+    const raw = localStorage.getItem(LS_DATASETS_KEY);
+    if (!raw) return [];
+    const metas: DatasetMeta[] = JSON.parse(raw);
+    return metas
+      .filter((m) => m.id !== "seed")
+      .map((m) => {
+        const athletesRaw = localStorage.getItem(`pratibha_athletes_${m.id}`);
+        const athletes: EnrichedAthlete[] = athletesRaw ? JSON.parse(athletesRaw) : [];
+        return { ...m, athletes };
+      });
+  } catch (e) {
+    console.warn("[Pratibha] localStorage read failed:", e);
+    return [];
+  }
+}
+
+function getPersistedActiveId(): string | null {
+  try {
+    return localStorage.getItem(LS_ACTIVE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setPersistedActiveId(id: string) {
+  try {
+    localStorage.setItem(LS_ACTIVE_KEY, id);
+  } catch {}
+}
+
 const AthleteContext = createContext<AthleteContextValue>({
   athletes: [],
   loading: true,
@@ -51,24 +107,34 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
   const [savedDatasets, setSavedDatasets] = useState<DatasetMeta[]>([SEED_META]);
 
   useEffect(() => {
-    const id = requestIdleCallback
-      ? requestIdleCallback(() => {
-          const enriched = enrichAthletes(getSeedAthletes());
-          setSeedAthletes(enriched);
-          setRawAthletes(enriched);
+    const doInit = () => {
+      const enriched = enrichAthletes(getSeedAthletes());
+      const seedDs: DatasetMeta = { ...SEED_META, count: enriched.length, athletes: enriched };
+      setSeedAthletes(enriched);
+
+      // Rehydrate from localStorage
+      const persisted = loadPersistedDatasets();
+      const allDatasets: DatasetMeta[] = [seedDs, ...persisted];
+      setSavedDatasets(allDatasets);
+
+      const activeId = getPersistedActiveId();
+      if (activeId && activeId !== "seed") {
+        const activeDs = persisted.find((d) => d.id === activeId);
+        if (activeDs?.athletes && activeDs.athletes.length > 0) {
+          setRawAthletes(activeDs.athletes);
+          setDatasetMeta({ ...activeDs, athletes: undefined });
           setLoading(false);
-          // Patch seed count
-          setSavedDatasets([{ ...SEED_META, count: enriched.length, athletes: enriched }]);
-          setDatasetMeta((m) => ({ ...m, count: enriched.length }));
-        })
-      : setTimeout(() => {
-          const enriched = enrichAthletes(getSeedAthletes());
-          setSeedAthletes(enriched);
-          setRawAthletes(enriched);
-          setLoading(false);
-          setSavedDatasets([{ ...SEED_META, count: enriched.length, athletes: enriched }]);
-          setDatasetMeta((m) => ({ ...m, count: enriched.length }));
-        }, 0);
+          return;
+        }
+      }
+
+      // Default to seed
+      setRawAthletes(enriched);
+      setDatasetMeta({ ...SEED_META, count: enriched.length });
+      setLoading(false);
+    };
+
+    const id = requestIdleCallback ? requestIdleCallback(doInit) : setTimeout(doInit, 0);
 
     return () => {
       if (requestIdleCallback) cancelIdleCallback(id as number);
@@ -76,29 +142,50 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  /** Register a freshly imported dataset and immediately make it active */
   const addDataset = useCallback(
     (meta: Omit<DatasetMeta, "id">, newAthletes: EnrichedAthlete[]) => {
+      // Cap dataset size
+      if (newAthletes.length > MAX_ATHLETES_PER_DATASET) {
+        toast({
+          title: "Large dataset truncated",
+          description: `Only the first ${MAX_ATHLETES_PER_DATASET} athletes were stored due to browser storage limits.`,
+          variant: "destructive",
+        });
+        newAthletes = newAthletes.slice(0, MAX_ATHLETES_PER_DATASET);
+      }
+
       const newId = `import_${Date.now()}`;
       const full: DatasetMeta = { ...meta, id: newId, count: newAthletes.length, athletes: newAthletes };
+
       setSavedDatasets((prev) => {
-        const filtered = prev.filter((d) => d.name !== meta.name);
-        return [full, ...filtered]; // put new one first
+        // Remove same-name duplicates, keep seed, cap at MAX_DATASETS imports
+        const withoutSeed = prev.filter((d) => d.id !== "seed");
+        const filtered = withoutSeed.filter((d) => d.name !== meta.name);
+        const trimmed = [full, ...filtered].slice(0, MAX_DATASETS);
+        const next = [prev.find((d) => d.id === "seed")!, ...trimmed];
+
+        // Persist after state update
+        setTimeout(() => persistDatasets(next), 0);
+        return next;
       });
+
       setRawAthletes(newAthletes);
-      setDatasetMeta(full);
+      setDatasetMeta({ ...full, athletes: undefined });
+      setPersistedActiveId(newId);
     },
     []
   );
 
-  /** Switch the active dataset by id */
   const loadDataset = useCallback(
     (id: string) => {
       const ds = savedDatasets.find((d) => d.id === id);
       if (!ds) return;
+
+      setPersistedActiveId(id);
+
       if (id === "seed") {
         setRawAthletes(seedAthletes);
-        setDatasetMeta({ ...ds, athletes: undefined }); // strip athletes from meta to save memory
+        setDatasetMeta({ ...ds, athletes: undefined });
         return;
       }
       if (!ds.athletes || ds.athletes.length === 0) return;
@@ -128,4 +215,3 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
 export function useAthletes() {
   return useContext(AthleteContext);
 }
-

@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
 
 export default function AnalyticsPage() {
-  const { athletes, loading } = useAthletes();
+  const { athletes, loading, datasetMeta } = useAthletes();
   const { dict } = useT();
   const [view, setView] = useState<"executive" | "analyst">("executive");
 
@@ -69,6 +69,17 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
   const highPotential = athletes.filter((a) => a.isHighPotential).length;
   const avgComp = Math.round(athletes.reduce((s, a) => s + (a.completeness ?? 0), 0) / Math.max(athletes.length, 1));
 
+  // Derive "assessments this month" — falls back to total athlete count when no assessmentDate field is present.
+  const now = new Date();
+  const thisMonthCount = athletes.filter((at) => {
+    const raw = (at as unknown as Record<string, unknown>).assessmentDate;
+    if (!raw) return false;
+    const d = new Date(raw as string);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  const assessmentsValue = thisMonthCount > 0 ? thisMonthCount : athletes.length;
+  const assessmentsLabel = thisMonthCount > 0 ? a.kpis.assessmentsThisMonth : a.kpis.totalAthletes;
+
   const genderData = [
     { name: dict.common.male, value: maleCount },
     { name: dict.common.female, value: femaleCount },
@@ -109,7 +120,7 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
         <KPICard label={a.kpis.maleFemale} value={`${maleCount}/${femaleCount}`} icon={Users} iconColor="hsl(var(--chart-2))" />
         <KPICard label={a.kpis.highPotential} value={`${Math.round(highPotential / athletes.length * 100)}%`} icon={Star} iconColor="hsl(var(--chart-3))" sub={`${highPotential} athletes`} />
         <KPICard label={a.kpis.dataCompleteness} value={`${avgComp}%`} icon={CheckCircle2} iconColor="hsl(var(--chart-4))" />
-        <KPICard label={a.kpis.assessmentsThisMonth} value={42} icon={Activity} iconColor="hsl(var(--chart-5))" />
+        <KPICard label={assessmentsLabel} value={assessmentsValue} icon={Activity} iconColor="hsl(var(--chart-5))" />
         <KPICard label={a.kpis.sportFitDist} value={Object.keys(sportCounts).length} icon={BarChart3} iconColor="hsl(var(--primary))" sub="sports covered" />
       </div>
 
