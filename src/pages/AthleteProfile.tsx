@@ -428,8 +428,9 @@ function InsightsTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
     <div className="space-y-4">
       {/* AI label */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-        <Brain size={14} className="shrink-0" />
-        <span>{p.fallbackLabel}</span>
+        <Brain size={14} className="shrink-0 text-primary" />
+        <span className="font-medium text-foreground">Pratibha Intelligence Engine</span>
+        <span className="text-muted-foreground">· Deterministic rules-based analysis</span>
         <div className="ml-auto flex items-center gap-1.5">
           <ConfidenceBar score={Math.round(65 + (athlete.completeness ?? 0) * 0.3)} />
         </div>
