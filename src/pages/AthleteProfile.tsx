@@ -313,7 +313,7 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
                 <tr key={m.name} className="border-b last:border-0">
                   <td className="py-2 pr-4 text-xs font-medium">{m.name}</td>
                   <td className="py-2 px-2 text-right font-bold tabular-nums">
-                    {m.hasValue ? `${m.athlete.toFixed(m.unit === "s" ? 2 : 1)} ${m.unit}` : "—"}
+                    {m.displayValue}
                   </td>
                   <td className="py-2 px-2 text-right text-xs tabular-nums">
                     {m.hasValue ? `${m.pct}th` : "—"}
