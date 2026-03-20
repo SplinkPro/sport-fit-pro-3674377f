@@ -2,7 +2,9 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useT } from "@/i18n/useTranslation";
+import { Language } from "@/i18n/useTranslation";
 import { EnrichedAthlete } from "@/engine/analyticsEngine";
+import { SPORTS_CONFIG } from "@/data/sportsConfig";
 import {
   KPICard, DataQualityBadge, BenchmarkBadge, FlagBadge, EmptyState, PageHeader,
 } from "@/components/shared";
@@ -20,6 +22,14 @@ import {
   BarChart3, GitCompare, ChevronLeft, Eye, EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Helper: translate sport name
+function getSportName(topSport: string | undefined, language: Language): string {
+  if (!topSport) return "—";
+  const cfg = SPORTS_CONFIG.find((s) => s.nameEn === topSport || s.key === topSport?.toLowerCase());
+  if (!cfg) return topSport;
+  return language === "hi" ? cfg.nameHi : cfg.nameEn;
+}
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface Filters {
