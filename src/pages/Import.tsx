@@ -52,21 +52,47 @@ export default function ImportPage() {
   const { t } = useTranslation();
   const [step, setStep] = useState<ImportStep>(1);
   const [dragging, setDragging] = useState(false);
-  const [fileUploaded, setFileUploaded] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [rowCount, setRowCount] = useState(0);
+  const [colCount, setColCount] = useState(0);
   const [importMode, setImportMode] = useState<"append" | "replace">("append");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fileUploaded = uploadedFile !== null;
 
   const validCount = DEMO_VALIDATION.filter(r => r.status === "valid").length;
   const warningCount = DEMO_VALIDATION.filter(r => r.status === "warning").length;
   const errorCount = DEMO_VALIDATION.filter(r => r.status === "error").length;
 
+  const processFile = (file: File) => {
+    if (!file) return;
+    setUploadedFile(file);
+    // Parse CSV to get row/col count
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.trim().split("\n").filter(Boolean);
+      const headers = lines[0]?.split(",") ?? [];
+      setRowCount(Math.max(0, lines.length - 1));
+      setColCount(headers.length);
+    };
+    reader.readAsText(file);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    setFileUploaded(true);
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
   };
 
-  const handleFileInput = () => {
-    setFileUploaded(true);
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleZoneClick = () => {
+    if (!fileUploaded) fileInputRef.current?.click();
   };
 
   return (
