@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
 import {
-  Upload, FileText, CheckCircle, AlertTriangle, Download,
-  ChevronRight, RotateCcw, CheckCircle2, XCircle, ArrowRight,
+  Upload, FileText, CheckCircle, Download,
+  ChevronRight, RotateCcw, CheckCircle2, ArrowRight,
   Info,
 } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
