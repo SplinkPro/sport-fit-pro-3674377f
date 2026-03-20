@@ -342,7 +342,7 @@ export default function ExplorerPage() {
       {/* Results bar */}
       <div className="px-6 py-1.5 border-b bg-muted/30 flex items-center justify-between shrink-0">
         <span className="text-xs text-muted-foreground">
-          {filtered.length} {dict.common.of} {athletes.length} athletes
+          {filtered.length} {dict.common.of} {athletes.length} {dict.explorer.totalAthletes.split(" ").at(-1) ?? "athletes"}
         </span>
         {selected.size > 0 && (
           <div className="flex items-center gap-2">
