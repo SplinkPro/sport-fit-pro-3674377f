@@ -283,6 +283,7 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
       hasValue: val != null,
       pct: athlete.percentiles?.[m.key] ?? 0,
       band: athlete.benchmarkBands?.[m.key],
+      displayValue: val != null ? m.fmt(val) : "—",
     };
   });
 
