@@ -107,39 +107,32 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
   const [savedDatasets, setSavedDatasets] = useState<DatasetMeta[]>([SEED_META]);
 
   useEffect(() => {
-    const doInit = () => {
-      const enriched = enrichAthletes(getSeedAthletes());
-      const seedDs: DatasetMeta = { ...SEED_META, count: enriched.length, athletes: enriched };
-      setSeedAthletes(enriched);
+    // Run synchronously on mount — no requestIdleCallback to avoid race with
+    // components that read athletes immediately on first render (e.g. AthleteProfile).
+    const enriched = enrichAthletes(getSeedAthletes());
+    const seedDs: DatasetMeta = { ...SEED_META, count: enriched.length, athletes: enriched };
+    setSeedAthletes(enriched);
 
-      // Rehydrate from localStorage
-      const persisted = loadPersistedDatasets();
-      const allDatasets: DatasetMeta[] = [seedDs, ...persisted];
-      setSavedDatasets(allDatasets);
+    // Rehydrate from localStorage
+    const persisted = loadPersistedDatasets();
+    const allDatasets: DatasetMeta[] = [seedDs, ...persisted];
+    setSavedDatasets(allDatasets);
 
-      const activeId = getPersistedActiveId();
-      if (activeId && activeId !== "seed") {
-        const activeDs = persisted.find((d) => d.id === activeId);
-        if (activeDs?.athletes && activeDs.athletes.length > 0) {
-          setRawAthletes(activeDs.athletes);
-          setDatasetMeta({ ...activeDs, athletes: undefined });
-          setLoading(false);
-          return;
-        }
+    const activeId = getPersistedActiveId();
+    if (activeId && activeId !== "seed") {
+      const activeDs = persisted.find((d) => d.id === activeId);
+      if (activeDs?.athletes && activeDs.athletes.length > 0) {
+        setRawAthletes(activeDs.athletes);
+        setDatasetMeta({ ...activeDs, athletes: undefined });
+        setLoading(false);
+        return;
       }
+    }
 
-      // Default to seed
-      setRawAthletes(enriched);
-      setDatasetMeta({ ...SEED_META, count: enriched.length });
-      setLoading(false);
-    };
-
-    const id = requestIdleCallback ? requestIdleCallback(doInit) : setTimeout(doInit, 0);
-
-    return () => {
-      if (requestIdleCallback) cancelIdleCallback(id as number);
-      else clearTimeout(id as number);
-    };
+    // Default to seed
+    setRawAthletes(enriched);
+    setDatasetMeta({ ...SEED_META, count: enriched.length });
+    setLoading(false);
   }, []);
 
   const addDataset = useCallback(
