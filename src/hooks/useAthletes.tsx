@@ -1,3 +1,4 @@
+// useAthletes.tsx — athlete context provider with localStorage persistence
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { getSeedAthletes } from "../data/seedAthletes";
 import { enrichAthletes, EnrichedAthlete } from "../engine/analyticsEngine";
