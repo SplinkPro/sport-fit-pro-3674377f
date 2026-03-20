@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -73,7 +73,6 @@ function loadWeights() {
 }
 
 export default function SettingsPage() {
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("users");
   const [aiEnabled, setAiEnabled] = useState(true);
   const [fallbackEnabled, setFallbackEnabled] = useState(true);
@@ -114,7 +113,7 @@ export default function SettingsPage() {
       localStorage.setItem(LS_BRANDING_KEY, JSON.stringify(data));
     } catch {}
     setBrandingSaved(true);
-    toast({ title: "Branding saved", description: "Client name and report header have been updated." });
+    toast.success("Branding saved — client name and report header updated.");
     setTimeout(() => setBrandingSaved(false), 2000);
   };
 
@@ -126,12 +125,12 @@ export default function SettingsPage() {
       localStorage.setItem(LS_WEIGHTS_KEY, JSON.stringify(data));
     } catch {}
     setWeightsSaved(true);
-    toast({ title: "Metric weights saved", description: "New weights will apply on next dataset load." });
+    toast.success("Metric weights saved — applies on next dataset load.");
     setTimeout(() => setWeightsSaved(false), 2000);
   };
 
   const saveSimple = (section: string) => {
-    toast({ title: `${section} saved`, description: "Settings have been updated successfully." });
+    toast.success(`${section} saved successfully.`);
   };
 
   return (

@@ -250,11 +250,18 @@ function OverviewTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
 
 // ─── Tab 2: Performance ───────────────────────────────────────────────────
 function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete; dict: ReturnType<typeof useT>["dict"]; athletes: EnrichedAthlete[] }) {
+  function fmtRunTime(sec: number | undefined): string {
+    if (sec == null || isNaN(sec)) return "—";
+    const m = Math.floor(sec / 60);
+    const s = Math.round(sec % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  }
+
   const metrics = [
-    { key: "verticalJump" as const, label: dict.metrics.verticalJump, unit: "cm", higherBetter: true },
-    { key: "broadJump" as const, label: dict.metrics.broadJump, unit: "cm", higherBetter: true },
-    { key: "sprint30m" as const, label: dict.metrics.sprint30m, unit: "s", higherBetter: false },
-    { key: "run800m" as const, label: dict.metrics.run800m, unit: "s", higherBetter: false },
+    { key: "verticalJump" as const, label: dict.metrics.verticalJump, unit: "cm", higherBetter: true, fmt: (v: number) => `${v.toFixed(1)} cm` },
+    { key: "broadJump" as const, label: dict.metrics.broadJump, unit: "cm", higherBetter: true, fmt: (v: number) => `${v.toFixed(1)} cm` },
+    { key: "sprint30m" as const, label: dict.metrics.sprint30m, unit: "s", higherBetter: false, fmt: (v: number) => `${v.toFixed(2)} s` },
+    { key: "run800m" as const, label: dict.metrics.run800m, unit: "min", higherBetter: false, fmt: (v: number) => fmtRunTime(v) },
   ];
 
   // Cohort stats for bar chart
@@ -276,6 +283,7 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
       hasValue: val != null,
       pct: athlete.percentiles?.[m.key] ?? 0,
       band: athlete.benchmarkBands?.[m.key],
+      displayValue: val != null ? m.fmt(val) : "—",
     };
   });
 
@@ -305,7 +313,7 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
                 <tr key={m.name} className="border-b last:border-0">
                   <td className="py-2 pr-4 text-xs font-medium">{m.name}</td>
                   <td className="py-2 px-2 text-right font-bold tabular-nums">
-                    {m.hasValue ? `${m.athlete.toFixed(m.unit === "s" ? 2 : 1)} ${m.unit}` : "—"}
+                    {m.displayValue}
                   </td>
                   <td className="py-2 px-2 text-right text-xs tabular-nums">
                     {m.hasValue ? `${m.pct}th` : "—"}
