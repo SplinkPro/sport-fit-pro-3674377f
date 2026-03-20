@@ -337,8 +337,8 @@ export default function ImportPage() {
             <CardHeader>
               <CardTitle>Field Mapping</CardTitle>
               <CardDescription>
-                These are the column names the platform recognises. As long as your CSV uses
-                these names (case-insensitive), fields map automatically.
+                The platform auto-detects column names. Both the Bihar assessment format
+                and the standard template names are accepted — case-insensitive.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -346,18 +346,22 @@ export default function ImportPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 pr-4 font-medium text-muted-foreground">CSV Column Name</th>
-                      <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Platform Field</th>
+                      <th className="text-left py-2 pr-3 font-medium text-muted-foreground">Bihar Format Column</th>
+                      <th className="text-left py-2 pr-3 font-medium text-muted-foreground">Alt Name</th>
+                      <th className="text-left py-2 pr-3 font-medium text-muted-foreground">Mapped To</th>
                       <th className="text-left py-2 font-medium text-muted-foreground">Required</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {FIELD_MAP.map((f) => (
-                      <tr key={f.detected}>
-                        <td className="py-2 pr-4">
-                          <code className="bg-muted/40 px-2 py-0.5 rounded text-xs font-mono">{f.detected}</code>
+                      <tr key={f.detected} className="hover:bg-muted/20">
+                        <td className="py-2 pr-3">
+                          <code className="bg-muted/50 px-2 py-0.5 rounded text-xs font-mono">{f.detected}</code>
                         </td>
-                        <td className="py-2 pr-4 text-foreground">{f.platform}</td>
+                        <td className="py-2 pr-3 text-muted-foreground text-xs">
+                          <code className="bg-muted/30 px-1.5 py-0.5 rounded font-mono">{f.altName}</code>
+                        </td>
+                        <td className="py-2 pr-3 text-foreground">{f.platform}</td>
                         <td className="py-2">
                           {f.required
                             ? <Badge className="text-xs bg-primary/10 text-primary border-primary/20">Required</Badge>
@@ -379,6 +383,7 @@ export default function ImportPage() {
           </div>
         </div>
       )}
+
 
       {/* ── Step 3: Validate ── */}
       {step === 3 && (
