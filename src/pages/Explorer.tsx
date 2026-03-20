@@ -25,6 +25,14 @@ import {
 import { Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Helper: translate sport name
+function getSportName(topSport: string | undefined, language: Language): string {
+  if (!topSport) return "—";
+  const cfg = SPORTS_CONFIG.find((s) => s.nameEn === topSport || s.key === topSport?.toLowerCase());
+  if (!cfg) return topSport;
+  return language === "hi" ? cfg.nameHi : cfg.nameEn;
+}
+
 // ─── Active Dataset Banner ──────────────────────────────────────────────────
 function ActiveDatasetBanner({ meta }: { meta: import("@/hooks/useAthletes").DatasetMeta }) {
   return (
