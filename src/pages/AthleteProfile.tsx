@@ -18,7 +18,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine, Cell,
 } from "recharts";
-import { ChevronLeft, ChevronDown, ChevronUp, Brain, Shield, AlertTriangle, Lightbulb, Target, User } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronUp, Brain, AlertTriangle, Lightbulb, Target, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Page ─────────────────────────────────────────────────────────────────
