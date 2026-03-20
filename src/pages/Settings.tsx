@@ -73,7 +73,6 @@ function loadWeights() {
 }
 
 export default function SettingsPage() {
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("users");
   const [aiEnabled, setAiEnabled] = useState(true);
   const [fallbackEnabled, setFallbackEnabled] = useState(true);
