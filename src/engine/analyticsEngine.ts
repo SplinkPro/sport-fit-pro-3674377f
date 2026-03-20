@@ -1,4 +1,4 @@
-import { Athlete } from "../data/seedAthletes";
+import { Athlete, AthleteFlag } from "../data/seedAthletes";
 import { SPORTS_CONFIG, SportConfig } from "../data/sportsConfig";
 
 // ─── Z-SCORE ENGINE ────────────────────────────────────────────────────────
@@ -245,10 +245,61 @@ export interface EnrichedAthlete extends Athlete {
   dimensionScores: { speed: number; power: number; endurance: number; agility: number; bodyComp: number };
 }
 
+// ─── COMPLETENESS SCORING ──────────────────────────────────────────────────
+
+const COMPLETENESS_METRICS: MetricKey[] = ["verticalJump", "broadJump", "sprint30m", "run800m", "shuttleRun", "footballThrow"];
+
+function calcCompleteness(athlete: Athlete): number {
+  const present = COMPLETENESS_METRICS.filter((m) => {
+    const v = athlete[m] as number | undefined;
+    return v != null && isFinite(v) && v > 0;
+  }).length;
+  return Math.round((present / COMPLETENESS_METRICS.length) * 100);
+}
+
+// ─── FLAG DETECTION ─────────────────────────────────────────────────────────
+
+
+
+function calcFlags(athlete: Athlete, cohortStats: Partial<Record<MetricKey, CohortStats>>): AthleteFlag[] {
+  const flags: AthleteFlag[] = [];
+
+  // BMI flags
+  if (athlete.bmi != null) {
+    if (athlete.bmi < 16) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — severely underweight` });
+    else if (athlete.bmi < 18.5) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — underweight` });
+    else if (athlete.bmi > 30) flags.push({ type: "overweight", message: `BMI ${athlete.bmi} — overweight` });
+  }
+
+  // Missing key metrics flag
+  const missingMetrics = (["verticalJump", "sprint30m"] as MetricKey[]).filter((m) => {
+    const v = athlete[m] as number | undefined;
+    return v == null || !isFinite(v) || v <= 0;
+  });
+  if (missingMetrics.length > 0) {
+    flags.push({ type: "missing", metric: missingMetrics[0], message: `Missing: ${missingMetrics.join(", ")}` });
+  }
+
+  // Outlier flags (z-score > 3)
+  for (const metric of METRIC_KEYS) {
+    const value = athlete[metric] as number | undefined;
+    const stats = cohortStats[metric];
+    if (value == null || stats == null) continue;
+    const z = calcZScore(value, stats);
+    if (Math.abs(z) >= 3) {
+      flags.push({ type: "outlier", metric, message: `${metric} is a statistical outlier (z=${z.toFixed(1)})` });
+    }
+  }
+
+  return flags;
+}
+
 export function enrichAthletes(athletes: Athlete[]): EnrichedAthlete[] {
-  // Build cohort stats for all
+  if (athletes.length === 0) return [];
+
+  // Build cohort stats for all metrics
   const cohortStats: Partial<Record<MetricKey, CohortStats>> = {};
-  for (const metric of [...METRIC_KEYS, "shuttleRun" as MetricKey]) {
+  for (const metric of [...METRIC_KEYS, "shuttleRun" as MetricKey, "footballThrow" as MetricKey]) {
     cohortStats[metric] = buildCohortStats(athletes, metric);
   }
 
@@ -259,13 +310,15 @@ export function enrichAthletes(athletes: Athlete[]): EnrichedAthlete[] {
     for (const metric of METRIC_KEYS) {
       const value = athlete[metric] as number | undefined;
       const stats = cohortStats[metric];
-      if (value != null && stats) {
+      if (value != null && isFinite(value) && value > 0 && stats) {
         const p = calcPercentile(value, stats, LOWER_IS_BETTER.has(metric));
         percentiles[metric] = p;
         benchmarkBands[metric] = getBenchmarkBand(p);
       }
     }
 
+    const completeness = calcCompleteness(athlete);
+    const flags = calcFlags(athlete, cohortStats);
     const compositeScore = calcCompositeScore(athlete, cohortStats);
     const sportFit = calcSportFit(athlete, cohortStats);
     const topSport = sportFit[0]?.sport.nameEn ?? "—";
@@ -275,6 +328,8 @@ export function enrichAthletes(athletes: Athlete[]): EnrichedAthlete[] {
 
     return {
       ...athlete,
+      completeness,
+      flags,
       compositeScore,
       percentiles,
       benchmarkBands,
@@ -286,3 +341,4 @@ export function enrichAthletes(athletes: Athlete[]): EnrichedAthlete[] {
     };
   });
 }
+
