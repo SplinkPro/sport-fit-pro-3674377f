@@ -515,7 +515,7 @@ export default function ExplorerPage() {
               {dict.explorer.comparisonDrawer.title}
             </SheetTitle>
           </SheetHeader>
-          <ComparisonPanel athletes={compareAthletes} dict={dict} />
+          <ComparisonPanel athletes={compareAthletes} dict={dict} language={language} />
         </SheetContent>
       </Sheet>
     </div>
