@@ -98,14 +98,37 @@ export default function ImportPage() {
   const processFile = useCallback((file: File) => {
     if (!file) return;
     setUploadedFile(file);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const rows = parseCSVText(text);
-      const result = rowsToAthletes(rows);
-      setParseResult(result);
-    };
-    reader.readAsText(file);
+
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+
+    if (isExcel) {
+      // Use SheetJS for binary Excel files
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        // Convert to array of objects (header row → keys)
+        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
+          defval: "",
+          raw: false, // get formatted strings so H:MM:SS stays intact
+        });
+        const result = rowsToAthletes(rows);
+        setParseResult(result);
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      // CSV / TSV — text reader
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        const rows = parseCSVText(text);
+        const result = rowsToAthletes(rows);
+        setParseResult(result);
+      };
+      reader.readAsText(file);
+    }
   }, []);
 
   const handleDrop = (e: React.DragEvent) => {
