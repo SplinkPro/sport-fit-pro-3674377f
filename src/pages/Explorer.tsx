@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useT } from "@/i18n/useTranslation";
