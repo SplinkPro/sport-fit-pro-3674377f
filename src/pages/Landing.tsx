@@ -173,11 +173,6 @@ export default function Landing() {
         <div className="relative z-10 max-w-4xl mx-auto">
           {/* Badge */}
           <div
-            style={{
-              opacity: heroVisible ? 1 : 0,
-              transform: heroVisible ? "translateY(0)" : "translateY(16px)",
-              transition: "opacity 0.6s cubic-bezier(0.16,1,0.3,1) 0ms, transform 0.6s cubic-bezier(0.16,1,0.3,1) 0ms",
-            }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest mb-8 border"
             style={{
               background: "#FFF7ED",
