@@ -276,8 +276,8 @@ export default function ExplorerPage() {
           }
         />
 
-        {/* Active Dataset Banner */}
-        <ActiveDatasetBanner meta={datasetMeta} />
+        {/* Dataset Switcher */}
+        <DatasetSwitcher current={datasetMeta} datasets={savedDatasets} onSwitch={loadDataset} />
 
         {/* KPI Cards */}
         <div className="grid grid-cols-4 gap-3 mb-4">
