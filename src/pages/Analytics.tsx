@@ -72,7 +72,7 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
   // Derive "assessments this month" — falls back to total athlete count when no assessmentDate field is present.
   const now = new Date();
   const thisMonthCount = athletes.filter((at) => {
-    const raw = (at as Record<string, unknown>).assessmentDate;
+    const raw = (at as unknown as Record<string, unknown>).assessmentDate;
     if (!raw) return false;
     const d = new Date(raw as string);
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
