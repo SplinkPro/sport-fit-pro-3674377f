@@ -50,7 +50,7 @@ const PAGE_SIZE = 20;
 
 // ─── Component ─────────────────────────────────────────────────────────────
 export default function ExplorerPage() {
-  const { athletes, loading } = useAthletes();
+  const { athletes, loading, datasetMeta } = useAthletes();
   const { dict, language } = useT();
   const navigate = useNavigate();
 

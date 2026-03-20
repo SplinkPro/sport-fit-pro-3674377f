@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, CheckCircle, AlertTriangle, Download, ChevronRight, RotateCcw, Database } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Upload, FileText, CheckCircle, AlertTriangle, Download, ChevronRight, RotateCcw, Database, Users, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useAthletes } from "@/hooks/useAthletes";
 import { cn } from "@/lib/utils";
 
 type ImportStep = 1 | 2 | 3 | 4 | 5;
