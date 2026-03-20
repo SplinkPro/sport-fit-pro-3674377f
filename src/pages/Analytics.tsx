@@ -69,8 +69,7 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
   const highPotential = athletes.filter((a) => a.isHighPotential).length;
   const avgComp = Math.round(athletes.reduce((s, a) => s + (a.completeness ?? 0), 0) / Math.max(athletes.length, 1));
 
-  // Derive "assessments this month" — athletes assessed in the current calendar month.
-  // Falls back to total athlete count when no assessmentDate field is present.
+  // Derive "assessments this month" — falls back to total athlete count when no assessmentDate field is present.
   const now = new Date();
   const thisMonthCount = athletes.filter((at) => {
     const raw = (at as Record<string, unknown>).assessmentDate;
@@ -80,7 +79,47 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
   }).length;
   const assessmentsValue = thisMonthCount > 0 ? thisMonthCount : athletes.length;
   const assessmentsLabel = thisMonthCount > 0 ? a.kpis.assessmentsThisMonth : a.kpis.totalAthletes;
-...
+
+  const genderData = [
+    { name: dict.common.male, value: maleCount },
+    { name: dict.common.female, value: femaleCount },
+  ];
+
+  const ageBandData = [
+    { name: a.ageBands.under12, count: athletes.filter((at) => at.age < 12).length },
+    { name: a.ageBands.twelve14, count: athletes.filter((at) => at.age >= 12 && at.age <= 14).length },
+    { name: a.ageBands.fifteen17, count: athletes.filter((at) => at.age >= 15 && at.age <= 17).length },
+    { name: a.ageBands.eighteenPlus, count: athletes.filter((at) => at.age >= 18).length },
+  ];
+
+  // Top sports
+  const sportCounts: Record<string, number> = {};
+  athletes.forEach((at) => {
+    if (at.topSport) sportCounts[at.topSport] = (sportCounts[at.topSport] ?? 0) + 1;
+  });
+  const topSportsData = Object.entries(sportCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([name, count]) => ({ name, count }));
+
+  // School leaderboard
+  const schoolScores: Record<string, number[]> = {};
+  athletes.forEach((at) => {
+    if (!schoolScores[at.school]) schoolScores[at.school] = [];
+    schoolScores[at.school].push(at.compositeScore);
+  });
+  const schoolData = Object.entries(schoolScores)
+    .map(([name, scores]) => ({ name: name.split(" ").slice(-2).join(" "), avg: Math.round(scores.reduce((s, v) => s + v, 0) / scores.length), count: scores.length }))
+    .sort((a, b) => b.avg - a.avg);
+
+  return (
+    <div className="space-y-4">
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <KPICard label={a.kpis.totalAthletes} value={athletes.length} icon={Users} iconColor="hsl(var(--chart-1))" />
+        <KPICard label={a.kpis.maleFemale} value={`${maleCount}/${femaleCount}`} icon={Users} iconColor="hsl(var(--chart-2))" />
+        <KPICard label={a.kpis.highPotential} value={`${Math.round(highPotential / athletes.length * 100)}%`} icon={Star} iconColor="hsl(var(--chart-3))" sub={`${highPotential} athletes`} />
+        <KPICard label={a.kpis.dataCompleteness} value={`${avgComp}%`} icon={CheckCircle2} iconColor="hsl(var(--chart-4))" />
         <KPICard label={assessmentsLabel} value={assessmentsValue} icon={Activity} iconColor="hsl(var(--chart-5))" />
         <KPICard label={a.kpis.sportFitDist} value={Object.keys(sportCounts).length} icon={BarChart3} iconColor="hsl(var(--primary))" sub="sports covered" />
       </div>
