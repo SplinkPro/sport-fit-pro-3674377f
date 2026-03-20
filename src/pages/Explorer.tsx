@@ -523,17 +523,22 @@ export default function ExplorerPage() {
 }
 
 // ─── Cell Renderer ─────────────────────────────────────────────────────────
-function renderCell(key: string, a: EnrichedAthlete): React.ReactNode {
+function renderCell(
+  key: string,
+  a: EnrichedAthlete,
+  dict: ReturnType<typeof useT>["dict"],
+  language: Language
+): React.ReactNode {
   switch (key) {
     case "id": return <span className="font-mono text-[10px] text-muted-foreground">{a.id}</span>;
     case "name": return <span className="font-medium text-xs">{a.name}</span>;
     case "gender":
       return (
         <span className={cn("font-semibold", a.gender === "M" ? "text-blue-600" : "text-pink-600")}>
-          {a.gender === "M" ? "♂ M" : "♀ F"}
+          {a.gender === "M" ? `♂ ${dict.common.male}` : `♀ ${dict.common.female}`}
         </span>
       );
-    case "age": return <span>{a.age}y</span>;
+    case "age": return <span>{a.age}{dict.common.years[0]}</span>;
     case "height": return <span>{a.height}</span>;
     case "weight": return <span>{a.weight}</span>;
     case "bmi": return <span>{a.bmi?.toFixed(1) ?? "—"}</span>;
@@ -553,14 +558,16 @@ function renderCell(key: string, a: EnrichedAthlete): React.ReactNode {
     case "topSport":
       return (
         <span className="inline-flex items-center gap-1 bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded text-[10px] font-medium">
-          {a.topSport}
+          {getSportName(a.topSport, language)}
         </span>
       );
     case "completeness": return <DataQualityBadge score={a.completeness ?? 0} />;
     case "flags":
       return (
         <div className="flex flex-wrap gap-0.5">
-          {(a.flags ?? []).slice(0, 2).map((f, i) => <FlagBadge key={i} type={f.type} />)}
+          {(a.flags ?? []).slice(0, 2).map((f, i) => (
+            <FlagBadge key={i} type={f.type} label={dict.explorer.flagTypes[f.type as keyof typeof dict.explorer.flagTypes]} />
+          ))}
         </div>
       );
     default: return null;
