@@ -91,7 +91,7 @@ export default function AIQueryPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleQuery(query)}
-                placeholder={lang === "hi" ? "खिलाड़ियों के बारे में कुछ भी पूछें..." : "Ask anything about your athletes..."}
+                placeholder={language === "hi" ? "खिलाड़ियों के बारे में कुछ भी पूछें..." : "Ask anything about your athletes..."}
                 className="w-full pl-9 pr-4 py-2.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               />
             </div>

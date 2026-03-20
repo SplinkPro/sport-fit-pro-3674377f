@@ -23,7 +23,7 @@ const RECENT_REPORTS = [
 ];
 
 export default function ReportsPage() {
-  const { t, lang } = useTranslation();
+  const { t, language } = useTranslation();
   const [selectedType, setSelectedType] = useState<ReportType>("coach");
   const [reportLang, setReportLang] = useState<"en" | "hi" | "both">("en");
   const [generating, setGenerating] = useState(false);

@@ -36,7 +36,7 @@ const SPORT_WEIGHTS: Record<string, Record<string, number>> = {
 };
 
 export default function MethodologyPage() {
-  const { t, lang } = useTranslation();
+  const { t, language } = useTranslation();
   const [active, setActive] = useState<Section>("composite");
   const [expanded, setExpanded] = useState<string[]>([]);
 
