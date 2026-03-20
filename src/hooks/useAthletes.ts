@@ -202,7 +202,7 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
     [rawAthletes, loading, datasetMeta, savedDatasets, addDataset, loadDataset]
   );
 
-  return <AthleteContext.Provider value={value}>{children}</AthleteContext.Provider>;
+  return React.createElement(AthleteContext.Provider, { value }, children);
 }
 
 export function useAthletes() {
