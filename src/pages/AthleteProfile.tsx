@@ -250,11 +250,18 @@ function OverviewTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
 
 // ─── Tab 2: Performance ───────────────────────────────────────────────────
 function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete; dict: ReturnType<typeof useT>["dict"]; athletes: EnrichedAthlete[] }) {
+  function fmtRunTime(sec: number | undefined): string {
+    if (sec == null || isNaN(sec)) return "—";
+    const m = Math.floor(sec / 60);
+    const s = Math.round(sec % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  }
+
   const metrics = [
-    { key: "verticalJump" as const, label: dict.metrics.verticalJump, unit: "cm", higherBetter: true },
-    { key: "broadJump" as const, label: dict.metrics.broadJump, unit: "cm", higherBetter: true },
-    { key: "sprint30m" as const, label: dict.metrics.sprint30m, unit: "s", higherBetter: false },
-    { key: "run800m" as const, label: dict.metrics.run800m, unit: "s", higherBetter: false },
+    { key: "verticalJump" as const, label: dict.metrics.verticalJump, unit: "cm", higherBetter: true, fmt: (v: number) => `${v.toFixed(1)} cm` },
+    { key: "broadJump" as const, label: dict.metrics.broadJump, unit: "cm", higherBetter: true, fmt: (v: number) => `${v.toFixed(1)} cm` },
+    { key: "sprint30m" as const, label: dict.metrics.sprint30m, unit: "s", higherBetter: false, fmt: (v: number) => `${v.toFixed(2)} s` },
+    { key: "run800m" as const, label: dict.metrics.run800m, unit: "min", higherBetter: false, fmt: (v: number) => fmtRunTime(v) },
   ];
 
   // Cohort stats for bar chart
