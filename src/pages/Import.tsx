@@ -139,6 +139,14 @@ export default function ImportPage() {
               <CardDescription>Drag & drop a CSV or Excel file, or click to browse. Download the template for the correct format.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Hidden real file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+                onChange={handleFileInput}
+              />
               <div
                 onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                 onDragLeave={() => setDragging(false)}
@@ -147,16 +155,16 @@ export default function ImportPage() {
                   "border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer",
                   dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"
                 )}
-                onClick={handleFileInput}
+                onClick={handleZoneClick}
               >
                 {fileUploaded ? (
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-14 h-14 bg-success/10 rounded-full flex items-center justify-center">
                       <CheckCircle className="w-8 h-8 text-success" />
                     </div>
-                    <p className="font-semibold text-foreground">athletes_batch_demo.csv</p>
-                    <p className="text-muted-foreground text-sm">8 rows detected · 11 columns</p>
-                    <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setFileUploaded(false); }}>
+                    <p className="font-semibold text-foreground">{uploadedFile?.name}</p>
+                    <p className="text-muted-foreground text-sm">{rowCount} rows detected · {colCount} columns</p>
+                    <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setUploadedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
                       <RotateCcw className="w-3 h-3 mr-1" /> Change file
                     </Button>
                   </div>
