@@ -52,7 +52,7 @@ const IMPORT_HISTORY = [
 
 export default function ImportPage() {
   const { t } = useTranslation();
-  const { datasetMeta, setDatasetMeta } = useAthletes();
+  const { datasetMeta, setDatasetMeta, addDataset } = useAthletes();
   const navigate = useNavigate();
   const [step, setStep] = useState<ImportStep>(1);
   const [dragging, setDragging] = useState(false);
