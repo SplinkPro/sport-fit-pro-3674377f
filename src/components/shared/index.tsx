@@ -178,21 +178,18 @@ export function FlagBadge({ type, label }: { type: "outlier" | "missing" | "unde
 }
 
 // ─── Section Card ──────────────────────────────────────────────────────────
-export function SectionCard({
-  title,
-  subtitle,
-  children,
-  className,
-  action,
-}: {
-  title?: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  className?: string;
-  action?: React.ReactNode;
-}) {
+export const SectionCard = React.forwardRef<
+  HTMLDivElement,
+  {
+    title?: string;
+    subtitle?: string;
+    children: React.ReactNode;
+    className?: string;
+    action?: React.ReactNode;
+  }
+>(function SectionCard({ title, subtitle, children, className, action }, ref) {
   return (
-    <div className={cn("bg-card border rounded-lg p-4", className)}>
+    <div ref={ref} className={cn("bg-card border rounded-lg p-4", className)}>
       {(title || action) && (
         <div className="flex items-start justify-between gap-2 mb-3">
           <div>
@@ -205,7 +202,7 @@ export function SectionCard({
       {children}
     </div>
   );
-}
+});
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────
 export function KPICard({
