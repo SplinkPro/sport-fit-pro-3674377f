@@ -448,7 +448,7 @@ export default function ExplorerPage() {
                       className="px-2 py-2 text-xs"
                       onClick={() => navigate(`/athlete/${athlete.id}`)}
                     >
-                      {renderCell(col.key, athlete)}
+                      {renderCell(col.key, athlete, dict, language)}
                     </td>
                   ))}
                   <td className="px-2 py-2">
