@@ -45,8 +45,8 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AthleteProvider>
-        <BrowserRouter>
+      <BrowserRouter>
+        <AthleteProvider>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Navigate to="/explorer" replace />} />
@@ -64,8 +64,8 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
-        </BrowserRouter>
-      </AthleteProvider>
+        </AthleteProvider>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
