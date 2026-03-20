@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
+// useAthletes.ts — athlete context, localStorage persistence, dataset management
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
+import type { ReactNode, Dispatch, SetStateAction } from "react";
 import { getSeedAthletes } from "../data/seedAthletes";
 import { enrichAthletes, EnrichedAthlete } from "../engine/analyticsEngine";
 import { toast } from "@/hooks/use-toast";
@@ -13,18 +15,18 @@ export interface DatasetMeta {
   athletes?: EnrichedAthlete[];
 }
 
-interface AthleteContextValue {
+export interface AthleteContextValue {
   athletes: EnrichedAthlete[];
   loading: boolean;
   datasetMeta: DatasetMeta;
   savedDatasets: DatasetMeta[];
-  setAthletes: React.Dispatch<React.SetStateAction<EnrichedAthlete[]>>;
-  setDatasetMeta: React.Dispatch<React.SetStateAction<DatasetMeta>>;
+  setAthletes: Dispatch<SetStateAction<EnrichedAthlete[]>>;
+  setDatasetMeta: Dispatch<SetStateAction<DatasetMeta>>;
   addDataset: (meta: Omit<DatasetMeta, "id">, athletes: EnrichedAthlete[]) => void;
   loadDataset: (id: string) => void;
 }
 
-const SEED_META: DatasetMeta = {
+export const SEED_META: DatasetMeta = {
   id: "seed",
   name: "Bihar Demo Dataset",
   version: "v3",
@@ -38,13 +40,10 @@ const LS_ACTIVE_KEY = "pratibha_active_dataset";
 const MAX_DATASETS = 5;
 const MAX_ATHLETES_PER_DATASET = 500;
 
-/** Persist saved datasets (without athletes array — stored separately) + athlete blobs */
 function persistDatasets(datasets: DatasetMeta[]) {
   try {
-    // Store meta without athletes array (athletes stored under separate keys)
     const metas = datasets.map(({ athletes: _, ...m }) => m);
     localStorage.setItem(LS_DATASETS_KEY, JSON.stringify(metas));
-    // Store athletes per dataset id
     datasets.forEach((ds) => {
       if (ds.athletes && ds.id !== "seed") {
         localStorage.setItem(`pratibha_athletes_${ds.id}`, JSON.stringify(ds.athletes));
@@ -55,7 +54,6 @@ function persistDatasets(datasets: DatasetMeta[]) {
   }
 }
 
-/** Load persisted datasets from localStorage, rehydrating athletes */
 function loadPersistedDatasets(): DatasetMeta[] {
   try {
     const raw = localStorage.getItem(LS_DATASETS_KEY);
@@ -75,20 +73,13 @@ function loadPersistedDatasets(): DatasetMeta[] {
 }
 
 function getPersistedActiveId(): string | null {
-  try {
-    return localStorage.getItem(LS_ACTIVE_KEY);
-  } catch {
-    return null;
-  }
+  try { return localStorage.getItem(LS_ACTIVE_KEY); } catch { return null; }
 }
-
 function setPersistedActiveId(id: string) {
-  try {
-    localStorage.setItem(LS_ACTIVE_KEY, id);
-  } catch {}
+  try { localStorage.setItem(LS_ACTIVE_KEY, id); } catch {}
 }
 
-const AthleteContext = createContext<AthleteContextValue>({
+export const AthleteContext = createContext<AthleteContextValue>({
   athletes: [],
   loading: true,
   datasetMeta: SEED_META,
@@ -99,7 +90,7 @@ const AthleteContext = createContext<AthleteContextValue>({
   loadDataset: () => {},
 });
 
-export function AthleteProvider({ children }: { children: React.ReactNode }) {
+export function useAthleteProviderValue() {
   const [seedAthletes, setSeedAthletes] = useState<EnrichedAthlete[]>([]);
   const [rawAthletes, setRawAthletes] = useState<EnrichedAthlete[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,13 +98,10 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
   const [savedDatasets, setSavedDatasets] = useState<DatasetMeta[]>([SEED_META]);
 
   useEffect(() => {
-    // Run synchronously on mount — no requestIdleCallback to avoid race with
-    // components that read athletes immediately on first render (e.g. AthleteProfile).
     const enriched = enrichAthletes(getSeedAthletes());
     const seedDs: DatasetMeta = { ...SEED_META, count: enriched.length, athletes: enriched };
     setSeedAthletes(enriched);
 
-    // Rehydrate from localStorage
     const persisted = loadPersistedDatasets();
     const allDatasets: DatasetMeta[] = [seedDs, ...persisted];
     setSavedDatasets(allDatasets);
@@ -129,7 +117,6 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Default to seed
     setRawAthletes(enriched);
     setDatasetMeta({ ...SEED_META, count: enriched.length });
     setLoading(false);
@@ -137,7 +124,6 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
 
   const addDataset = useCallback(
     (meta: Omit<DatasetMeta, "id">, newAthletes: EnrichedAthlete[]) => {
-      // Cap dataset size
       if (newAthletes.length > MAX_ATHLETES_PER_DATASET) {
         toast({
           title: "Large dataset truncated",
@@ -151,13 +137,10 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
       const full: DatasetMeta = { ...meta, id: newId, count: newAthletes.length, athletes: newAthletes };
 
       setSavedDatasets((prev) => {
-        // Remove same-name duplicates, keep seed, cap at MAX_DATASETS imports
         const withoutSeed = prev.filter((d) => d.id !== "seed");
         const filtered = withoutSeed.filter((d) => d.name !== meta.name);
         const trimmed = [full, ...filtered].slice(0, MAX_DATASETS);
         const next = [prev.find((d) => d.id === "seed")!, ...trimmed];
-
-        // Persist after state update
         setTimeout(() => persistDatasets(next), 0);
         return next;
       });
@@ -173,9 +156,7 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
     (id: string) => {
       const ds = savedDatasets.find((d) => d.id === id);
       if (!ds) return;
-
       setPersistedActiveId(id);
-
       if (id === "seed") {
         setRawAthletes(seedAthletes);
         setDatasetMeta({ ...ds, athletes: undefined });
@@ -188,7 +169,7 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
     [savedDatasets, seedAthletes]
   );
 
-  const value = useMemo(
+  return useMemo(
     () => ({
       athletes: rawAthletes,
       loading,
@@ -201,8 +182,6 @@ export function AthleteProvider({ children }: { children: React.ReactNode }) {
     }),
     [rawAthletes, loading, datasetMeta, savedDatasets, addDataset, loadDataset]
   );
-
-  return <AthleteContext.Provider value={value}>{children}</AthleteContext.Provider>;
 }
 
 export function useAthletes() {
