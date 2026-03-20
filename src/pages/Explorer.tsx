@@ -575,21 +575,22 @@ function renderCell(
 }
 
 // ─── Comparison Panel ─────────────────────────────────────────────────────
-function ComparisonPanel({ athletes, dict }: { athletes: EnrichedAthlete[]; dict: ReturnType<typeof useT>["dict"] }) {
+function ComparisonPanel({ athletes, dict, language }: { athletes: EnrichedAthlete[]; dict: ReturnType<typeof useT>["dict"]; language: Language }) {
   if (athletes.length === 0) return (
-    <div className="text-sm text-muted-foreground text-center py-8">Select athletes from the table to compare</div>
+    <div className="text-sm text-muted-foreground text-center py-8">{dict.explorer.comparisonDrawer.subtitle}</div>
   );
 
+  const m = dict.metrics;
   const metrics: Array<{ key: keyof EnrichedAthlete; label: string; unit: string }> = [
-    { key: "age", label: "Age", unit: "y" },
-    { key: "height", label: "Height", unit: "cm" },
-    { key: "weight", label: "Weight", unit: "kg" },
-    { key: "bmi", label: "BMI", unit: "" },
-    { key: "verticalJump", label: "V. Jump", unit: "cm" },
-    { key: "broadJump", label: "B. Jump", unit: "cm" },
-    { key: "sprint30m", label: "30m Sprint", unit: "s" },
-    { key: "run800m", label: "800m Run", unit: "s" },
-    { key: "compositeScore", label: "Composite Score", unit: "" },
+    { key: "age", label: dict.common.age, unit: dict.common.years.slice(0, 1) },
+    { key: "height", label: m.height, unit: m.units.cm },
+    { key: "weight", label: m.weight, unit: m.units.kg },
+    { key: "bmi", label: m.bmi, unit: "" },
+    { key: "verticalJump", label: m.verticalJump, unit: m.units.cm },
+    { key: "broadJump", label: m.broadJump, unit: m.units.cm },
+    { key: "sprint30m", label: m.sprint30m, unit: m.units.sec },
+    { key: "run800m", label: m.run800m, unit: m.units.min },
+    { key: "compositeScore", label: dict.explorer.comparisonDrawer.score, unit: "" },
   ];
 
   return (
