@@ -49,11 +49,22 @@ const schools = [
   { name: "Muzaffarpur Central School", district: "Muzaffarpur" },
 ];
 
+// ─── Deterministic seeded PRNG (Mulberry32) ────────────────────────────────
+// Ensures the same 82 athletes are generated on every page load / hot reload.
+let _seed = 0x9E3779B9;
+function mulberry32(): number {
+  _seed |= 0; _seed = _seed + 0x6D2B79F5 | 0;
+  let t = Math.imul(_seed ^ (_seed >>> 15), 1 | _seed);
+  t = t + Math.imul(t ^ (t >>> 7), 61 | t) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function resetSeed() { _seed = 0x9E3779B9; }
+
 function randFloat(min: number, max: number, dp = 1): number {
-  return parseFloat((Math.random() * (max - min) + min).toFixed(dp));
+  return parseFloat((mulberry32() * (max - min) + min).toFixed(dp));
 }
 function randInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return Math.floor(mulberry32() * (max - min + 1)) + min;
 }
 
 const maleNames = [
