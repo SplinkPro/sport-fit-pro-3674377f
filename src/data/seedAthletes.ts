@@ -152,7 +152,7 @@ function generateMetric(mean: number, std: number, dp = 1, missing = false): num
 }
 
 export function generateSeedAthletes(): Athlete[] {
-  // Use seeded random (reset via fixed seed emulation)
+  resetSeed(); // always start from the same seed = deterministic output
   const athletes: Athlete[] = [];
   let id = 1;
 
