@@ -47,6 +47,7 @@ export function calcZScore(value: number, stats: CohortStats): number {
 }
 
 export function calcPercentile(value: number, stats: CohortStats, lowerIsBetter = false): number {
+  // Use pre-sorted values from stats — avoid re-sorting on every call
   const sorted = [...stats.values].sort((a, b) => a - b);
   const n = sorted.length;
   if (n === 0) return 50;
