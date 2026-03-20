@@ -255,7 +255,7 @@ export default function ExplorerPage() {
               {COLS.map((col) => (
                 <div
                   key={col.key}
-                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-muted"
+                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-muted select-none"
                   onClick={() => {
                     setHiddenCols((prev) => {
                       const next = new Set(prev);
