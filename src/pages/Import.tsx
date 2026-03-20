@@ -293,13 +293,14 @@ export default function ImportPage() {
               {/* Format hint */}
               <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-sm">
                 <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                <p className="text-blue-700">
-                  Your file needs at least: <strong>Name, Gender, Age, Height_cm, Weight_kg</strong>.
-                  Optional metrics: V_Jump, Broad_Jump, Sprint_30m, Run_800m, School, District.
-                </p>
+                <div className="text-blue-700 space-y-0.5">
+                  <p><strong>Accepted format:</strong> Same as the Bihar assessment spreadsheet.</p>
+                  <p>Columns: <code className="bg-blue-100 px-1 rounded text-xs">Athlete Name, Height, Weight, Thirty mflingstarts, Standinggbroadjump, Shuttlerun10Mx6, Verticaljump, Footballballthrow5No, Eighthundredmetersrun</code></p>
+                  <p className="text-xs mt-1">800m run accepts <strong>H:MM:SS</strong> time format or plain seconds. Gender and Age default to M / 14 if not present.</p>
+                </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <Button
                   variant="outline"
                   size="sm"
@@ -308,7 +309,13 @@ export default function ImportPage() {
                 >
                   <Download className="w-4 h-4" /> Download CSV Template
                 </Button>
+                <a href="/sample_data.xlsx" download="Sample_data_12.xlsx">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Download className="w-4 h-4" /> Download Sample Excel
+                  </Button>
+                </a>
               </div>
+
             </CardContent>
           </Card>
           <div className="flex justify-end">
