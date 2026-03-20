@@ -177,14 +177,14 @@ export function generateSeedAthletes(): Athlete[] {
 
     const verticalJump = isOutlier && isMale
       ? 95
-      : generateMetric(params.vj[0], params.vj[1], 1, isMissingData && Math.random() < 0.4);
-    const broadJump = generateMetric(params.bj[0], params.bj[1], 1, isMissingData && Math.random() < 0.3);
+      : generateMetric(params.vj[0], params.vj[1], 1, isMissingData && mulberry32() < 0.4);
+    const broadJump = generateMetric(params.bj[0], params.bj[1], 1, isMissingData && mulberry32() < 0.3);
     const sprint30m = isOutlier && !isMale
       ? 3.2
-      : generateMetric(params.s30[0], params.s30[1], 2, isMissingData && Math.random() < 0.3);
-    const run800m = generateMetric(params.r800[0], params.r800[1], 0, isMissingData && Math.random() < 0.4);
-    const shuttleRun = Math.random() > 0.35 ? generateMetric(params.shuttle[0], params.shuttle[1], 2) : undefined;
-    const footballThrow = Math.random() > 0.4 ? generateMetric(params.ft[0], params.ft[1], 1) : undefined;
+      : generateMetric(params.s30[0], params.s30[1], 2, isMissingData && mulberry32() < 0.3);
+    const run800m = generateMetric(params.r800[0], params.r800[1], 0, isMissingData && mulberry32() < 0.4);
+    const shuttleRun = mulberry32() > 0.35 ? generateMetric(params.shuttle[0], params.shuttle[1], 2) : undefined;
+    const footballThrow = mulberry32() > 0.4 ? generateMetric(params.ft[0], params.ft[1], 1) : undefined;
 
     const nameList = isMale ? maleNames : femaleNames;
     const name = nameList[Math.floor(i % nameList.length)];
