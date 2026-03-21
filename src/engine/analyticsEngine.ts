@@ -377,7 +377,7 @@ export function calcSportFit(
       dims.agility    * w.agility    +
       dims.bodyComp   * w.bodyComp;
 
-    const matchScore = Math.round(rawScore);
+    const matchScore = Math.round(rawScore * 10) / 10; // one decimal — preserves ranking separation
     const confidence = Math.round(confidencePenalty * 100);
 
     return {
