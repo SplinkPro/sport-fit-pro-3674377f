@@ -593,14 +593,14 @@ export function getSAIBand(nationalPercentile: number): SAIBand {
  */
 export function getLTADProfile(topSportKey: string): LTADProfile | null {
   const map: Record<string, string> = {
-    athletics: "athletics_sprint",
-    football: "football",
-    kabaddi: "kabaddi",
+    athletics:  "athletics_sprint",
+    football:   "football",
+    kabaddi:    "kabaddi",
     volleyball: "volleyball",
-    wrestling: "wrestling",
-    cycling: "athletics_endurance",
-    swimming: "athletics_endurance",
-    basketball: "kabaddi", // closest profile
+    wrestling:  "wrestling",
+    cycling:    "athletics_endurance",  // endurance profile fits cycling best
+    swimming:   "athletics_endurance",  // endurance + power
+    basketball: "volleyball",           // court jumping sport — closer to volleyball than kabaddi
   };
   const key = map[topSportKey];
   return key ? LTAD_PROFILES[key] ?? null : null;
