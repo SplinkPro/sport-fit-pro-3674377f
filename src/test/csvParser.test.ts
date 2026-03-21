@@ -3,7 +3,7 @@
  * Covers: header normalisation, time parsing, Bihar file format, edge cases
  */
 import { describe, it, expect } from "vitest";
-import { parseCSVText, rowsToAthletes, generateCSVTemplate } from "../lib/csvParser";
+import { parseCSVText, rowsToAthletes, generateCSVTemplate } from "@/lib/csvParser";
 
 // ─── 1. HEADER NORMALISATION ──────────────────────────────────────────────────
 
