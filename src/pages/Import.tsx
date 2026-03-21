@@ -334,11 +334,14 @@ export default function ImportPage() {
                 >
                   <Download className="w-4 h-4" /> Download CSV Template
                 </Button>
-                <a href="/sample_data.xlsx" download="Sample_data_12.xlsx">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Download className="w-4 h-4" /> Download Sample Excel
-                  </Button>
-                </a>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleDownloadTemplate}
+                >
+                  <Download className="w-4 h-4" /> Download Sample CSV
+                </Button>
               </div>
 
             </CardContent>

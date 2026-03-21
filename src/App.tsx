@@ -1,12 +1,13 @@
 // App.tsx — root router
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/layout/AppShell";
 import { AthleteProvider } from "@/hooks/AthleteProvider";
+import { isAuthenticated } from "@/components/layout/TopHeader";
 
 // ─── Lazy-loaded pages (each becomes its own chunk) ────────────────────────
 const LandingPage       = lazy(() => import("./pages/Landing"));
@@ -32,6 +33,15 @@ function PageLoader() {
   );
 }
 
+// ─── Auth guard — redirects to / if not authenticated ──────────────────────
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  if (!isAuthenticated()) {
+    return <Navigate to="/" state={{ from: location }} replace />;
+  }
+  return <>{children}</>;
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -41,6 +51,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+import React from "react";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -53,8 +65,8 @@ const App = () => (
             <Routes>
               {/* Landing page — no AppShell chrome */}
               <Route path="/" element={<LandingPage />} />
-              {/* App shell wraps all internal pages */}
-              <Route element={<AppShell />}>
+              {/* App shell wraps all internal pages — requires auth */}
+              <Route element={<RequireAuth><AppShell /></RequireAuth>}>
                 <Route path="/explorer"     element={<ExplorerPage />} />
                 <Route path="/athlete/:id"  element={<AthleteProfilePage />} />
                 <Route path="/analytics"    element={<AnalyticsPage />} />

@@ -287,7 +287,7 @@ export function rowsToAthletes(rows: Record<string, string>[]): ParseResult {
 
     const id = importedId
       ? `ID${importedId.slice(-6)}`  // use last 6 digits of studentId
-      : `IMP${String(_idCounter++).padStart(4, "0")}`;
+      : `IMP${String(_idBase + idx).padStart(6, "0")}`;
 
     const bmi = parseFloat((weight / ((height / 100) ** 2)).toFixed(1));
 
