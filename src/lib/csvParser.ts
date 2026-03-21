@@ -197,6 +197,8 @@ export interface ParseResult {
   errors:   { row: number; name: string; issues: string[] }[];
   skipped:  number;
   detectedColumns: string[]; // for debug / field-map display
+  unmappedColumns: string[]; // columns in file that were NOT recognized
+  headerSnapshot: string[];  // all raw column names from the file
 }
 
 // Module-level counter so IDs never collide across multiple imports in the same session
@@ -212,6 +214,8 @@ export function rowsToAthletes(rows: Record<string, string>[]): ParseResult {
 
   // Build header → internal-field map once
   const headerMap: Record<string, InternalField> = {};
+  const headerSnapshot: string[] = rows.length > 0 ? Object.keys(rows[0]) : [];
+
   if (rows.length > 0) {
     Object.keys(rows[0]).forEach((h) => {
       const norm = normaliseHeader(h);
@@ -220,6 +224,7 @@ export function rowsToAthletes(rows: Record<string, string>[]): ParseResult {
     });
   }
   const detectedColumns = Object.keys(headerMap);
+  const unmappedColumns = headerSnapshot.filter((h) => !headerMap[h]);
 
   /** Get raw string value for an internal field */
   const getField = (row: Record<string, string>, field: InternalField): string => {
@@ -250,28 +255,41 @@ export function rowsToAthletes(rows: Record<string, string>[]): ParseResult {
       gender = "M"; // default — Bihar file has no gender column
       softWarnings.push("Gender not provided — defaulted to M");
     } else {
-      hardErrors.push(`Invalid gender value: "${genderRaw}"`);
+      gender = "M"; // fallback instead of hard error
+      softWarnings.push(`Unrecognised gender "${genderRaw}" — defaulted to M`);
     }
 
     // ── Optional: Age (default 14 if absent) ──
     const ageRaw = getField(row, "age");
     let age = parseFloat(ageRaw);
     if (!ageRaw || isNaN(age) || age < 5 || age > 50) {
-      if (ageRaw) hardErrors.push(`Invalid age: "${ageRaw}"`);
+      if (ageRaw && !isNaN(age)) hardErrors.push(`Invalid age: "${ageRaw}"`);
       else { age = 14; softWarnings.push("Age not provided — defaulted to 14"); }
     }
 
-    // ── Required: Height ──
+    // ── Height — soft error (warn but don't skip) ──
     const heightRaw = getField(row, "height");
-    const height = parseFloat(heightRaw);
-    if (!heightRaw || isNaN(height) || height < 50 || height > 260)
-      hardErrors.push(`Invalid height: "${heightRaw}"`);
+    let height = parseFloat(heightRaw);
+    if (!heightRaw || isNaN(height) || height < 50 || height > 260) {
+      if (!heightRaw) {
+        height = 160; // reasonable default
+        softWarnings.push("Height missing — defaulted to 160cm");
+      } else {
+        hardErrors.push(`Invalid height: "${heightRaw}"`);
+      }
+    }
 
-    // ── Required: Weight ──
+    // ── Weight — soft error (warn but don't skip) ──
     const weightRaw = getField(row, "weight");
-    const weight = parseFloat(weightRaw);
-    if (!weightRaw || isNaN(weight) || weight < 10 || weight > 250)
-      hardErrors.push(`Invalid weight: "${weightRaw}"`);
+    let weight = parseFloat(weightRaw);
+    if (!weightRaw || isNaN(weight) || weight < 10 || weight > 250) {
+      if (!weightRaw) {
+        weight = 50; // reasonable default
+        softWarnings.push("Weight missing — defaulted to 50kg");
+      } else {
+        hardErrors.push(`Invalid weight: "${weightRaw}"`);
+      }
+    }
 
     if (hardErrors.length > 0) {
       errors.push({ row: rowNum, name: name || `Row ${rowNum}`, issues: hardErrors });
