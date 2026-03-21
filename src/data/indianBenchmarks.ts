@@ -417,15 +417,18 @@ export function calcGapToRecords(
 /**
  * Khelo India selection probability score (0–100).
  * Based on national percentile + age advantage (younger = more time to develop).
+ * completeness is 0–100 (percentage of metrics present).
  */
 export function calcKheloIndiaScore(
   nationalComposite: number,
   age: number,
   completeness: number
 ): number {
-  // Age factor: younger athletes get bonus (more development runway)
-  const ageFactor = age <= 14 ? 15 : age <= 16 ? 8 : age <= 18 ? 3 : 0;
-  const raw = nationalComposite + ageFactor + (completeness * 0.05);
+  // Age factor: younger athletes get more weight (more development runway)
+  const ageFactor = age <= 14 ? 12 : age <= 16 ? 6 : age <= 18 ? 2 : 0;
+  // Completeness penalty: if < 50% data, cap score (can't reliably assess)
+  const completenessFactor = completeness >= 80 ? 1.0 : completeness >= 50 ? 0.85 : 0.65;
+  const raw = (nationalComposite + ageFactor) * completenessFactor;
   return Math.min(100, Math.round(raw));
 }
 
