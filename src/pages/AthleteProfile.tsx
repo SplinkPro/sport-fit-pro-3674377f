@@ -605,6 +605,16 @@ function TrajectoryTab({ athlete }: { athlete: EnrichedAthlete }) {
   return (
     <div className="space-y-4">
 
+      {/* Coach Explainer Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+        <p className="text-xs font-semibold text-blue-800 mb-1">📋 How to read this page</p>
+        <p className="text-xs leading-relaxed text-blue-700">
+          This page shows <strong>where this athlete stands today</strong> compared to district, state, national and Olympic levels —
+          and <strong>where they could reach</strong> with consistent training. All projections assume regular coaching and are estimates only.
+          The <strong>Khelo India Score</strong> (0–100) is a quick summary of the athlete's selection potential right now.
+        </p>
+      </div>
+
       {/* Header row: Khelo India Score + LTAD window */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-3">
@@ -612,31 +622,35 @@ function TrajectoryTab({ athlete }: { athlete: EnrichedAthlete }) {
             <Trophy size={12} /> Khelo India Score
           </div>
           <div className="text-3xl font-bold tabular-nums">{kheloScore}</div>
-          <div className="text-[10px] text-muted-foreground mt-1">
+          <div className="text-[10px] font-semibold mt-1">
             {kheloScore >= 75 ? "🟢 Strong selection candidate" : kheloScore >= 55 ? "🟡 Development pathway" : "🔴 Foundational stage"}
           </div>
-          <div className="text-[10px] text-muted-foreground mt-1">National CAPI + age bonus + data completeness</div>
+          <div className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
+            Score out of 100. Combines: national performance rank + age bonus (younger = more time to grow) + how complete the data is.
+            <span className="font-medium"> 75+ = recommend for Khelo India trials.</span>
+          </div>
         </div>
 
         <div className="bg-muted/40 border rounded-lg p-3">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground mb-1">
-            <Clock size={12} /> LTAD Window
+            <Clock size={12} /> Training Window (LTAD)
           </div>
           {ltadProfile ? (
             <>
               <div className="text-sm font-semibold">{ltadProfile.sport}</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Train to Train: <span className="font-medium text-foreground">{ltadProfile.trainToTrainWindow[0]}–{ltadProfile.trainToTrainWindow[1]} yrs</span>
+              <div className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
+                <strong>Critical window:</strong> Ages {ltadProfile.trainToTrainWindow[0]}–{ltadProfile.trainToTrainWindow[1]}.
+                This is when fitness training has the biggest impact on a young athlete.
               </div>
-              <div className="text-xs text-muted-foreground">
-                Peak Performance: <span className="font-medium text-foreground">{ltadProfile.peakPerformanceAge[0]}–{ltadProfile.peakPerformanceAge[1]} yrs</span>
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                <strong>Peak performance:</strong> Ages {ltadProfile.peakPerformanceAge[0]}–{ltadProfile.peakPerformanceAge[1]}
               </div>
-              <div className="text-[10px] text-primary mt-1.5 font-medium">
+              <div className="text-[10px] text-primary mt-1.5 font-semibold">
                 {athlete.age >= ltadProfile.trainToTrainWindow[0] && athlete.age <= ltadProfile.trainToTrainWindow[1]
-                  ? "✅ In critical training window now"
+                  ? "✅ Athlete is in the critical window NOW — don't miss it"
                   : athlete.age < ltadProfile.trainToTrainWindow[0]
-                  ? `⏳ Critical window starts in ${ltadProfile.trainToTrainWindow[0] - athlete.age} yr(s)`
-                  : "⚡ Beyond train-to-train window"}
+                  ? `⏳ Critical window starts in ${ltadProfile.trainToTrainWindow[0] - athlete.age} year(s)`
+                  : "⚡ Past the main fitness window — focus on competition training"}
               </div>
             </>
           ) : (
@@ -646,13 +660,13 @@ function TrajectoryTab({ athlete }: { athlete: EnrichedAthlete }) {
 
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 mb-1">
-            <Flame size={12} /> Coach Priority
+            <Flame size={12} /> Coach Action Note
           </div>
           {ltadProfile && (
             <p className="text-[11px] text-foreground leading-relaxed">{ltadProfile.coachNote}</p>
           )}
-          <div className="mt-2 text-[10px] text-amber-700 font-medium">
-            Top sport: {athlete.topSport} ({athlete.topSportScore}% fit)
+          <div className="mt-2 text-[10px] text-amber-700 font-semibold">
+            Best sport fit: {athlete.topSport} ({athlete.topSportScore}% match)
           </div>
         </div>
       </div>
