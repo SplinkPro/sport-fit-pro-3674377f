@@ -790,48 +790,57 @@ function TrajectoryTab({ athlete }: { athlete: EnrichedAthlete }) {
 
       {/* Gap to Records */}
       {currentValue != null && gaps.length > 0 && (
-        <SectionCard title={`Gap to Reference Levels — ${metaOpt.label}`}>
-          <div className="space-y-2">
+        <SectionCard title={`How Far From Each Level? — ${metaOpt.label}`}>
+          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+            Each row shows a performance <strong>target level</strong> — from district average all the way to Olympic standard.
+            The bar shows how close the athlete already is to that target.
+            <span className="font-medium"> "Achieved" means they already meet or beat that level.</span>
+            {metaOpt.lowerBetter && <span className="italic"> (For sprint/run/shuttle: lower time = better — the athlete needs to get faster.)</span>}
+          </p>
+          <div className="space-y-3">
             {gaps.map((gap) => (
-              <div key={gap.label} className="flex items-center gap-3">
-                <div
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: contextColors[gap.context] ?? "#94A3B8" }}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs font-medium truncate">{gap.label}</span>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs font-mono">{metaOpt.fmt(gap.targetValue)}</span>
-                      {gap.achieved ? (
-                        <span className="text-[10px] font-semibold text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded">✓ Achieved</span>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">
-                          {gap.yearsToAchieve != null ? `~${gap.yearsToAchieve}yr` : "10+ yr"}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {!gap.achieved && (
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div key={gap.label}>
+                <div className="flex items-center gap-2 mb-1">
+                  <div
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: contextColors[gap.context] ?? "#94A3B8" }}
+                  />
+                  <span className="text-xs font-medium flex-1 truncate">{gap.label}</span>
+                  <span className="text-xs font-mono text-muted-foreground">{metaOpt.fmt(gap.targetValue)}</span>
+                  {gap.achieved ? (
+                    <span className="text-[10px] font-semibold text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded shrink-0">✓ Achieved</span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      {gap.yearsToAchieve != null ? `~${gap.yearsToAchieve} yr to reach` : "10+ yrs"}
+                    </span>
+                  )}
+                </div>
+                {!gap.achieved ? (
+                  <div className="ml-4">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full"
+                        className="h-full rounded-full transition-all"
                         style={{
-                          width: `${Math.min(100, Math.max(5, 100 - gap.gapPercent))}%`,
+                          width: `${Math.min(100, Math.max(4, 100 - gap.gapPercent))}%`,
                           backgroundColor: contextColors[gap.context] ?? "#94A3B8",
                         }}
                       />
                     </div>
-                  )}
-                </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      Needs to improve by {gap.gap.toFixed(metaOpt.lowerBetter ? 2 : 0)}{metaOpt.lowerBetter ? "s" : "cm"} ({gap.gapPercent.toFixed(1)}% gap)
+                    </div>
+                  </div>
+                ) : (
+                  <div className="ml-4 h-2 bg-green-200 rounded-full" />
+                )}
               </div>
             ))}
           </div>
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t">
             {Object.entries(contextColors).map(([ctx, color]) => (
               <span key={ctx} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                {contextLabels[ctx]}
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                <span className="font-medium">{contextLabels[ctx]}</span>
               </span>
             ))}
           </div>
@@ -839,25 +848,29 @@ function TrajectoryTab({ athlete }: { athlete: EnrichedAthlete }) {
       )}
 
       {/* Development Roadmap */}
-      <SectionCard title="Olympic Development Roadmap (LTAD)">
+      <SectionCard title="Career Development Roadmap">
+        <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+          This shows the <strong>4 stages every elite Indian athlete goes through</strong>, based on the SAI Long-Term Athlete Development framework.
+          The highlighted stage is where this athlete is <strong>right now</strong>. Upcoming stages show what to work towards next.
+        </p>
         <div className="space-y-2">
           {roadmap.map((step, i) => (
             <div key={i} className={cn("rounded-lg border p-3", statusColors[step.status])}>
               <div className="flex items-center gap-2 mb-1">
                 <div className={cn("w-2 h-2 rounded-full shrink-0", statusDot[step.status])} />
                 <span className="text-xs font-semibold">{step.window}</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">Age {step.age}</span>
+                <span className="text-[10px] text-muted-foreground ml-auto bg-muted px-1.5 py-0.5 rounded">Age {step.age}</span>
               </div>
               <p className="text-[11px] text-muted-foreground mb-1">{step.focus}</p>
-              <p className="text-[11px] font-medium text-foreground flex items-center gap-1">
-                <Target size={10} className="shrink-0" /> {step.target}
+              <p className="text-[11px] font-semibold text-foreground flex items-center gap-1">
+                <Target size={10} className="shrink-0" /> Goal: {step.target}
               </p>
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-muted-foreground mt-2">
-          Based on SAI Long-Term Athlete Development (LTAD) framework. Roadmap adapts to athlete's current age and primary sport fit.
-          Specialisation recommendation is guidance only — multisport exposure until age 14 is strongly advised.
+        <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+          ⚠️ Roadmap is a guide only. Multi-sport exposure is strongly recommended until age 14 before specialising.
+          Based on SAI LTAD framework 2021.
         </p>
       </SectionCard>
 
