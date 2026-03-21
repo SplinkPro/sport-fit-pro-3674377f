@@ -1,8 +1,8 @@
 import React from "react";
-import { Bell, User, ChevronDown } from "lucide-react";
+import { Bell, User, ChevronDown, LogOut } from "lucide-react";
 import { useT, useLanguage } from "@/i18n/useTranslation";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,

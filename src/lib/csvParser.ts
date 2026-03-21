@@ -325,8 +325,9 @@ export function generateCSVTemplate(): string {
     "Thirty mflingstarts", "Standinggbroadjump", "Shuttlerun10Mx6",
     "Verticaljump", "Footballballthrow5No", "Eighthundredmetersrun", "Weight",
   ];
-  const row1 = ["1", "3524024014807", "Rahul Kumar", "158", "5.1", "200", "12.3", "42", "8.5", "3:45:00", "48"];
-  const row2 = ["2", "3524024014808", "Priya Singh", "152", "5.8", "165", "13.1", "35", "6.2", "4:10:00", "42"];
-  const row3 = ["3", "3524024014809", "Arjun Sharma", "165", "4.9", "220", "11.8", "55", "10.0", "3:20:00", "55"];
+  // 800m run in MM:SS format (not H:MM:SS which would be read as hours)
+  const row1 = ["1", "3524024014807", "Rahul Kumar", "158", "5.1", "200", "12.3", "42", "8.5", "3:45", "48"];
+  const row2 = ["2", "3524024014808", "Priya Singh", "152", "5.8", "165", "13.1", "35", "6.2", "4:10", "42"];
+  const row3 = ["3", "3524024014809", "Arjun Sharma", "165", "4.9", "220", "11.8", "55", "10.0", "3:20", "55"];
   return [headers.join(","), row1.join(","), row2.join(","), row3.join(",")].join("\n");
 }
