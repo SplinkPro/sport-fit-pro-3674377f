@@ -521,7 +521,331 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
   );
 }
 
-// ─── Tab 3: AI Insights ───────────────────────────────────────────────────
+// ─── Tab: Trajectory & Olympic Pathway ────────────────────────────────────
+function TrajectoryTab({ athlete }: { athlete: EnrichedAthlete }) {
+  const [selectedMetric, setSelectedMetric] = useState<NationalBenchmarkMetric>("sprint30m");
+
+  const METRIC_OPTIONS: Array<{ key: NationalBenchmarkMetric; label: string; lowerBetter: boolean; fmt: (v: number) => string }> = [
+    { key: "sprint30m",    label: "30m Sprint",     lowerBetter: true,  fmt: (v) => `${v.toFixed(2)}s` },
+    { key: "run800m",      label: "800m Run",        lowerBetter: true,  fmt: (v) => { const m = Math.floor(v/60); const s = Math.round(v%60); return `${m}:${s.toString().padStart(2,"0")}`; } },
+    { key: "verticalJump", label: "Vertical Jump",   lowerBetter: false, fmt: (v) => `${v.toFixed(1)}cm` },
+    { key: "broadJump",    label: "Broad Jump",      lowerBetter: false, fmt: (v) => `${v.toFixed(0)}cm` },
+    { key: "shuttleRun",   label: "Shuttle Run",     lowerBetter: true,  fmt: (v) => `${v.toFixed(2)}s` },
+  ];
+
+  const metaOpt = METRIC_OPTIONS.find((m) => m.key === selectedMetric)!;
+  const currentValue = athlete[selectedMetric] as number | undefined;
+
+  // Project trajectory 6 years ahead
+  const trajectory = useMemo(() => {
+    if (currentValue == null) return [];
+    return projectTrajectory(currentValue, athlete.age, selectedMetric, athlete.gender, 6, metaOpt.lowerBetter);
+  }, [currentValue, athlete.age, athlete.gender, selectedMetric, metaOpt.lowerBetter]);
+
+  // Gap to records
+  const gaps = useMemo(() => {
+    if (currentValue == null) return [];
+    return calcGapToRecords(currentValue, athlete.age, selectedMetric, athlete.gender, metaOpt.lowerBetter);
+  }, [currentValue, athlete.age, athlete.gender, selectedMetric, metaOpt.lowerBetter]);
+
+  // Khelo India score
+  const kheloScore = calcKheloIndiaScore(
+    athlete.derivedIndices?.nationalComposite ?? 0,
+    athlete.age,
+    athlete.completeness ?? 50
+  );
+
+  // LTAD profile
+  const sportKey = athlete.sportFit?.[0]?.sport.key ?? "athletics";
+  const ltadProfile = getLTADProfile(sportKey);
+
+  const contextColors: Record<string, string> = {
+    district: "#94A3B8",
+    state: "#60A5FA",
+    national_junior: "#34D399",
+    national_senior: "#FBBF24",
+    olympic: "#F97316",
+    world: "#EF4444",
+  };
+  const contextLabels: Record<string, string> = {
+    district: "District", state: "State", national_junior: "Nat. Jr",
+    national_senior: "National", olympic: "Olympic", world: "World",
+  };
+
+  // Roadmap milestones based on LTAD
+  const getRoadmapMilestones = () => {
+    const age = athlete.age;
+    const items: Array<{ window: string; age: string; focus: string; target: string; status: "current" | "upcoming" | "future" }> = [];
+
+    if (age <= 12) {
+      items.push({ window: "Learn to Train", age: "10–12", focus: "Multilateral development. No specialisation.", target: "Improve all metrics 8–12% annually", status: "current" });
+      items.push({ window: "Train to Train", age: "12–16", focus: "Fitness foundation. Introduce sport specifics.", target: "Reach SAI P70 standard", status: "upcoming" });
+      items.push({ window: "Train to Compete", age: "16–18", focus: "Khelo India selection. State competition.", target: "Reach SAI P85 / Khelo India selection", status: "future" });
+      items.push({ window: "Train to Win", age: "18–22", focus: "National championship. Senior circuit entry.", target: "National-level podium performance", status: "future" });
+    } else if (age <= 15) {
+      items.push({ window: "Train to Train (Active)", age: "12–16", focus: "You're in the critical fitness window. Build base.", target: "Reach SAI P85 standard in top 2 metrics", status: "current" });
+      items.push({ window: "Train to Compete", age: "16–18", focus: "Khelo India & state championships.", target: "Khelo India squad selection", status: "upcoming" });
+      items.push({ window: "Train to Win", age: "18–22", focus: "Senior national circuit.", target: "National Athletics / Federation ranking", status: "future" });
+      items.push({ window: "Peak Performance", age: "22–28", focus: "Asian Games / Commonwealth / Olympics cycle.", target: "International qualification standard", status: "future" });
+    } else if (age <= 18) {
+      items.push({ window: "Train to Compete (Active)", age: "16–18", focus: "Khelo India squad — competition focus.", target: "Top 8 finish at national youth level", status: "current" });
+      items.push({ window: "Train to Win", age: "18–22", focus: "Senior national circuit. AFI ranking.", target: "National senior podium", status: "upcoming" });
+      items.push({ window: "Peak Performance", age: "22–28", focus: "Olympic cycle planning.", target: "Olympic qualification (if on trajectory)", status: "future" });
+    } else {
+      items.push({ window: "Train to Win (Active)", age: "18–22", focus: "National senior competition.", target: "Federation Top-10 ranking", status: "current" });
+      items.push({ window: "Peak Performance", age: "22–28", focus: "Olympic / Asian Games cycle.", target: "International A-standard", status: "upcoming" });
+    }
+    return items;
+  };
+
+  const roadmap = getRoadmapMilestones();
+  const statusColors = { current: "border-primary bg-primary/5", upcoming: "border-blue-400 bg-blue-50", future: "border-muted bg-muted/20" };
+  const statusDot = { current: "bg-primary", upcoming: "bg-blue-400", future: "bg-muted-foreground" };
+
+  return (
+    <div className="space-y-4">
+
+      {/* Header row: Khelo India Score + LTAD window */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-1">
+            <Trophy size={12} /> Khelo India Score
+          </div>
+          <div className="text-3xl font-bold tabular-nums">{kheloScore}</div>
+          <div className="text-[10px] text-muted-foreground mt-1">
+            {kheloScore >= 75 ? "🟢 Strong selection candidate" : kheloScore >= 55 ? "🟡 Development pathway" : "🔴 Foundational stage"}
+          </div>
+          <div className="text-[10px] text-muted-foreground mt-1">National CAPI + age bonus + data completeness</div>
+        </div>
+
+        <div className="bg-muted/40 border rounded-lg p-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground mb-1">
+            <Clock size={12} /> LTAD Window
+          </div>
+          {ltadProfile ? (
+            <>
+              <div className="text-sm font-semibold">{ltadProfile.sport}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Train to Train: <span className="font-medium text-foreground">{ltadProfile.trainToTrainWindow[0]}–{ltadProfile.trainToTrainWindow[1]} yrs</span>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Peak Performance: <span className="font-medium text-foreground">{ltadProfile.peakPerformanceAge[0]}–{ltadProfile.peakPerformanceAge[1]} yrs</span>
+              </div>
+              <div className="text-[10px] text-primary mt-1.5 font-medium">
+                {athlete.age >= ltadProfile.trainToTrainWindow[0] && athlete.age <= ltadProfile.trainToTrainWindow[1]
+                  ? "✅ In critical training window now"
+                  : athlete.age < ltadProfile.trainToTrainWindow[0]
+                  ? `⏳ Critical window starts in ${ltadProfile.trainToTrainWindow[0] - athlete.age} yr(s)`
+                  : "⚡ Beyond train-to-train window"}
+              </div>
+            </>
+          ) : (
+            <div className="text-xs text-muted-foreground">No LTAD profile available</div>
+          )}
+        </div>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 mb-1">
+            <Flame size={12} /> Coach Priority
+          </div>
+          {ltadProfile && (
+            <p className="text-[11px] text-foreground leading-relaxed">{ltadProfile.coachNote}</p>
+          )}
+          <div className="mt-2 text-[10px] text-amber-700 font-medium">
+            Top sport: {athlete.topSport} ({athlete.topSportScore}% fit)
+          </div>
+        </div>
+      </div>
+
+      {/* Metric selector */}
+      <SectionCard title="Performance Trajectory Projection">
+        <div className="flex gap-1.5 flex-wrap mb-3">
+          {METRIC_OPTIONS.map((m) => {
+            const hasData = (athlete[m.key] as number | undefined) != null;
+            return (
+              <button
+                key={m.key}
+                onClick={() => setSelectedMetric(m.key)}
+                className={cn(
+                  "px-2.5 py-1 rounded text-xs font-medium border transition-colors",
+                  selectedMetric === m.key
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : hasData ? "border-border hover:bg-muted" : "border-border text-muted-foreground opacity-50 cursor-not-allowed"
+                )}
+                disabled={!hasData}
+              >
+                {m.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {currentValue != null && trajectory.length > 0 ? (
+          <>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trajectory} margin={{ top: 4, right: 12, bottom: 4, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="age" tick={{ fontSize: 10 }} label={{ value: "Age", position: "insideBottomRight", offset: -4, fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} width={45}
+                    tickFormatter={(v) => metaOpt.fmt(v)}
+                    reversed={metaOpt.lowerBetter}
+                  />
+                  <Tooltip
+                    formatter={(v: number, name: string) => [metaOpt.fmt(v), name]}
+                    labelFormatter={(l) => `Age ${l}`}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="projectedValue"
+                    name="Projected Value"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={(props) => {
+                      const { cx, cy, payload } = props;
+                      return payload.milestone
+                        ? <circle key={`dot-${payload.age}`} cx={cx} cy={cy} r={5} fill="#F59E0B" stroke="#fff" strokeWidth={2} />
+                        : <circle key={`dot-${payload.age}`} cx={cx} cy={cy} r={3} fill="hsl(var(--primary))" />;
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="nationalPercentile"
+                    name="Nat. Percentile"
+                    stroke="#10B981"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 2"
+                    yAxisId="pct"
+                  />
+                  <YAxis yAxisId="pct" orientation="right" tick={{ fontSize: 9 }} width={28} domain={[0, 100]} label={{ value: "Pct.", angle: 90, position: "insideRight", fontSize: 9 }} />
+                  <ReferenceLine y={70} yAxisId="pct" stroke="#2563EB" strokeDasharray="3 3" label={{ value: "KI", fill: "#2563EB", fontSize: 9, position: "insideTopLeft" }} />
+                  <ReferenceLine y={85} yAxisId="pct" stroke="#16A34A" strokeDasharray="3 3" label={{ value: "SAI Elite", fill: "#16A34A", fontSize: 9, position: "insideTopLeft" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap gap-3 mt-2 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1"><div className="w-4 h-0.5 bg-primary inline-block" /> Projected value</span>
+              <span className="flex items-center gap-1"><div className="w-4 h-0.5 bg-emerald-500 inline-block border-dashed" /> National percentile</span>
+              <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-amber-500 inline-block" /> Milestone threshold</span>
+            </div>
+
+            {/* Trajectory table */}
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="text-left py-1.5 pr-3">Age</th>
+                    <th className="text-right py-1.5 px-2">Projected</th>
+                    <th className="text-right py-1.5 px-2">Nat. Pct.</th>
+                    <th className="text-left py-1.5 pl-2">Milestone</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trajectory.map((pt) => (
+                    <tr key={pt.age} className={cn("border-b last:border-0", pt.age === athlete.age && "bg-primary/5 font-semibold")}>
+                      <td className="py-1.5 pr-3">{pt.age === athlete.age ? `${pt.age} ★` : pt.age}</td>
+                      <td className="py-1.5 px-2 text-right tabular-nums">{metaOpt.fmt(pt.projectedValue)}</td>
+                      <td className="py-1.5 px-2 text-right tabular-nums" style={{ color: pt.nationalPercentile >= 85 ? "#16A34A" : pt.nationalPercentile >= 70 ? "#2563EB" : undefined }}>
+                        {pt.nationalPercentile}th
+                      </td>
+                      <td className="py-1.5 pl-2">
+                        {pt.milestone ? (
+                          <span className="text-amber-600 font-medium flex items-center gap-1">
+                            <Award size={10} /> {pt.milestone}
+                          </span>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              Projection uses SAI LTAD annual improvement rates by age band. Assumes consistent training — not guaranteed. Coach validation required.
+            </p>
+          </>
+        ) : (
+          <div className="text-xs text-muted-foreground py-4 text-center">No data for this metric — import athlete measurement to see trajectory</div>
+        )}
+      </SectionCard>
+
+      {/* Gap to Records */}
+      {currentValue != null && gaps.length > 0 && (
+        <SectionCard title={`Gap to Reference Levels — ${metaOpt.label}`}>
+          <div className="space-y-2">
+            {gaps.map((gap) => (
+              <div key={gap.label} className="flex items-center gap-3">
+                <div
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: contextColors[gap.context] ?? "#94A3B8" }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-xs font-medium truncate">{gap.label}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-mono">{metaOpt.fmt(gap.targetValue)}</span>
+                      {gap.achieved ? (
+                        <span className="text-[10px] font-semibold text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded">✓ Achieved</span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">
+                          {gap.yearsToAchieve != null ? `~${gap.yearsToAchieve}yr` : "10+ yr"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {!gap.achieved && (
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(100, Math.max(5, 100 - gap.gapPercent))}%`,
+                          backgroundColor: contextColors[gap.context] ?? "#94A3B8",
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2 mt-3">
+            {Object.entries(contextColors).map(([ctx, color]) => (
+              <span key={ctx} className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                {contextLabels[ctx]}
+              </span>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Development Roadmap */}
+      <SectionCard title="Olympic Development Roadmap (LTAD)">
+        <div className="space-y-2">
+          {roadmap.map((step, i) => (
+            <div key={i} className={cn("rounded-lg border p-3", statusColors[step.status])}>
+              <div className="flex items-center gap-2 mb-1">
+                <div className={cn("w-2 h-2 rounded-full shrink-0", statusDot[step.status])} />
+                <span className="text-xs font-semibold">{step.window}</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">Age {step.age}</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mb-1">{step.focus}</p>
+              <p className="text-[11px] font-medium text-foreground flex items-center gap-1">
+                <Target size={10} className="shrink-0" /> {step.target}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-2">
+          Based on SAI Long-Term Athlete Development (LTAD) framework. Roadmap adapts to athlete's current age and primary sport fit.
+          Specialisation recommendation is guidance only — multisport exposure until age 14 is strongly advised.
+        </p>
+      </SectionCard>
+
+    </div>
+  );
+}
+
 function InsightsTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnType<typeof useT>["dict"] }) {
   const p = dict.profile;
   const [openExplain, setOpenExplain] = useState<string | null>(null);
