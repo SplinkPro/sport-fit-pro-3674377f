@@ -91,7 +91,6 @@ const COLUMN_MAP: Record<string, InternalField> = {
   "800mrun": "run800m",
   "run800m": "run800m",
   "800m": "run800m",
-  "800mrun": "run800m",
   "800meterrun": "run800m",
   "800mendurance": "run800m",
   "endurancerun": "run800m",
