@@ -160,9 +160,36 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
   }
 
   // ── High potential ──
-  if (/high\s*potential|top\s*talent|elite/i.test(q)) {
+  if (/high\s*potential|top\s*talent/i.test(q)) {
     pool = pool.filter((a) => a.isHighPotential);
     filters.push("Filter: High Potential");
+  }
+
+  // ── SAI elite band filter ──
+  if (/sai\s*elite|khelo\s*india\s*(candidate|selection)|elite\s*candidate/i.test(q)) {
+    pool = pool.filter((a) => {
+      const di = a.derivedIndices;
+      if (!di) return false;
+      return di.nationalComposite >= 70;
+    });
+    filters.push("Filter: SAI Elite Band (Nat. CAPI ≥ 70)");
+    metricLabel = "National CAPI";
+    metricFn = (a) => `${a.derivedIndices?.nationalComposite ?? "—"} / 100`;
+  }
+
+  // ── National talent pool filter ──
+  if (/national\s*talent\s*pool|talent\s*pool|khelo\s*india\s*standard/i.test(q)) {
+    pool = pool.filter((a) => (a.derivedIndices?.nationalComposite ?? 0) >= 55);
+    filters.push("Filter: National Talent Pool (Nat. CAPI ≥ 55)");
+    metricLabel = "National CAPI";
+    metricFn = (a) => `${a.derivedIndices?.nationalComposite ?? "—"} / 100`;
+  }
+
+  // ── SAI/National percentile sort ──
+  if (/national\s*(composite|score|rank)|best\s*nationally|top\s*national/i.test(q)) {
+    filters.push("Sort: National Composite ↓");
+    metricLabel = "National CAPI";
+    metricFn = (a) => `${a.derivedIndices?.nationalComposite ?? "—"} / 100`;
   }
 
   // ── Composite score threshold ──
@@ -170,6 +197,33 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
   if (threshold !== null) {
     pool = pool.filter((a) => a.compositeScore >= threshold);
     filters.push(`Composite Score ≥ ${threshold}`);
+  }
+
+  // ── Trajectory / young talent (athletes with development runway) ──
+  if (/young\s*talent|future\s*star|most\s*potential|development\s*pipeline|train\s*to\s*train/i.test(q)) {
+    pool = pool.filter((a) => a.age <= 15);
+    pool.sort((a, b) => (b.derivedIndices?.nationalComposite ?? 0) - (a.derivedIndices?.nationalComposite ?? 0));
+    filters.push("Filter: Young Talent Pipeline (age ≤ 15)");
+    metricLabel = "National CAPI";
+    metricFn = (a) => `${a.derivedIndices?.nationalComposite ?? "—"} (age ${a.age})`;
+    const poolSize = pool.length;
+    const results = pool.slice(0, limit);
+    const reasoning = `Showing ${results.length} young athletes (≤15 yrs) with highest national CAPI — these are your development pipeline candidates with most growth runway. Full dataset: ${totalAthletes} athletes.`;
+    return { results, filters, reasoning, metricLabel, metricFn, poolSize };
+  }
+
+  // ── Aerobic capacity / VO2max ──
+  if (/vo2|aerobic\s*cap|oxygen|aerobic\s*fitness/i.test(q)) {
+    filters.push("Metric: VO₂max Estimate");
+    metricLabel = "VO₂max Est. (ml/kg/min)";
+    metricFn = (a) => a.derivedIndices?.aerobicCapacityEst != null ? `${a.derivedIndices.aerobicCapacityEst.toFixed(1)} ml/kg/min` : "—";
+  }
+
+  // ── Explosive power (RPI) ──
+  if (/explosive\s*power|relative\s*power|power\s*index|rpi/i.test(q)) {
+    filters.push("Metric: Relative Power Index (RPI)");
+    metricLabel = "Relative Power Index";
+    metricFn = (a) => a.derivedIndices?.relativePowerIndex != null ? `RPI ${a.derivedIndices.relativePowerIndex.toFixed(2)}` : "—";
   }
 
   // Record pool size BEFORE sorting/slicing for honest reasoning
