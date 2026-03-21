@@ -179,8 +179,12 @@ export interface ParseResult {
   detectedColumns: string[]; // for debug / field-map display
 }
 
+// Module-level counter so IDs never collide across multiple imports in the same session
+let _globalIdCounter = Date.now() % 100000; // start from a time-based offset
+
 export function rowsToAthletes(rows: Record<string, string>[]): ParseResult {
-  let _idCounter = 1;
+  // Use module-scoped counter (not reset on each call) to avoid ID collisions on append imports
+  const _idBase = ++_globalIdCounter;
   const athletes: Athlete[] = [];
   const warnings: ParseResult["warnings"] = [];
   const errors:   ParseResult["errors"]   = [];
