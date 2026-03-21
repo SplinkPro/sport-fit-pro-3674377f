@@ -216,6 +216,11 @@ export function rowsToAthletes(rows: Record<string, string>[]): ParseResult {
   const detectedColumns = Object.keys(headerMap);
   const unmappedColumns = headerSnapshot.filter((h) => !headerMap[h]);
 
+  // Debug: log what was mapped and what wasn't
+  console.log("[csvParser] Header snapshot:", headerSnapshot);
+  console.log("[csvParser] Detected (mapped):", detectedColumns);
+  console.log("[csvParser] Unmapped:", unmappedColumns);
+
   /** Get raw string value for an internal field */
   const getField = (row: Record<string, string>, field: InternalField): string => {
     for (const [header, mapped] of Object.entries(headerMap)) {
