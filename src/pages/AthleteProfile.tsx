@@ -4,6 +4,7 @@ import { useAthletes } from "@/hooks/useAthletes";
 import { useT } from "@/i18n/useTranslation";
 import { EnrichedAthlete, getBenchmarkBand, BENCHMARK_COLORS } from "@/engine/analyticsEngine";
 import { SPORTS_CONFIG } from "@/data/sportsConfig";
+import { SAI_BAND_COLORS, SAI_BAND_LABELS } from "@/data/indianBenchmarks";
 import {
   BenchmarkBadge, DataQualityBadge, FlagBadge, PercentileBar,
   SportFitBar, ConfidenceBar, MetricChip, SectionCard,
@@ -18,7 +19,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine, Cell,
 } from "recharts";
-import { ChevronLeft, ChevronDown, ChevronUp, Brain, AlertTriangle, Lightbulb, Target, Star } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronUp, Brain, AlertTriangle, Lightbulb, Target, Star, Globe, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Page ─────────────────────────────────────────────────────────────────
@@ -258,10 +259,10 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
   }
 
   const metrics = [
-    { key: "verticalJump" as const, label: dict.metrics.verticalJump, unit: "cm", higherBetter: true, fmt: (v: number) => `${v.toFixed(1)} cm` },
-    { key: "broadJump" as const, label: dict.metrics.broadJump, unit: "cm", higherBetter: true, fmt: (v: number) => `${v.toFixed(1)} cm` },
-    { key: "sprint30m" as const, label: dict.metrics.sprint30m, unit: "s", higherBetter: false, fmt: (v: number) => `${v.toFixed(2)} s` },
-    { key: "run800m" as const, label: dict.metrics.run800m, unit: "min", higherBetter: false, fmt: (v: number) => fmtRunTime(v) },
+    { key: "verticalJump" as const, label: dict.metrics.verticalJump, unit: "cm", higherBetter: true, fmt: (v: number) => `${v.toFixed(1)} cm`, natKey: "verticalJump" as const },
+    { key: "broadJump" as const, label: dict.metrics.broadJump, unit: "cm", higherBetter: true, fmt: (v: number) => `${v.toFixed(1)} cm`, natKey: "broadJump" as const },
+    { key: "sprint30m" as const, label: dict.metrics.sprint30m, unit: "s", higherBetter: false, fmt: (v: number) => `${v.toFixed(2)} s`, natKey: "sprint30m" as const },
+    { key: "run800m" as const, label: dict.metrics.run800m, unit: "min", higherBetter: false, fmt: (v: number) => fmtRunTime(v), natKey: "run800m" as const },
   ];
 
   // Cohort stats for bar chart
@@ -274,6 +275,8 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
     const sorted = [...peers].sort((a, b) => m.higherBetter ? b - a : a - b);
     const top10 = sorted[Math.floor(sorted.length * 0.1)] ?? avg;
     const val = athlete[m.key] as number | undefined;
+    const natPct = athlete.derivedIndices?.nationalPercentiles?.[m.natKey] ?? null;
+    const natBand = athlete.derivedIndices?.nationalBands?.[m.natKey] ?? null;
     return {
       name: m.label,
       athlete: val ?? 0,
@@ -284,6 +287,8 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
       pct: athlete.percentiles?.[m.key] ?? 0,
       band: athlete.benchmarkBands?.[m.key],
       displayValue: val != null ? m.fmt(val) : "—",
+      natPct,
+      natBand,
     };
   });
 
@@ -293,37 +298,80 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
     development: dict.benchmarks.development,
   };
 
+  const di = athlete.derivedIndices;
+
   return (
     <div className="space-y-4">
-      {/* Raw metrics table */}
-      <SectionCard title="Raw Metrics & Benchmarks">
+      {/* National vs Local comparison banner */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-muted/40 border rounded-lg p-3 flex items-center justify-between">
+          <div>
+            <div className="text-xs text-muted-foreground font-medium">Local CAPI</div>
+            <div className="text-2xl font-bold tabular-nums text-primary">{athlete.compositeScore}</div>
+            <div className="text-xs text-muted-foreground">vs. this cohort</div>
+          </div>
+          <div className="text-3xl">🏫</div>
+        </div>
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center justify-between">
+          <div>
+            <div className="text-xs text-primary font-medium flex items-center gap-1"><Globe size={10} /> National CAPI (SAI)</div>
+            <div className="text-2xl font-bold tabular-nums">{di?.nationalComposite ?? "—"}</div>
+            <div className="text-xs text-muted-foreground">vs. all-India standard</div>
+          </div>
+          <div className="text-right">
+            {di?.nationalComposite != null && (
+              <Badge
+                className="text-[10px]"
+                style={{
+                  backgroundColor: SAI_BAND_COLORS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"] + "20",
+                  color: SAI_BAND_COLORS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"],
+                  borderColor: SAI_BAND_COLORS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"] + "40",
+                }}
+              >
+                {SAI_BAND_LABELS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"]}
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Raw metrics table with national percentile column */}
+      <SectionCard title="Performance vs. Local Cohort & SAI National Standard">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b">
-                <th className="text-left py-2 pr-4 text-xs font-semibold text-muted-foreground">Metric</th>
+                <th className="text-left py-2 pr-3 text-xs font-semibold text-muted-foreground">Metric</th>
                 <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">Value</th>
-                <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">Percentile</th>
+                <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">Local Pct.</th>
+                <th className="text-right py-2 px-2 text-xs font-semibold text-primary">Nat. Pct.</th>
                 <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground">Band</th>
-                <th className="text-left py-2 pl-4 text-xs font-semibold text-muted-foreground">Distribution</th>
+                <th className="text-left py-2 pl-3 text-xs font-semibold text-muted-foreground">Distribution</th>
               </tr>
             </thead>
             <tbody>
               {cohortData.map((m) => (
                 <tr key={m.name} className="border-b last:border-0">
-                  <td className="py-2 pr-4 text-xs font-medium">{m.name}</td>
-                  <td className="py-2 px-2 text-right font-bold tabular-nums">
+                  <td className="py-2 pr-3 text-xs font-medium">{m.name}</td>
+                  <td className="py-2 px-2 text-right font-bold tabular-nums text-xs">
                     {m.displayValue}
                   </td>
                   <td className="py-2 px-2 text-right text-xs tabular-nums">
                     {m.hasValue ? `${m.pct}th` : "—"}
+                  </td>
+                  <td className="py-2 px-2 text-right text-xs tabular-nums">
+                    {m.natPct != null ? (
+                      <span className="font-semibold" style={{ color: SAI_BAND_COLORS[m.natBand ?? "average"] }}>
+                        {m.natPct}th
+                      </span>
+                    ) : <span className="text-muted-foreground">—</span>}
                   </td>
                   <td className="py-2 px-2 text-center">
                     {m.band ? (
                       <BenchmarkBadge band={m.band} label={bandLabel[m.band] ?? m.band} />
                     ) : <span className="text-muted-foreground text-xs">—</span>}
                   </td>
-                  <td className="py-2 pl-4 w-48">
+                  <td className="py-2 pl-3 w-40">
                     {m.hasValue ? <PercentileBar percentile={m.pct} showValue={false} /> : null}
                   </td>
                 </tr>
@@ -331,7 +379,105 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
             </tbody>
           </table>
         </div>
+        <p className="text-[10px] text-muted-foreground mt-2">
+          Nat. Pct. = compared against SAI/NSTC all-India reference norms for {athlete.gender === "M" ? "boys" : "girls"} aged {athlete.age}.
+        </p>
       </SectionCard>
+
+      {/* Derived Indices */}
+      {di && (
+        <SectionCard title="Derived Performance Indices (Scientific)">
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              {
+                label: "Relative Power Index",
+                abbr: "RPI",
+                value: di.relativePowerIndex != null ? di.relativePowerIndex.toFixed(2) : "—",
+                unit: "",
+                desc: "VJ × mass / 1000",
+                status: di.relativePowerIndex != null
+                  ? di.relativePowerIndex >= (athlete.gender === "M" ? 1.8 : 1.3) ? "high" : di.relativePowerIndex >= 1.0 ? "mid" : "low"
+                  : "none",
+              },
+              {
+                label: "Speed-Endurance Ratio",
+                abbr: "SER",
+                value: di.speedEnduranceRatio != null ? di.speedEnduranceRatio.toFixed(2) : "—",
+                unit: "",
+                desc: "Sprint pct / 800m pct",
+                status: di.speedEnduranceRatio != null
+                  ? di.speedEnduranceRatio >= 1.2 ? "speed" : di.speedEnduranceRatio <= 0.8 ? "endurance" : "balanced"
+                  : "none",
+              },
+              {
+                label: "Explosive-Structural",
+                abbr: "ESR",
+                value: di.explosiveStructuralRatio != null ? `${di.explosiveStructuralRatio.toFixed(1)}%` : "—",
+                unit: "",
+                desc: "VJ / Height × 100",
+                status: di.explosiveStructuralRatio != null
+                  ? di.explosiveStructuralRatio >= (athlete.gender === "M" ? 30 : 26) ? "high" : "low"
+                  : "none",
+              },
+              {
+                label: "VO₂max Estimate",
+                abbr: "ACE",
+                value: di.aerobicCapacityEst != null ? `${di.aerobicCapacityEst.toFixed(1)}` : "—",
+                unit: "ml/kg/min",
+                desc: "483/800m_min + 3.5",
+                status: di.aerobicCapacityEst != null
+                  ? di.aerobicCapacityEst >= 50 ? "high" : di.aerobicCapacityEst >= 40 ? "mid" : "low"
+                  : "none",
+              },
+              {
+                label: "Lean Power Score",
+                abbr: "LPS",
+                value: di.leanPowerScore != null ? di.leanPowerScore.toFixed(2) : "—",
+                unit: "cm/kg",
+                desc: "Broad Jump / mass",
+                status: di.leanPowerScore != null
+                  ? di.leanPowerScore >= (athlete.gender === "M" ? 2.8 : 2.4) ? "high" : "mid"
+                  : "none",
+              },
+              {
+                label: "Talent Trajectory",
+                abbr: "TTI",
+                value: di.talentTrajectoryIndex != null ? `${di.talentTrajectoryIndex > 0 ? "+" : ""}${di.talentTrajectoryIndex.toFixed(2)}` : "N/A",
+                unit: "/month",
+                desc: "CAPI change / month",
+                status: di.talentTrajectoryIndex != null
+                  ? di.talentTrajectoryIndex >= 0.5 ? "high" : di.talentTrajectoryIndex >= 0 ? "mid" : "low"
+                  : "none",
+              },
+            ].map((idx) => {
+              const statusColors: Record<string, string> = {
+                high: "text-green-700 bg-green-50 border-green-200",
+                speed: "text-blue-700 bg-blue-50 border-blue-200",
+                endurance: "text-cyan-700 bg-cyan-50 border-cyan-200",
+                balanced: "text-foreground bg-muted/40 border-border",
+                mid: "text-amber-700 bg-amber-50 border-amber-200",
+                low: "text-red-700 bg-red-50 border-red-200",
+                none: "text-muted-foreground bg-muted/20 border-border",
+              };
+              return (
+                <div key={idx.abbr} className={cn("rounded-lg border p-3", statusColors[idx.status])}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-mono font-bold">{idx.abbr}</span>
+                    <Zap size={10} className="opacity-50" />
+                  </div>
+                  <div className="text-lg font-bold tabular-nums">{idx.value}</div>
+                  {idx.unit && <div className="text-[10px] opacity-70">{idx.unit}</div>}
+                  <div className="text-[10px] mt-1 opacity-60">{idx.label}</div>
+                  <div className="text-[10px] font-mono opacity-50 mt-0.5">{idx.desc}</div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2">
+            See Methodology → Derived Indices for formulas and scientific references.
+          </p>
+        </SectionCard>
+      )}
 
       {/* Peer comparison chart */}
       <SectionCard title={`Peer Cohort Comparison (${athlete.gender === "M" ? "Male" : "Female"}, Age ±2)`}>
@@ -349,18 +495,18 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
           </ResponsiveContainer>
         </div>
         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: "hsl(var(--muted-foreground))", opacity: 0.4 }} /><span>Cohort Avg</span></div>
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: "hsl(var(--chart-1))", opacity: 0.4 }} /><span>Top 10%</span></div>
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ background: "hsl(var(--accent))" }} /><span>This Athlete</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-muted-foreground/40" /><span>Cohort Avg</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-chart-1/40" /><span>Top 10%</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-accent" /><span>This Athlete</span></div>
         </div>
       </SectionCard>
 
       {/* Composite formula */}
-      <SectionCard title="Composite Score Formula">
+      <SectionCard title="Composite Score Formula (CAPI)">
         <div className="bg-muted/40 rounded p-3 font-mono text-xs text-muted-foreground">
-          Score = V.Jump(25%) + Broad Jump(20%) + 30m Sprint(25%) + 800m Run(25%) + Shuttle(5%)
+          CAPI = V.Jump(25%) + Broad Jump(20%) + 30m Sprint(25%) + 800m Run(25%) + Shuttle(5%)
         </div>
-        <div className="mt-2 text-xs text-muted-foreground">All metrics normalized to percentile within gender+age cohort before weighting.</div>
+        <div className="mt-2 text-xs text-muted-foreground">All metrics normalized to percentile within gender cohort before weighting. Sprint/run: lower time = higher percentile.</div>
       </SectionCard>
     </div>
   );

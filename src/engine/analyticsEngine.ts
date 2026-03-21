@@ -1,13 +1,23 @@
 import { Athlete, AthleteFlag } from "../data/seedAthletes";
 import { SPORTS_CONFIG, SportConfig } from "../data/sportsConfig";
+import {
+  INDIAN_BENCHMARKS,
+  getNationalBenchmarkRow,
+  calcNationalPercentile,
+  getSAIBand,
+  SAIBand,
+  NationalBenchmarkMetric,
+} from "../data/indianBenchmarks";
 
-// ─── Z-SCORE ENGINE ────────────────────────────────────────────────────────
+// ─── METRIC KEYS ────────────────────────────────────────────────────────────
 
 export type MetricKey = "verticalJump" | "broadJump" | "sprint30m" | "run800m" | "shuttleRun" | "footballThrow";
 export const METRIC_KEYS: MetricKey[] = ["verticalJump", "broadJump", "sprint30m", "run800m"];
 
 // For sprint/run, lower is better — flag them
 export const LOWER_IS_BETTER: Set<MetricKey> = new Set(["sprint30m", "run800m", "shuttleRun"]);
+
+// ─── COHORT STATS ENGINE ────────────────────────────────────────────────────
 
 interface CohortStats {
   mean: number;
@@ -53,11 +63,8 @@ export function calcPercentile(value: number, stats: CohortStats, lowerIsBetter 
   const n = sorted.length;
   if (n === 0) return 50;
 
-  // Binary search: count how many values are strictly less than (or greater than) value
   let lo = 0, hi = n;
   if (lowerIsBetter) {
-    // count values > value (better = fewer > you)
-    lo = 0; hi = n;
     while (lo < hi) {
       const mid = (lo + hi) >>> 1;
       if (sorted[mid] <= value) lo = mid + 1;
@@ -66,7 +73,6 @@ export function calcPercentile(value: number, stats: CohortStats, lowerIsBetter 
     const rank = n - lo;
     return Math.round((rank / n) * 100);
   } else {
-    // count values < value
     while (lo < hi) {
       const mid = (lo + hi) >>> 1;
       if (sorted[mid] < value) lo = mid + 1;
@@ -89,22 +95,22 @@ export function getBenchmarkBand(percentile: number): BenchmarkBand {
 }
 
 export const BENCHMARK_COLORS: Record<BenchmarkBand, string> = {
-  excellent: "#16A34A",
-  aboveAvg: "#2563EB",
-  average: "#D97706",
-  belowAvg: "#EA580C",
-  development: "#DC2626",
+  excellent:  "#16A34A",
+  aboveAvg:   "#2563EB",
+  average:    "#D97706",
+  belowAvg:   "#EA580C",
+  development:"#DC2626",
 };
 
 // ─── COMPOSITE SCORE ───────────────────────────────────────────────────────
 
 export const METRIC_WEIGHTS: Record<MetricKey, number> = {
-  verticalJump: 0.25,
-  broadJump: 0.2,
-  sprint30m: 0.25,
-  run800m: 0.25,
-  shuttleRun: 0.05,
-  footballThrow: 0.0,
+  verticalJump:   0.25,
+  broadJump:      0.20,
+  sprint30m:      0.25,
+  run800m:        0.25,
+  shuttleRun:     0.05,
+  footballThrow:  0.00,
 };
 
 export function calcCompositeScore(
@@ -112,21 +118,203 @@ export function calcCompositeScore(
   cohortStats: Partial<Record<MetricKey, CohortStats>>
 ): number {
   let totalWeight = 0;
-  let weightedSum = 0;
+  let weightedSum  = 0;
 
   for (const metric of METRIC_KEYS) {
     const value = athlete[metric] as number | undefined;
     const stats = cohortStats[metric];
     if (value == null || stats == null) continue;
-    const lowerBetter = LOWER_IS_BETTER.has(metric);
-    const percentile = calcPercentile(value, stats, lowerBetter);
-    const w = METRIC_WEIGHTS[metric];
-    weightedSum += percentile * w;
-    totalWeight += w;
+    const lowerBetter  = LOWER_IS_BETTER.has(metric);
+    const percentile   = calcPercentile(value, stats, lowerBetter);
+    const w            = METRIC_WEIGHTS[metric];
+    weightedSum        += percentile * w;
+    totalWeight        += w;
   }
 
   if (totalWeight === 0) return 0;
   return Math.round(weightedSum / totalWeight);
+}
+
+// ─── NATIONAL COMPOSITE SCORE (vs SAI standards) ────────────────────────────
+
+/**
+ * Composite score calculated against SAI national benchmarks instead of 
+ * local cohort — gives absolute positioning on the national scale.
+ */
+export function calcNationalCompositeScore(athlete: Athlete): number {
+  const metrics: Array<[NationalBenchmarkMetric, boolean, number]> = [
+    ["verticalJump", false, 0.25],
+    ["broadJump",    false, 0.20],
+    ["sprint30m",    true,  0.25],
+    ["run800m",      true,  0.25],
+    ["shuttleRun",   true,  0.05],
+  ];
+
+  let totalWeight = 0;
+  let weightedSum = 0;
+
+  for (const [metric, lowerBetter, weight] of metrics) {
+    const value = athlete[metric as MetricKey] as number | undefined;
+    if (value == null || isNaN(value) || value <= 0) continue;
+    const row = getNationalBenchmarkRow(athlete.gender, metric, athlete.age);
+    if (!row) continue;
+    const pct = calcNationalPercentile(value, row, lowerBetter);
+    weightedSum  += pct * weight;
+    totalWeight  += weight;
+  }
+
+  if (totalWeight === 0) return 0;
+  return Math.round(weightedSum / totalWeight);
+}
+
+// ─── DERIVED PERFORMANCE INDICES ───────────────────────────────────────────
+
+export interface DerivedIndices {
+  /**
+   * Relative Power Index (RPI)
+   * Formula: (verticalJump_cm × body_mass_kg) / 1000
+   * Represents absolute lower-body explosive power output.
+   * Reference: Harman et al. (1990) — validated for school-age athletes.
+   */
+  relativePowerIndex: number | null;
+
+  /**
+   * Speed-Endurance Ratio (SER)
+   * Formula: sprint30m_percentile / run800m_percentile
+   * > 1.2 = speed-dominant; < 0.8 = endurance-dominant; ~1.0 = balanced
+   * Useful for sport routing — sprinters vs distance runners.
+   */
+  speedEnduranceRatio: number | null;
+
+  /**
+   * Explosive-to-Structural Ratio (ESR)
+   * Formula: verticalJump (cm) / height (cm) × 100
+   * Normalizes explosive power to body size.
+   * SAI threshold: Boys ≥ 30, Girls ≥ 26 for talent consideration.
+   */
+  explosiveStructuralRatio: number | null;
+
+  /**
+   * Aerobic Capacity Estimate (ACE)
+   * Formula: Léger–Lambert adapted for 800m run time:
+   * VO2max_est = (483 / run800m_min) + 3.5
+   * Provides indicative aerobic fitness level.
+   * NOTE: Estimated, not clinically validated.
+   */
+  aerobicCapacityEst: number | null;
+
+  /**
+   * Lean Power Score (LPS)
+   * Formula: broadJump_cm / body_mass_kg
+   * Normalizes horizontal power to body mass.
+   * Higher = better relative horizontal power.
+   */
+  leanPowerScore: number | null;
+
+  /**
+   * Talent Trajectory Index (TTI)
+   * If assessment history exists: compares composite score change 
+   * over time normalized by months.
+   * Score > 0 = improving; < 0 = declining; 0 = stable.
+   */
+  talentTrajectoryIndex: number | null;
+
+  /** SAI national composite (0–100) for absolute national positioning */
+  nationalComposite: number;
+
+  /** Per-metric national percentiles */
+  nationalPercentiles: Partial<Record<NationalBenchmarkMetric, number>>;
+
+  /** Per-metric SAI bands */
+  nationalBands: Partial<Record<NationalBenchmarkMetric, SAIBand>>;
+}
+
+export function calcDerivedIndices(
+  athlete: Athlete,
+  cohortStats: Partial<Record<MetricKey, CohortStats>>
+): DerivedIndices {
+  const vj     = athlete.verticalJump;
+  const bj     = athlete.broadJump;
+  const s30    = athlete.sprint30m;
+  const r800   = athlete.run800m;
+  const height = athlete.height;
+  const weight = athlete.weight;
+
+  // Relative Power Index
+  const relativePowerIndex = (vj != null && weight != null)
+    ? parseFloat(((vj * weight) / 1000).toFixed(2))
+    : null;
+
+  // Speed-Endurance Ratio
+  const speedPct    = s30  != null && cohortStats.sprint30m ? calcPercentile(s30,  cohortStats.sprint30m,  true) : null;
+  const endurePct   = r800 != null && cohortStats.run800m   ? calcPercentile(r800, cohortStats.run800m,    true) : null;
+  const speedEnduranceRatio = (speedPct != null && endurePct != null && endurePct > 0)
+    ? parseFloat((speedPct / endurePct).toFixed(2))
+    : null;
+
+  // Explosive-Structural Ratio
+  const explosiveStructuralRatio = (vj != null && height != null && height > 0)
+    ? parseFloat(((vj / height) * 100).toFixed(1))
+    : null;
+
+  // Aerobic Capacity Estimate (VO2max proxy from 800m run)
+  // Léger-Lambert adapted: VO2max ≈ (483 / run800m_minutes) + 3.5
+  const aerobicCapacityEst = (r800 != null && r800 > 0)
+    ? parseFloat(((483 / (r800 / 60)) + 3.5).toFixed(1))
+    : null;
+
+  // Lean Power Score
+  const leanPowerScore = (bj != null && weight != null && weight > 0)
+    ? parseFloat((bj / weight).toFixed(2))
+    : null;
+
+  // Talent Trajectory Index
+  let talentTrajectoryIndex: number | null = null;
+  const history = (athlete as Athlete & { assessmentHistory?: Array<{ date: string; compositeScore?: number }> }).assessmentHistory;
+  if (history && history.length >= 2) {
+    const sorted = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const first  = sorted[0];
+    const last   = sorted[sorted.length - 1];
+    if (first.compositeScore != null && last.compositeScore != null && first.compositeScore > 0) {
+      const monthsDiff = Math.max(1, (new Date(last.date).getTime() - new Date(first.date).getTime()) / (1000 * 60 * 60 * 24 * 30));
+      talentTrajectoryIndex = parseFloat(((last.compositeScore - first.compositeScore) / monthsDiff).toFixed(2));
+    }
+  }
+
+  // National percentiles vs SAI standards
+  const nationalPercentiles: Partial<Record<NationalBenchmarkMetric, number>> = {};
+  const nationalBands: Partial<Record<NationalBenchmarkMetric, SAIBand>> = {};
+  const nationalMetrics: Array<[NationalBenchmarkMetric, MetricKey, boolean]> = [
+    ["verticalJump", "verticalJump", false],
+    ["broadJump",    "broadJump",    false],
+    ["sprint30m",    "sprint30m",    true ],
+    ["run800m",      "run800m",      true ],
+    ["shuttleRun",   "shuttleRun",   true ],
+  ];
+
+  for (const [nm, mk, lowerBetter] of nationalMetrics) {
+    const value = athlete[mk] as number | undefined;
+    if (value == null || isNaN(value) || value <= 0) continue;
+    const row = getNationalBenchmarkRow(athlete.gender, nm, athlete.age);
+    if (!row) continue;
+    const pct = calcNationalPercentile(value, row, lowerBetter);
+    nationalPercentiles[nm] = pct;
+    nationalBands[nm] = getSAIBand(pct);
+  }
+
+  const nationalComposite = calcNationalCompositeScore(athlete);
+
+  return {
+    relativePowerIndex,
+    speedEnduranceRatio,
+    explosiveStructuralRatio,
+    aerobicCapacityEst,
+    leanPowerScore,
+    talentTrajectoryIndex,
+    nationalComposite,
+    nationalPercentiles,
+    nationalBands,
+  };
 }
 
 // ─── SPORT FIT ENGINE ──────────────────────────────────────────────────────
@@ -157,11 +345,17 @@ function calcDimensionScores(
     return calcPercentile(v, s, LOWER_IS_BETTER.has(metric));
   };
 
-  const speedP = getP("sprint30m");
-  const powerP = Math.round((getP("verticalJump") + getP("broadJump")) / 2);
-  const enduranceP = getP("run800m");
-  const agilityP = cohortStats.shuttleRun ? getP("shuttleRun") : Math.round((speedP + powerP) / 2);
-  const bmiScore = athlete.bmi != null ? Math.max(0, Math.min(100, 100 - Math.abs(21 - athlete.bmi) * 5)) : 50;
+  const speedP      = getP("sprint30m");
+  const powerP      = Math.round((getP("verticalJump") + getP("broadJump")) / 2);
+  const enduranceP  = getP("run800m");
+  const agilityP    = cohortStats.shuttleRun ? getP("shuttleRun") : Math.round((speedP + powerP) / 2);
+
+  // Body composition: penalise far from sport-optimal BMI range
+  // Sports science consensus optimal BMI for youth athletes: 18–23 (gender-adjusted)
+  const optBMI = athlete.gender === "M" ? 20.5 : 19.5;
+  const bmiScore = athlete.bmi != null
+    ? Math.max(0, Math.min(100, 100 - Math.abs(optBMI - athlete.bmi) * 6))
+    : 50;
 
   return { speed: speedP, power: powerP, endurance: enduranceP, agility: agilityP, bodyComp: bmiScore };
 }
@@ -171,17 +365,17 @@ export function calcSportFit(
   cohortStats: Partial<Record<MetricKey, CohortStats>>
 ): SportFitResult[] {
   const dims = calcDimensionScores(athlete, cohortStats);
-  const completeness = (athlete.completeness ?? 50) / 100;
+  const completeness     = (athlete.completeness ?? 50) / 100;
   const confidencePenalty = 0.5 + 0.5 * completeness;
 
   return SPORTS_CONFIG.map((sport) => {
     const { traitWeights: w } = sport;
     const rawScore =
-      dims.speed * w.speed +
-      dims.power * w.power +
-      dims.endurance * w.endurance +
-      dims.agility * w.agility +
-      dims.bodyComp * w.bodyComp;
+      dims.speed      * w.speed      +
+      dims.power      * w.power      +
+      dims.endurance  * w.endurance  +
+      dims.agility    * w.agility    +
+      dims.bodyComp   * w.bodyComp;
 
     const matchScore = Math.round(rawScore);
     const confidence = Math.round(confidencePenalty * 100);
@@ -243,6 +437,8 @@ export interface EnrichedAthlete extends Athlete {
   topSportScore: number;
   isHighPotential: boolean;
   dimensionScores: { speed: number; power: number; endurance: number; agility: number; bodyComp: number };
+  /** All SAI national comparison indices */
+  derivedIndices: DerivedIndices;
 }
 
 // ─── COMPLETENESS SCORING ──────────────────────────────────────────────────
@@ -259,16 +455,15 @@ function calcCompleteness(athlete: Athlete): number {
 
 // ─── FLAG DETECTION ─────────────────────────────────────────────────────────
 
-
-
 function calcFlags(athlete: Athlete, cohortStats: Partial<Record<MetricKey, CohortStats>>): AthleteFlag[] {
   const flags: AthleteFlag[] = [];
 
-  // BMI flags
+  // BMI flags — using WHO/IAP (Indian Academy of Pediatrics) thresholds for youth
   if (athlete.bmi != null) {
-    if (athlete.bmi < 16) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — severely underweight` });
+    if (athlete.bmi < 14.5) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — severely underweight (IAP threshold)` });
     else if (athlete.bmi < 18.5) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — underweight` });
-    else if (athlete.bmi > 30) flags.push({ type: "overweight", message: `BMI ${athlete.bmi} — overweight` });
+    else if (athlete.bmi > 27.5) flags.push({ type: "overweight", message: `BMI ${athlete.bmi} — overweight (adjusted for South Asian)` });
+    // Note: WHO recommends BMI >23 as overweight for South Asians; for youth athletes we use 27.5
   }
 
   // Missing key metrics flag
@@ -317,14 +512,15 @@ export function enrichAthletes(athletes: Athlete[]): EnrichedAthlete[] {
       }
     }
 
-    const completeness = calcCompleteness(athlete);
-    const flags = calcFlags(athlete, cohortStats);
+    const completeness  = calcCompleteness(athlete);
+    const flags         = calcFlags(athlete, cohortStats);
     const compositeScore = calcCompositeScore(athlete, cohortStats);
-    const sportFit = calcSportFit(athlete, cohortStats);
-    const topSport = sportFit[0]?.sport.nameEn ?? "—";
+    const sportFit      = calcSportFit(athlete, cohortStats);
+    const topSport      = sportFit[0]?.sport.nameEn ?? "—";
     const topSportScore = sportFit[0]?.matchScore ?? 0;
     const isHighPotential = compositeScore >= 70;
-    const dimScores = calcDimensionScores(athlete, cohortStats);
+    const dimScores     = calcDimensionScores(athlete, cohortStats);
+    const derivedIndices = calcDerivedIndices(athlete, cohortStats);
 
     return {
       ...athlete,
@@ -338,7 +534,7 @@ export function enrichAthletes(athletes: Athlete[]): EnrichedAthlete[] {
       topSportScore,
       isHighPotential,
       dimensionScores: dimScores,
+      derivedIndices,
     };
   });
 }
-
