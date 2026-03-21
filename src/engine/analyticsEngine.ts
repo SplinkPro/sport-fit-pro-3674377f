@@ -146,6 +146,8 @@ export function calcCompositeScore(
   }
 
   if (totalWeight === 0) return 0;
+  // Normalise by actual weights present (handles missing metrics gracefully)
+  // Result is a 0–100 weighted average of percentile scores
   return Math.round(weightedSum / totalWeight);
 }
 
