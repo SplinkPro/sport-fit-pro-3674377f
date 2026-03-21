@@ -116,7 +116,8 @@ const COLUMN_MAP: Record<string, InternalField> = {
 };
 
 function normaliseHeader(h: string): string {
-  return h.trim().toLowerCase().replace(/\s+/g, " ").replace(/[_-]/g, " ");
+  // Strip ALL non-alphanumeric chars so "Thirty mflingstarts" == "thirtymflingstarts"
+  return h.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 // ─── Time conversion helpers ────────────────────────────────────────────────
