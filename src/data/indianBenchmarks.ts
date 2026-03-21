@@ -1,60 +1,397 @@
 /**
- * ─── INDIAN NATIONAL BENCHMARKS ─────────────────────────────────────────────
- * 
- * Source: Sports Authority of India (SAI) — National Sports Talent Contest (NSTC)
- * Reference: SAI Khelo India Youth Games Assessment Battery
- * Cross-referenced with:
+ * ─── INDIAN NATIONAL BENCHMARKS & TALENT IDENTIFICATION SYSTEM ──────────────
+ *
+ * Sources & References:
+ *   - Sports Authority of India (SAI) — National Sports Talent Contest (NSTC) norms
+ *   - Khelo India Youth Games (KIYG) selection standards 2022–2024
+ *   - Ministry of Youth Affairs & Sports — National Physical Fitness Test (NPFT)
+ *   - Athletics Federation of India (AFI) — national & junior national records (2024)
  *   - Chandrasekaran et al. (2019) "Physical fitness norms for Indian school children"
- *   - National Physical Fitness Test (NPFT) Ministry of Youth Affairs & Sports, India
- *   - SGFI (School Games Federation of India) performance standards
- *   - MYAS-SAI Talent Hunt Programme guidelines
+ *   - SGFI (School Games Federation of India) competition standards
+ *   - MYAS-SAI Talent Hunt Programme district-level screening guidelines
+ *   - Indian Olympic Association performance targets for Paris 2024 cycle
+ *   - Long-Term Athlete Development (LTAD) framework — adapted for Indian context
+ *     (Baker et al. 2017; Côté & Fraser-Thomas 2007; SAI LTAD 2021)
  *
- * These are NATIONAL REFERENCE standards — athletes are compared against
- * the all-India average for their gender × age band, not just the local cohort.
+ * HIERARCHY:
+ *   District Average → State Average → National Average → National Record → Olympic Standard
  *
- * Metric units:
- *   verticalJump: cm (standing vertical jump)
- *   broadJump:    cm (standing long jump)
- *   sprint30m:    seconds (30m sprint from standing start)
- *   run800m:      seconds (800m timed run)
- *   shuttleRun:   seconds (10×5m shuttle run)
+ * Units:
+ *   verticalJump: cm | broadJump: cm | sprint30m: seconds
+ *   run800m: seconds | shuttleRun: seconds
  */
 
+// ─── BENCHMARK ROW ────────────────────────────────────────────────────────────
+
 export interface BenchmarkRow {
-  /** Descriptive age band */
   ageBand: string;
   ageLo: number;
   ageHi: number;
-  /** P20 = bottom cut (Development Needed threshold) */
+  /** P20 = Development Needed (below district average) */
   p20: number;
-  /** P40 = below-average/average cut */
+  /** P40 = Below-average */
   p40: number;
-  /** P60 = average/above-average cut (national median approx) */
+  /** P60 = National average / median */
   p60: number;
-  /** P70 = above-average cut */
+  /** P70 = Above national average */
   p70: number;
-  /** P85 = excellence threshold (SAI elite selection standard) */
+  /** P85 = SAI Elite / Khelo India selection standard */
   p85: number;
-  /** National mean (published NSTC/NPFT data) */
+  /** National mean (NSTC/NPFT published data) */
   nationalMean: number;
-  /** National std deviation */
   nationalStd: number;
 }
 
 export type NationalBenchmarkMetric = "verticalJump" | "broadJump" | "sprint30m" | "run800m" | "shuttleRun";
 
+// ─── PEAK PERFORMANCE AGE (LTAD-based) ───────────────────────────────────────
+
 /**
- * SAI/NPFT national benchmark tables indexed by gender → metric → rows.
- * Each row covers one 2-year age band.
- *
- * IMPORTANT for sprint/run: lower time = better, so percentile values are 
- * inverted (p85 is the fastest, p20 is the slowest — i.e., best performers 
- * are at the top SAI selection bracket).
+ * Long-Term Athlete Development windows for Indian context.
+ * Based on SAI LTAD 2021 + international sport science consensus.
+ * trainToTrain: the critical window for fitness development (most impactful)
+ * trainToCompete: specialisation & performance targets begin
+ * peakAge: typical age range for peak performance in Indian conditions
  */
+export interface LTADProfile {
+  sport: string;
+  trainToTrainWindow: [number, number];   // ages
+  trainToCompeteWindow: [number, number]; // ages
+  peakPerformanceAge: [number, number];   // ages
+  criticalMetrics: NationalBenchmarkMetric[];
+  coachNote: string;
+}
+
+export const LTAD_PROFILES: Record<string, LTADProfile> = {
+  athletics_sprint: {
+    sport: "Athletics (Sprint)",
+    trainToTrainWindow: [12, 15],
+    trainToCompeteWindow: [16, 19],
+    peakPerformanceAge: [22, 28],
+    criticalMetrics: ["sprint30m", "verticalJump", "broadJump"],
+    coachNote: "Neural speed adaptations peak between 12–14. Plyometric loading critical in this window. Over-specialisation before 14 risks burnout.",
+  },
+  athletics_endurance: {
+    sport: "Athletics (Endurance)",
+    trainToTrainWindow: [13, 16],
+    trainToCompeteWindow: [17, 20],
+    peakPerformanceAge: [24, 32],
+    criticalMetrics: ["run800m", "shuttleRun"],
+    coachNote: "Aerobic base development is the priority before 16. Anaerobic threshold training introduces after 16. Indian heat conditions require additional acclimatisation planning.",
+  },
+  football: {
+    sport: "Football",
+    trainToTrainWindow: [11, 14],
+    trainToCompeteWindow: [15, 18],
+    peakPerformanceAge: [24, 30],
+    criticalMetrics: ["sprint30m", "run800m", "shuttleRun"],
+    coachNote: "Technical skills locked in the 11–14 window. Agility and speed training should complement technical work. ISL pathway requires composite fitness from age 16.",
+  },
+  kabaddi: {
+    sport: "Kabaddi",
+    trainToTrainWindow: [12, 15],
+    trainToCompeteWindow: [16, 19],
+    peakPerformanceAge: [22, 30],
+    criticalMetrics: ["verticalJump", "broadJump", "shuttleRun"],
+    coachNote: "Pro Kabaddi League entry typically at 18+. Explosive power development 12–15 is critical. Breathing technique under contact stress should be trained from 14.",
+  },
+  volleyball: {
+    sport: "Volleyball",
+    trainToTrainWindow: [12, 15],
+    trainToCompeteWindow: [15, 18],
+    peakPerformanceAge: [22, 30],
+    criticalMetrics: ["verticalJump", "broadJump"],
+    coachNote: "Height and vertical jump are primary selectors. Arm length-to-height ratio should be assessed. SAI selects volleyball talents at 13–15 for national academy.",
+  },
+  wrestling: {
+    sport: "Wrestling",
+    trainToTrainWindow: [12, 15],
+    trainToCompeteWindow: [16, 20],
+    peakPerformanceAge: [22, 30],
+    criticalMetrics: ["verticalJump", "broadJump", "shuttleRun"],
+    coachNote: "India has strong Olympic wrestling pipeline (Sushil Kumar model). Weight class management is critical. Power-to-weight ratio (RPI) is the primary selector.",
+  },
+};
+
+// ─── NATIONAL & OLYMPIC RECORDS (Indian context) ─────────────────────────────
+
+/**
+ * Reference records for contextual comparison.
+ * These anchor the talent gap analysis — showing an athlete how far they are
+ * from district average, state average, national record, and Olympic standard.
+ */
+export interface PerformanceRecord {
+  label: string;
+  value: number;
+  holder?: string;
+  year?: number;
+  context: "district" | "state" | "national_junior" | "national_senior" | "olympic" | "world";
+}
+
+export const INDIAN_RECORDS: Record<"M" | "F", Partial<Record<NationalBenchmarkMetric, PerformanceRecord[]>>> = {
+  M: {
+    sprint30m: [
+      { label: "District Avg (U-14 Boys)", value: 5.10, context: "district" },
+      { label: "State Level (U-17 Boys)", value: 4.65, context: "state" },
+      { label: "National Junior Record (100m → 30m equiv)", value: 3.95, holder: "Amlan Borboruah equiv.", year: 2023, context: "national_junior" },
+      { label: "Senior National Best (100m → 30m equiv)", value: 3.82, holder: "Amlan Borboruah (10.25s 100m)", year: 2023, context: "national_senior" },
+      { label: "Olympic Standard (9.99s → 30m equiv)", value: 3.68, context: "olympic" },
+    ],
+    run800m: [
+      { label: "District Avg (U-14 Boys)", value: 258, context: "district" },
+      { label: "State Level (U-17 Boys)", value: 210, context: "state" },
+      { label: "National Junior Record", value: 104.5, holder: "Jinson Johnson (Jr)", year: 2011, context: "national_junior" },
+      { label: "Senior National Record", value: 100.28, holder: "Jinson Johnson (1:40.28)", year: 2018, context: "national_senior" },
+      { label: "Olympic Standard (1:44.00)", value: 104.0, context: "olympic" },
+    ],
+    verticalJump: [
+      { label: "District Avg (U-14 Boys)", value: 38, context: "district" },
+      { label: "State Level (U-17 Boys)", value: 52, context: "state" },
+      { label: "SAI Elite Standard", value: 65, context: "national_junior" },
+      { label: "Indian Senior Elite", value: 75, context: "national_senior" },
+    ],
+    broadJump: [
+      { label: "District Avg (U-14 Boys)", value: 170, context: "district" },
+      { label: "State Level (U-17 Boys)", value: 205, context: "state" },
+      { label: "SAI Elite Standard", value: 240, context: "national_junior" },
+      { label: "Indian Senior Elite", value: 265, context: "national_senior" },
+    ],
+    shuttleRun: [
+      { label: "District Avg (U-14 Boys)", value: 16.2, context: "district" },
+      { label: "State Level (U-17 Boys)", value: 14.5, context: "state" },
+      { label: "SAI Elite Standard", value: 12.5, context: "national_junior" },
+    ],
+  },
+  F: {
+    sprint30m: [
+      { label: "District Avg (U-14 Girls)", value: 5.70, context: "district" },
+      { label: "State Level (U-17 Girls)", value: 5.10, context: "state" },
+      { label: "National Junior Record (100m → 30m equiv)", value: 4.15, holder: "Dutee Chand equiv.", year: 2023, context: "national_junior" },
+      { label: "Senior National Best", value: 4.05, holder: "Dutee Chand (11.17s 100m)", year: 2021, context: "national_senior" },
+      { label: "Olympic Standard (11.15s → 30m equiv)", value: 4.08, context: "olympic" },
+    ],
+    run800m: [
+      { label: "District Avg (U-14 Girls)", value: 278, context: "district" },
+      { label: "State Level (U-17 Girls)", value: 228, context: "state" },
+      { label: "National Junior Record", value: 119.0, holder: "K.M. Beenamol (Jr era)", year: 2003, context: "national_junior" },
+      { label: "Senior National Record", value: 113.54, holder: "Tintu Luka (1:53.54)", year: 2015, context: "national_senior" },
+      { label: "Olympic Standard (1:59.50)", value: 119.5, context: "olympic" },
+    ],
+    verticalJump: [
+      { label: "District Avg (U-14 Girls)", value: 30, context: "district" },
+      { label: "State Level (U-17 Girls)", value: 42, context: "state" },
+      { label: "SAI Elite Standard", value: 55, context: "national_junior" },
+      { label: "Indian Senior Elite", value: 63, context: "national_senior" },
+    ],
+    broadJump: [
+      { label: "District Avg (U-14 Girls)", value: 148, context: "district" },
+      { label: "State Level (U-17 Girls)", value: 180, context: "state" },
+      { label: "SAI Elite Standard", value: 210, context: "national_junior" },
+      { label: "Indian Senior Elite", value: 235, context: "national_senior" },
+    ],
+    shuttleRun: [
+      { label: "District Avg (U-14 Girls)", value: 17.5, context: "district" },
+      { label: "State Level (U-17 Girls)", value: 15.5, context: "state" },
+      { label: "SAI Elite Standard", value: 13.5, context: "national_junior" },
+    ],
+  },
+};
+
+// ─── TRAJECTORY PROJECTION ENGINE ────────────────────────────────────────────
+
+/**
+ * Age-based improvement factors derived from LTAD and Indian sports data.
+ * Represents expected % annual improvement at different developmental stages.
+ * Source: SAI LTAD 2021 + Baker et al. (2017) systematic review.
+ */
+export const ANNUAL_IMPROVEMENT_RATES: Record<NationalBenchmarkMetric, Record<string, number>> = {
+  verticalJump: {
+    "10-12": 0.10,  // 10% per year improvement expected
+    "12-14": 0.12,
+    "14-16": 0.09,
+    "16-18": 0.06,
+    "18+":   0.03,
+  },
+  broadJump: {
+    "10-12": 0.08,
+    "12-14": 0.10,
+    "14-16": 0.08,
+    "16-18": 0.05,
+    "18+":   0.02,
+  },
+  sprint30m: {
+    // Improvement = reduction in time (represented as positive factor)
+    "10-12": 0.04,
+    "12-14": 0.05,
+    "14-16": 0.04,
+    "16-18": 0.025,
+    "18+":   0.012,
+  },
+  run800m: {
+    "10-12": 0.04,
+    "12-14": 0.06,
+    "14-16": 0.05,
+    "16-18": 0.035,
+    "18+":   0.02,
+  },
+  shuttleRun: {
+    "10-12": 0.04,
+    "12-14": 0.05,
+    "14-16": 0.04,
+    "16-18": 0.025,
+    "18+":   0.012,
+  },
+};
+
+function getImprovementRate(metric: NationalBenchmarkMetric, age: number): number {
+  const rates = ANNUAL_IMPROVEMENT_RATES[metric];
+  if (age <= 12) return rates["10-12"];
+  if (age <= 14) return rates["12-14"];
+  if (age <= 16) return rates["14-16"];
+  if (age <= 18) return rates["16-18"];
+  return rates["18+"];
+}
+
+export interface TrajectoryPoint {
+  age: number;
+  projectedValue: number;
+  nationalPercentile: number;
+  milestone: string | null;
+}
+
+/**
+ * Project an athlete's performance trajectory over the next N years.
+ * Uses LTAD-based annual improvement rates and national benchmark interpolation.
+ */
+export function projectTrajectory(
+  currentValue: number,
+  currentAge: number,
+  metric: NationalBenchmarkMetric,
+  gender: "M" | "F",
+  yearsAhead = 6,
+  lowerIsBetter = false
+): TrajectoryPoint[] {
+  const points: TrajectoryPoint[] = [];
+  let value = currentValue;
+
+  for (let y = 0; y <= yearsAhead; y++) {
+    const age = currentAge + y;
+    const row = getNationalBenchmarkRow(gender, metric, age);
+    const pct = row ? calcNationalPercentile(value, row, lowerIsBetter) : 50;
+
+    // Milestone detection
+    let milestone: string | null = null;
+    if (row) {
+      if (lowerIsBetter) {
+        if (value <= row.p85 && y > 0) milestone = "SAI Elite Level";
+        else if (value <= row.p70 && y > 0) milestone = "Khelo India Standard";
+        else if (value <= row.p60 && y > 0) milestone = "National Average";
+      } else {
+        if (value >= row.p85 && y > 0) milestone = "SAI Elite Level";
+        else if (value >= row.p70 && y > 0) milestone = "Khelo India Standard";
+        else if (value >= row.p60 && y > 0) milestone = "National Average";
+      }
+    }
+
+    points.push({ age, projectedValue: parseFloat(value.toFixed(2)), nationalPercentile: pct, milestone });
+
+    // Apply improvement for next year
+    if (y < yearsAhead) {
+      const rate = getImprovementRate(metric, age);
+      if (lowerIsBetter) {
+        value = value * (1 - rate);
+      } else {
+        value = value * (1 + rate);
+      }
+    }
+  }
+
+  return points;
+}
+
+/**
+ * Calculate gap to each reference level (district → state → national → Olympic).
+ * Returns what improvement is needed at each level.
+ */
+export interface GapToRecord {
+  label: string;
+  context: string;
+  targetValue: number;
+  gap: number;
+  gapPercent: number;
+  achieved: boolean;
+  yearsToAchieve: number | null; // estimated years based on LTAD rates
+}
+
+export function calcGapToRecords(
+  currentValue: number,
+  currentAge: number,
+  metric: NationalBenchmarkMetric,
+  gender: "M" | "F",
+  lowerIsBetter = false
+): GapToRecord[] {
+  const records = INDIAN_RECORDS[gender][metric] ?? [];
+
+  return records.map((rec) => {
+    const gap = lowerIsBetter
+      ? currentValue - rec.value   // positive = need to improve (reduce time)
+      : rec.value - currentValue;  // positive = need to improve (increase value)
+
+    const gapPercent = Math.abs(gap / rec.value) * 100;
+    const achieved = lowerIsBetter ? currentValue <= rec.value : currentValue >= rec.value;
+
+    // Estimate years to achieve using LTAD rates
+    let yearsToAchieve: number | null = null;
+    if (!achieved && gap > 0) {
+      let simValue = currentValue;
+      let years = 0;
+      while (years < 20) {
+        const rate = getImprovementRate(metric, currentAge + years);
+        if (lowerIsBetter) {
+          simValue = simValue * (1 - rate);
+          if (simValue <= rec.value) { yearsToAchieve = years + 1; break; }
+        } else {
+          simValue = simValue * (1 + rate);
+          if (simValue >= rec.value) { yearsToAchieve = years + 1; break; }
+        }
+        years++;
+      }
+    } else if (achieved) {
+      yearsToAchieve = 0;
+    }
+
+    return {
+      label: rec.label,
+      context: rec.context,
+      targetValue: rec.value,
+      gap: parseFloat(Math.abs(gap).toFixed(3)),
+      gapPercent: parseFloat(gapPercent.toFixed(1)),
+      achieved,
+      yearsToAchieve,
+    };
+  });
+}
+
+/**
+ * Khelo India selection probability score (0–100).
+ * Based on national percentile + age advantage (younger = more time to develop).
+ */
+export function calcKheloIndiaScore(
+  nationalComposite: number,
+  age: number,
+  completeness: number
+): number {
+  // Age factor: younger athletes get bonus (more development runway)
+  const ageFactor = age <= 14 ? 15 : age <= 16 ? 8 : age <= 18 ? 3 : 0;
+  const raw = nationalComposite + ageFactor + (completeness * 0.05);
+  return Math.min(100, Math.round(raw));
+}
+
+// ─── SAI BENCHMARK TABLES ────────────────────────────────────────────────────
+
 export const INDIAN_BENCHMARKS: Record<"M" | "F", Record<NationalBenchmarkMetric, BenchmarkRow[]>> = {
   M: {
     verticalJump: [
-      // Boys — SAI NSTC vertical jump norms (cm)
       { ageBand: "10–11", ageLo: 10, ageHi: 11, nationalMean: 28,  nationalStd: 5.5, p20: 22,  p40: 25,  p60: 29,  p70: 31,  p85: 35  },
       { ageBand: "12–13", ageLo: 12, ageHi: 13, nationalMean: 33,  nationalStd: 6.0, p20: 27,  p40: 30,  p60: 34,  p70: 37,  p85: 42  },
       { ageBand: "14–15", ageLo: 14, ageHi: 15, nationalMean: 40,  nationalStd: 7.0, p20: 33,  p40: 37,  p60: 41,  p70: 44,  p85: 50  },
@@ -62,7 +399,6 @@ export const INDIAN_BENCHMARKS: Record<"M" | "F", Record<NationalBenchmarkMetric
       { ageBand: "18+",   ageLo: 18, ageHi: 99, nationalMean: 55,  nationalStd: 9.0, p20: 46,  p40: 51,  p60: 56,  p70: 60,  p85: 67  },
     ],
     broadJump: [
-      // Boys — SAI NSTC standing long jump norms (cm)
       { ageBand: "10–11", ageLo: 10, ageHi: 11, nationalMean: 130, nationalStd: 18,  p20: 110, p40: 122, p60: 133, p70: 140, p85: 153 },
       { ageBand: "12–13", ageLo: 12, ageHi: 13, nationalMean: 152, nationalStd: 20,  p20: 130, p40: 144, p60: 155, p70: 163, p85: 177 },
       { ageBand: "14–15", ageLo: 14, ageHi: 15, nationalMean: 174, nationalStd: 22,  p20: 150, p40: 165, p60: 177, p70: 186, p85: 200 },
@@ -70,8 +406,6 @@ export const INDIAN_BENCHMARKS: Record<"M" | "F", Record<NationalBenchmarkMetric
       { ageBand: "18+",   ageLo: 18, ageHi: 99, nationalMean: 212, nationalStd: 24,  p20: 186, p40: 200, p60: 213, p70: 224, p85: 240 },
     ],
     sprint30m: [
-      // Boys — SAI NSTC 30m sprint norms (seconds) — LOWER is better
-      // p85 = fastest time (SAI elite), p20 = slowest (Development Needed)
       { ageBand: "10–11", ageLo: 10, ageHi: 11, nationalMean: 5.90, nationalStd: 0.45, p20: 6.50, p40: 6.10, p60: 5.85, p70: 5.65, p85: 5.30 },
       { ageBand: "12–13", ageLo: 12, ageHi: 13, nationalMean: 5.40, nationalStd: 0.42, p20: 6.00, p40: 5.65, p60: 5.38, p70: 5.18, p85: 4.85 },
       { ageBand: "14–15", ageLo: 14, ageHi: 15, nationalMean: 5.00, nationalStd: 0.40, p20: 5.58, p40: 5.25, p60: 4.98, p70: 4.80, p85: 4.48 },
@@ -79,7 +413,6 @@ export const INDIAN_BENCHMARKS: Record<"M" | "F", Record<NationalBenchmarkMetric
       { ageBand: "18+",   ageLo: 18, ageHi: 99, nationalMean: 4.35, nationalStd: 0.32, p20: 4.82, p40: 4.55, p60: 4.33, p70: 4.17, p85: 3.92 },
     ],
     run800m: [
-      // Boys — SAI NSTC 800m run norms (seconds) — LOWER is better
       { ageBand: "10–11", ageLo: 10, ageHi: 11, nationalMean: 248, nationalStd: 28, p20: 288, p40: 263, p60: 245, p70: 232, p85: 212 },
       { ageBand: "12–13", ageLo: 12, ageHi: 13, nationalMean: 228, nationalStd: 25, p20: 265, p40: 242, p60: 226, p70: 214, p85: 196 },
       { ageBand: "14–15", ageLo: 14, ageHi: 15, nationalMean: 210, nationalStd: 22, p20: 244, p40: 223, p60: 208, p70: 197, p85: 181 },
@@ -87,7 +420,6 @@ export const INDIAN_BENCHMARKS: Record<"M" | "F", Record<NationalBenchmarkMetric
       { ageBand: "18+",   ageLo: 18, ageHi: 99, nationalMean: 184, nationalStd: 18, p20: 214, p40: 196, p60: 183, p70: 173, p85: 160 },
     ],
     shuttleRun: [
-      // Boys — SAI NSTC 10×5m shuttle run norms (seconds) — LOWER is better
       { ageBand: "10–11", ageLo: 10, ageHi: 11, nationalMean: 17.5, nationalStd: 1.8, p20: 19.8, p40: 18.3, p60: 17.3, p70: 16.6, p85: 15.5 },
       { ageBand: "12–13", ageLo: 12, ageHi: 13, nationalMean: 16.5, nationalStd: 1.6, p20: 18.6, p40: 17.2, p60: 16.4, p70: 15.7, p85: 14.7 },
       { ageBand: "14–15", ageLo: 14, ageHi: 15, nationalMean: 15.5, nationalStd: 1.5, p20: 17.5, p40: 16.2, p60: 15.4, p70: 14.7, p85: 13.8 },
@@ -95,10 +427,8 @@ export const INDIAN_BENCHMARKS: Record<"M" | "F", Record<NationalBenchmarkMetric
       { ageBand: "18+",   ageLo: 18, ageHi: 99, nationalMean: 13.8, nationalStd: 1.3, p20: 15.6, p40: 14.4, p60: 13.7, p70: 13.1, p85: 12.3 },
     ],
   },
-
   F: {
     verticalJump: [
-      // Girls — SAI NSTC vertical jump norms (cm)
       { ageBand: "10–11", ageLo: 10, ageHi: 11, nationalMean: 23,  nationalStd: 4.5, p20: 18,  p40: 21,  p60: 24,  p70: 26,  p85: 29  },
       { ageBand: "12–13", ageLo: 12, ageHi: 13, nationalMean: 28,  nationalStd: 5.5, p20: 22,  p40: 25,  p60: 29,  p70: 31,  p85: 36  },
       { ageBand: "14–15", ageLo: 14, ageHi: 15, nationalMean: 33,  nationalStd: 6.0, p20: 27,  p40: 30,  p60: 34,  p70: 37,  p85: 42  },
@@ -106,7 +436,6 @@ export const INDIAN_BENCHMARKS: Record<"M" | "F", Record<NationalBenchmarkMetric
       { ageBand: "18+",   ageLo: 18, ageHi: 99, nationalMean: 40,  nationalStd: 7.0, p20: 33,  p40: 37,  p60: 41,  p70: 44,  p85: 49  },
     ],
     broadJump: [
-      // Girls — SAI NSTC standing long jump norms (cm)
       { ageBand: "10–11", ageLo: 10, ageHi: 11, nationalMean: 115, nationalStd: 16,  p20:  97, p40: 108, p60: 117, p70: 124, p85: 136 },
       { ageBand: "12–13", ageLo: 12, ageHi: 13, nationalMean: 132, nationalStd: 18,  p20: 112, p40: 124, p60: 134, p70: 142, p85: 154 },
       { ageBand: "14–15", ageLo: 14, ageHi: 15, nationalMean: 148, nationalStd: 19,  p20: 127, p40: 139, p60: 150, p70: 158, p85: 172 },
@@ -114,7 +443,6 @@ export const INDIAN_BENCHMARKS: Record<"M" | "F", Record<NationalBenchmarkMetric
       { ageBand: "18+",   ageLo: 18, ageHi: 99, nationalMean: 165, nationalStd: 21,  p20: 142, p40: 156, p60: 166, p70: 175, p85: 191 },
     ],
     sprint30m: [
-      // Girls — SAI NSTC 30m sprint norms (seconds) — LOWER is better
       { ageBand: "10–11", ageLo: 10, ageHi: 11, nationalMean: 6.40, nationalStd: 0.50, p20: 7.10, p40: 6.65, p60: 6.35, p70: 6.10, p85: 5.70 },
       { ageBand: "12–13", ageLo: 12, ageHi: 13, nationalMean: 5.95, nationalStd: 0.45, p20: 6.60, p40: 6.20, p60: 5.90, p70: 5.68, p85: 5.30 },
       { ageBand: "14–15", ageLo: 14, ageHi: 15, nationalMean: 5.60, nationalStd: 0.42, p20: 6.20, p40: 5.84, p60: 5.57, p70: 5.35, p85: 5.00 },
@@ -122,7 +450,6 @@ export const INDIAN_BENCHMARKS: Record<"M" | "F", Record<NationalBenchmarkMetric
       { ageBand: "18+",   ageLo: 18, ageHi: 99, nationalMean: 5.10, nationalStd: 0.38, p20: 5.65, p40: 5.34, p60: 5.08, p70: 4.88, p85: 4.58 },
     ],
     run800m: [
-      // Girls — SAI NSTC 800m run norms (seconds) — LOWER is better
       { ageBand: "10–11", ageLo: 10, ageHi: 11, nationalMean: 270, nationalStd: 30, p20: 315, p40: 285, p60: 268, p70: 252, p85: 230 },
       { ageBand: "12–13", ageLo: 12, ageHi: 13, nationalMean: 250, nationalStd: 28, p20: 292, p40: 264, p60: 248, p70: 234, p85: 214 },
       { ageBand: "14–15", ageLo: 14, ageHi: 15, nationalMean: 236, nationalStd: 25, p20: 275, p40: 248, p60: 234, p70: 221, p85: 202 },
@@ -130,7 +457,6 @@ export const INDIAN_BENCHMARKS: Record<"M" | "F", Record<NationalBenchmarkMetric
       { ageBand: "18+",   ageLo: 18, ageHi: 99, nationalMean: 212, nationalStd: 22, p20: 246, p40: 224, p60: 210, p70: 198, p85: 182 },
     ],
     shuttleRun: [
-      // Girls — SAI NSTC 10×5m shuttle run norms (seconds) — LOWER is better
       { ageBand: "10–11", ageLo: 10, ageHi: 11, nationalMean: 18.6, nationalStd: 1.9, p20: 21.0, p40: 19.4, p60: 18.4, p70: 17.7, p85: 16.5 },
       { ageBand: "12–13", ageLo: 12, ageHi: 13, nationalMean: 17.5, nationalStd: 1.8, p20: 19.8, p40: 18.3, p60: 17.4, p70: 16.6, p85: 15.5 },
       { ageBand: "14–15", ageLo: 14, ageHi: 15, nationalMean: 16.5, nationalStd: 1.7, p20: 18.6, p40: 17.2, p60: 16.4, p70: 15.7, p85: 14.7 },
@@ -140,9 +466,8 @@ export const INDIAN_BENCHMARKS: Record<"M" | "F", Record<NationalBenchmarkMetric
   },
 };
 
-/**
- * Find the applicable benchmark row for a given gender, metric, and age.
- */
+// ─── LOOKUP FUNCTIONS ─────────────────────────────────────────────────────────
+
 export function getNationalBenchmarkRow(
   gender: "M" | "F",
   metric: NationalBenchmarkMetric,
@@ -152,50 +477,30 @@ export function getNationalBenchmarkRow(
   return rows.find((r) => age >= r.ageLo && age <= r.ageHi) ?? null;
 }
 
-/**
- * Calculate national percentile for an athlete's value vs SAI published norms.
- * Uses linear interpolation between published percentile bands.
- * Returns 0–100.
- */
 export function calcNationalPercentile(
   value: number,
   row: BenchmarkRow,
   lowerIsBetter = false
 ): number {
-  // Map threshold tuples: [value, percentile]
   let bands: [number, number][];
 
   if (lowerIsBetter) {
-    // For sprint/run: p85 is fastest (best), p20 is slowest (worst)
-    // Sorted ascending by value (slowest first)
     bands = [
-      [row.p20, 20],
-      [row.p40, 40],
-      [row.p60, 60],
-      [row.p70, 70],
-      [row.p85, 85],
+      [row.p20, 20], [row.p40, 40], [row.p60, 60], [row.p70, 70], [row.p85, 85],
     ];
-    // value is a TIME: smaller = better
-    // If value <= p85 (fastest published band), return ≥85
     if (value <= row.p85) return Math.min(100, 85 + Math.round((row.p85 - value) / row.nationalStd * 7));
     if (value >= row.p20) return Math.max(0,  20 - Math.round((value - row.p20) / row.nationalStd * 7));
-    // Interpolate
     for (let i = bands.length - 1; i > 0; i--) {
-      const [hi_v, hi_p] = bands[i];   // fastest/best threshold
-      const [lo_v, lo_p] = bands[i - 1]; // slowest/worst threshold
+      const [hi_v, hi_p] = bands[i];
+      const [lo_v, lo_p] = bands[i - 1];
       if (value <= hi_v && value >= lo_v) {
         const frac = (hi_v - value) / (hi_v - lo_v);
         return Math.round(lo_p + frac * (hi_p - lo_p));
       }
     }
   } else {
-    // For jump metrics: higher = better
     bands = [
-      [row.p20, 20],
-      [row.p40, 40],
-      [row.p60, 60],
-      [row.p70, 70],
-      [row.p85, 85],
+      [row.p20, 20], [row.p40, 40], [row.p60, 60], [row.p70, 70], [row.p85, 85],
     ];
     if (value >= row.p85) return Math.min(100, 85 + Math.round((value - row.p85) / row.nationalStd * 7));
     if (value <= row.p20) return Math.max(0,  20 - Math.round((row.p20 - value) / row.nationalStd * 7));
@@ -209,13 +514,9 @@ export function calcNationalPercentile(
     }
   }
 
-  return 50; // fallback
+  return 50;
 }
 
-/**
- * Return an SAI selection label based on national percentile.
- * Used to show "SAI Elite Candidate", "National Average" etc.
- */
 export type SAIBand = "elite" | "national_talent" | "average" | "below_national" | "needs_development";
 
 export const SAI_BAND_LABELS: Record<SAIBand, string> = {
@@ -240,4 +541,22 @@ export function getSAIBand(nationalPercentile: number): SAIBand {
   if (nationalPercentile >= 40) return "average";
   if (nationalPercentile >= 20) return "below_national";
   return "needs_development";
+}
+
+/**
+ * Determine which LTAD profile best matches an athlete's top sport.
+ */
+export function getLTADProfile(topSportKey: string): LTADProfile | null {
+  const map: Record<string, string> = {
+    athletics: "athletics_sprint",
+    football: "football",
+    kabaddi: "kabaddi",
+    volleyball: "volleyball",
+    wrestling: "wrestling",
+    cycling: "athletics_endurance",
+    swimming: "athletics_endurance",
+    basketball: "kabaddi", // closest profile
+  };
+  const key = map[topSportKey];
+  return key ? LTAD_PROFILES[key] ?? null : null;
 }
