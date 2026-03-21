@@ -18,28 +18,40 @@ const COLUMN_MAP: Record<string, InternalField> = {
   // ── Skip columns ──
   "sl no": "_skip", "sl.no": "_skip", "slno": "_skip",
   "sr no": "_skip", "sr.no": "_skip", "srno": "_skip", "#": "_skip",
+  "serial no": "_skip", "serial number": "_skip", "s no": "_skip",
 
   // ── ID ──
   "studentid": "_id", "student id": "_id", "student_id": "_id",
   "id": "_id", "athleteid": "_id", "athlete id": "_id",
+  "roll no": "_id", "rollno": "_id", "roll number": "_id",
+  "reg no": "_id", "registration no": "_id", "regno": "_id",
 
   // ── Name ──
   "athlete name": "name", "athletename": "name", "name": "name",
-  "full name": "name", "fullname": "name",
+  "full name": "name", "fullname": "name", "student name": "name",
+  "studentname": "name", "player name": "name", "playername": "name",
+  "participant name": "name", "child name": "name", "childname": "name",
+  "naam": "name",
 
   // ── Gender ──
-  "gender": "gender", "sex": "gender",
+  "gender": "gender", "sex": "gender", "ling": "gender",
+  "gender (m/f)": "gender", "m/f": "gender",
 
   // ── Age ──
-  "age": "age",
+  "age": "age", "age (years)": "age", "age years": "age",
+  "ayu": "age", "aayu": "age",
 
   // ── Height ──
   "height": "height", "height cm": "height", "height_cm": "height",
-  "heightcm": "height", "height (cm)": "height",
+  "heightcm": "height", "height (cm)": "height", "ht": "height",
+  "ht (cm)": "height", "ht cm": "height", "height in cm": "height",
+  "lambai": "height", "lamba": "height",
 
   // ── Weight ──
   "weight": "weight", "weight kg": "weight", "weight_kg": "weight",
-  "weightkg": "weight", "weight (kg)": "weight",
+  "weightkg": "weight", "weight (kg)": "weight", "wt": "weight",
+  "wt (kg)": "weight", "wt kg": "weight", "weight in kg": "weight",
+  "bhar": "weight", "vajan": "weight",
 
   // ── 30m Sprint — Bihar columns ──
   "thirty mflingstarts": "sprint30m",
@@ -47,47 +59,55 @@ const COLUMN_MAP: Record<string, InternalField> = {
   "thirty meter flying starts": "sprint30m",
   "30m sprint": "sprint30m", "sprint 30m": "sprint30m",
   "sprint_30m": "sprint30m", "sprint30m": "sprint30m",
-  "sprint (30m)": "sprint30m", "sprint": "sprint30m",
+  "sprint (30m)": "sprint30m", "sprint (sec)": "sprint30m",
   "30 m sprint": "sprint30m", "30m": "sprint30m",
   "thirty m flying starts": "sprint30m",
+  "30 meter sprint": "sprint30m", "30 m flying start": "sprint30m",
+  "flying start 30m": "sprint30m", "30m flying start": "sprint30m",
+  "sprint": "sprint30m",
 
-  // ── Broad Jump — Bihar columns (note the typo/space in real file) ──
+  // ── Broad Jump — Bihar columns ──
   "standinggbroadjump": "broadJump",
-  "standin gbroadjump": "broadJump",       // exact Bihar file header
+  "standin gbroadjump": "broadJump",
   "standing broad jump": "broadJump", "standingt broad jump": "broadJump",
   "broad jump": "broadJump", "broadjump": "broadJump",
   "broad_jump": "broadJump", "bj": "broadJump",
   "broad jump (cm)": "broadJump", "standinggbroadjump (cm)": "broadJump",
-
+  "standing long jump": "broadJump", "standinglongjump": "broadJump",
+  "long jump": "broadJump", "longjump": "broadJump",
+  "standing jump": "broadJump",
 
   // ── Shuttle Run — Bihar column ──
   "shuttlerun10mx6": "shuttleRun",
   "shuttle run 10mx6": "shuttleRun", "shuttle run": "shuttleRun",
   "shuttlerun": "shuttleRun", "shuttle_run": "shuttleRun",
-  "shuttle run (sec)": "shuttleRun",
+  "shuttle run (sec)": "shuttleRun", "shuttle": "shuttleRun",
+  "10mx6 shuttle": "shuttleRun", "agility run": "shuttleRun",
 
   // ── Vertical Jump — Bihar column ──
   "verticaljump": "verticalJump",
   "vertical jump": "verticalJump", "vertical_jump": "verticalJump",
   "vj": "verticalJump", "v jump": "verticalJump", "v_jump": "verticalJump",
-  "vertical jump (cm)": "verticalJump",
+  "vertical jump (cm)": "verticalJump", "vert jump": "verticalJump",
 
   // ── Football Throw — Bihar column ──
   "footballballthrow5no": "footballThrow",
   "football ball throw 5 no": "footballThrow",
   "football throw": "footballThrow", "footballthrow": "footballThrow",
   "football_throw": "footballThrow", "football throw (m)": "footballThrow",
+  "ball throw": "footballThrow", "throw": "footballThrow",
 
-  // ── 800m Run — Bihar column (H:MM:SS or seconds) ──
+  // ── 800m Run — Bihar column ──
   "eighthundredmetersrun": "run800m",
   "eight hundred meters run": "run800m",
   "800m run": "run800m", "run800m": "run800m", "run_800m": "run800m",
   "800m run (sec)": "run800m", "800m": "run800m", "800 m run": "run800m",
-  "800m run (min)": "run800m",
+  "800m run (min)": "run800m", "800 meter run": "run800m",
+  "800m endurance": "run800m", "endurance run": "run800m",
 
   // ── School / District ──
-  "school": "school", "school name": "school",
-  "district": "district",
+  "school": "school", "school name": "school", "schoolname": "school",
+  "district": "district", "dist": "district", "zila": "district",
 
   // ── DoB / Assessment date ──
   "dob": "dob", "date of birth": "dob", "birthdate": "dob",
