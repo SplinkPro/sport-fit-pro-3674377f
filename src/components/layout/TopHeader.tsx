@@ -12,9 +12,27 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
+const SESSION_KEY = "pratibha_session";
+
+export function isAuthenticated(): boolean {
+  try { return !!sessionStorage.getItem(SESSION_KEY); } catch { return false; }
+}
+export function setAuthenticated() {
+  try { sessionStorage.setItem(SESSION_KEY, "1"); } catch {}
+}
+export function clearSession() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+}
+
 export function TopHeader({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
   const { dict } = useT();
   const { language, setLanguage } = useLanguage();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    clearSession();
+    navigate("/", { replace: true });
+  };
 
   return (
     <header className="h-14 flex items-center justify-between px-4 bg-card border-b shrink-0 gap-4">
@@ -78,7 +96,8 @@ export function TopHeader({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
               Profile
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleLogout}>
+              <LogOut size={14} className="mr-2" />
               {dict.nav.logout}
             </DropdownMenuItem>
           </DropdownMenuContent>
