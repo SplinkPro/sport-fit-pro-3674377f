@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Search, Sparkles, ChevronRight, X, BookOpen, Clock, Copy, Download } from "lucide-react";
+import { Search, Sparkles, ChevronRight, X, BookOpen, Clock, Copy, Download, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useAthletes } from "@/hooks/useAthletes";
 import { EnrichedAthlete } from "@/engine/analyticsEngine";
-import { cn } from "@/lib/utils";
 
 // ─── Query Engine ─────────────────────────────────────────────────────────
 
@@ -16,22 +15,35 @@ interface QueryResult {
   reasoning: string;
   metricLabel: string;
   metricFn: (a: EnrichedAthlete) => string;
+  poolSize: number;         // pre-slice pool size for accurate reasoning
+  isMaleVsFemale?: boolean; // special comparison mode
+  maleGroup?: EnrichedAthlete[];
+  femaleGroup?: EnrichedAthlete[];
 }
 
 function parseTopN(q: string): number {
-  const m = q.match(/top\s+(\d+)/i);
-  return m ? parseInt(m[1], 10) : 10;
+  const m = q.match(/(?:top|first|show)\s+(\d+)/i);
+  return m ? Math.min(parseInt(m[1], 10), 100) : 10;
 }
 
 function parseAgeRange(q: string): [number, number] | null {
-  // "aged 14-16" | "age 14–16" | "14 to 16"
-  const m = q.match(/(?:age[ds]?\s*)?(\d{1,2})\s*[-–to]+\s*(\d{1,2})/i);
-  return m ? [parseInt(m[1]), parseInt(m[2])] : null;
+  // Matches: "14-16", "14–16", "14 to 16", "aged 14-16"
+  // Must be preceded by age-related word OR be a standalone range (not part of "top 10")
+  const m = q.match(/(?:aged?\s+|between\s+)(\d{1,2})\s*[-–to]+\s*(\d{1,2})/i)
+    || q.match(/\b(\d{1,2})\s*[-–]\s*(\d{1,2})\s*(?:year|yr|age)/i);
+  if (!m) return null;
+  const lo = parseInt(m[1], 10), hi = parseInt(m[2], 10);
+  // Sanity: must be plausible ages, not confusion with "top 10" etc.
+  if (lo < 8 || lo > 25 || hi < 8 || hi > 25 || lo > hi) return null;
+  return [lo, hi];
 }
 
 function parseScoreThreshold(q: string): number | null {
-  const m = q.match(/(?:composite\s+score\s+above|score\s*>|above)\s*(\d+)/i);
-  return m ? parseInt(m[1]) : null;
+  const m = q.match(/(?:composite\s+score\s+(?:above|over|>|>=)|score\s*(?:>|>=|above|over))\s*(\d+)/i)
+    || q.match(/above\s+(\d{2,3})/i);
+  if (!m) return null;
+  const v = parseInt(m[1], 10);
+  return (v >= 1 && v <= 100) ? v : null;
 }
 
 function formatRunTime(seconds: number): string {
@@ -41,14 +53,68 @@ function formatRunTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function queryAthletes(query: string, athletes: EnrichedAthlete[]): QueryResult {
-  const q = query.toLowerCase();
+// ─── Hindi keyword maps ───────────────────────────────────────────────────
+const HINDI_TO_ENGLISH: [RegExp, string][] = [
+  [/शीर्ष|टॉप/g, "top"],
+  [/खिलाड़ी/g, "athletes"],
+  [/वर्टिकल जंप/g, "vertical jump"],
+  [/ब्रॉड जंप/g, "broad jump"],
+  [/स्प्रिंट|दौड़/g, "sprint"],
+  [/साइकिलिंग/g, "cycling"],
+  [/फुटबॉल/g, "football"],
+  [/कबड्डी/g, "kabaddi"],
+  [/कम वजन|कमजोर/g, "underweight"],
+  [/अधिक वजन/g, "overweight"],
+  [/उच्च क्षमता/g, "high potential"],
+  [/पुरुष|लड़के/g, "male"],
+  [/महिला|लड़कियां/g, "female"],
+  [/सहनशक्ति/g, "endurance"],
+  [/800 मीटर|आठ सौ मीटर/g, "800m"],
+  [/तुलना/g, "compare"],
+];
+
+function normaliseQuery(raw: string): string {
+  let q = raw;
+  for (const [re, en] of HINDI_TO_ENGLISH) q = q.replace(re, en);
+  return q.toLowerCase();
+}
+
+export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): QueryResult {
+  const q = normaliseQuery(rawQuery);
   const filters: string[] = [];
   let pool = [...athletes];
-  let limit = parseTopN(q);
-  let sortFn: ((a: EnrichedAthlete) => number) | null = null;
+  const totalAthletes = athletes.length;
+  const limit = parseTopN(q);
   let metricLabel = "Composite Score";
   let metricFn: (a: EnrichedAthlete) => string = (a) => String(a.compositeScore);
+
+  // ── Special: male vs female comparison ──
+  const isMvF = /compare\s+male|male\s+vs|male.*female|female.*male/i.test(q);
+  if (isMvF) {
+    const males = [...athletes].sort((a, b) => b.compositeScore - a.compositeScore).slice(0, limit);
+    const females = [...athletes]
+      .filter((a) => a.gender === "F")
+      .sort((a, b) => b.compositeScore - a.compositeScore)
+      .slice(0, limit);
+    const avgM = males.length
+      ? Math.round(males.reduce((s, a) => s + a.compositeScore, 0) / males.length)
+      : 0;
+    const avgF = females.length
+      ? Math.round(females.reduce((s, a) => s + a.compositeScore, 0) / females.length)
+      : 0;
+    const reasoning = `Comparison mode: Top ${males.length} mixed athletes (avg score ${avgM}) vs top ${females.length} female athletes (avg score ${avgF}). ${totalAthletes} athletes in dataset.`;
+    return {
+      results: [...males.slice(0, 5), ...females.slice(0, 5)],
+      filters: ["Mode: Male vs Female Comparison"],
+      reasoning,
+      metricLabel: "Composite Score",
+      metricFn: (a) => `${a.compositeScore} (${a.gender})`,
+      poolSize: totalAthletes,
+      isMaleVsFemale: true,
+      maleGroup: males,
+      femaleGroup: females,
+    };
+  }
 
   // ── Gender filter ──
   if (/\b(male|boys?|men)\b/i.test(q)) {
@@ -72,17 +138,25 @@ export function queryAthletes(query: string, athletes: EnrichedAthlete[]): Query
     filters.push("Age: 18+");
   }
 
-  // ── BMI / body flags ──
+  // ── BMI / body flags ── (check before general sort to allow compound queries)
+  let bmiFilter = false;
   if (/underweight|bmi\s*<\s*18/i.test(q)) {
     pool = pool.filter((a) => a.flags?.some((f) => f.type === "underweight"));
     filters.push("Flag: Underweight");
-    metricLabel = "BMI";
-    metricFn = (a) => a.bmi != null ? a.bmi.toFixed(1) : "—";
+    bmiFilter = true;
+    // If no other metric asked, show BMI as the metric
+    if (!/vertical|broad|sprint|30\s*m|800|endurance|shuttle|throw|cycling|football|kabaddi|swim|wrestl|basket|volley/i.test(q)) {
+      metricLabel = "BMI";
+      metricFn = (a) => a.bmi != null ? a.bmi.toFixed(1) : "—";
+    }
   } else if (/overweight|bmi\s*>\s*25/i.test(q)) {
     pool = pool.filter((a) => a.bmi != null && a.bmi > 25);
     filters.push("Flag: Overweight");
-    metricLabel = "BMI";
-    metricFn = (a) => a.bmi != null ? a.bmi.toFixed(1) : "—";
+    bmiFilter = true;
+    if (!/vertical|broad|sprint|30\s*m|800|endurance|shuttle|throw|cycling|football|kabaddi/i.test(q)) {
+      metricLabel = "BMI";
+      metricFn = (a) => a.bmi != null ? a.bmi.toFixed(1) : "—";
+    }
   }
 
   // ── High potential ──
@@ -98,7 +172,14 @@ export function queryAthletes(query: string, athletes: EnrichedAthlete[]): Query
     filters.push(`Composite Score ≥ ${threshold}`);
   }
 
-  // ── Metric sorts ──
+  // Record pool size BEFORE sorting/slicing for honest reasoning
+  const poolSize = pool.length;
+
+  // ── Metric sorts — determine best sort & metric display ──
+  // Use priority: explicit metric > sport > default
+  type SortFn = (a: EnrichedAthlete) => number;
+  let sortFn: SortFn | null = null;
+
   if (/vertical\s*jump/i.test(q)) {
     sortFn = (a) => -(a.verticalJump ?? 0);
     metricLabel = "Vertical Jump (cm)";
@@ -110,12 +191,12 @@ export function queryAthletes(query: string, athletes: EnrichedAthlete[]): Query
     metricFn = (a) => a.broadJump != null ? `${a.broadJump} cm` : "—";
     filters.push("Metric: Broad Jump");
   } else if (/sprint|30\s*m/i.test(q)) {
-    sortFn = (a) => (a.sprint30m ?? 999);
+    sortFn = (a) => (a.sprint30m ?? 999);  // lower is better
     metricLabel = "30m Sprint (sec)";
     metricFn = (a) => a.sprint30m != null ? `${a.sprint30m.toFixed(2)}s` : "—";
     filters.push("Metric: 30m Sprint");
-  } else if (/800\s*m|run|endurance/i.test(q)) {
-    sortFn = (a) => (a.run800m ?? 999999);
+  } else if (/\b800\s*m\b|endurance/i.test(q)) {
+    sortFn = (a) => (a.run800m ?? 999999);  // lower is better
     metricLabel = "800m Run";
     metricFn = (a) => a.run800m != null ? formatRunTime(a.run800m) : "—";
     filters.push("Metric: 800m Run");
@@ -129,42 +210,85 @@ export function queryAthletes(query: string, athletes: EnrichedAthlete[]): Query
     metricLabel = "Football Throw (m)";
     metricFn = (a) => a.footballThrow != null ? `${a.footballThrow} m` : "—";
     filters.push("Metric: Football Throw");
-  } else if (/cycling|cycle/i.test(q)) {
-    pool = pool.filter((a) => a.sportFit?.some((s) => s.sport.nameEn.toLowerCase().includes("cycl")));
+  } else if (/cycling|cycle|साइकिल/i.test(q)) {
+    // Do NOT filter pool by sport — just sort by cycling fit score
     sortFn = (a) => {
-      const fit = a.sportFit?.find((s) => s.sport.nameEn.toLowerCase().includes("cycl"));
+      const fit = a.sportFit?.find((s) => s.sport.key === "cycling");
       return -(fit?.matchScore ?? 0);
     };
     metricLabel = "Cycling Fit Score";
     metricFn = (a) => {
-      const fit = a.sportFit?.find((s) => s.sport.nameEn.toLowerCase().includes("cycl"));
-      return fit ? `${fit.matchScore}` : "—";
+      const fit = a.sportFit?.find((s) => s.sport.key === "cycling");
+      return fit ? `${fit.matchScore}/100` : "—";
     };
     filters.push("Sport Fit: Cycling");
-  } else if (/football/i.test(q) && !/throw/i.test(q)) {
+  } else if (/\bfootball\b/i.test(q) && !/throw/i.test(q)) {
     sortFn = (a) => {
-      const fit = a.sportFit?.find((s) => s.sport.nameEn.toLowerCase().includes("football"));
+      const fit = a.sportFit?.find((s) => s.sport.key === "football");
       return -(fit?.matchScore ?? 0);
     };
     metricLabel = "Football Fit Score";
     metricFn = (a) => {
-      const fit = a.sportFit?.find((s) => s.sport.nameEn.toLowerCase().includes("football"));
-      return fit ? `${fit.matchScore}` : "—";
+      const fit = a.sportFit?.find((s) => s.sport.key === "football");
+      return fit ? `${fit.matchScore}/100` : "—";
     };
     filters.push("Sport Fit: Football");
-  } else if (/kabaddi/i.test(q)) {
+  } else if (/kabaddi|कबड्डी/i.test(q)) {
     sortFn = (a) => {
-      const fit = a.sportFit?.find((s) => s.sport.nameEn.toLowerCase().includes("kabaddi"));
+      const fit = a.sportFit?.find((s) => s.sport.key === "kabaddi");
       return -(fit?.matchScore ?? 0);
     };
     metricLabel = "Kabaddi Fit Score";
     metricFn = (a) => {
-      const fit = a.sportFit?.find((s) => s.sport.nameEn.toLowerCase().includes("kabaddi"));
-      return fit ? `${fit.matchScore}` : "—";
+      const fit = a.sportFit?.find((s) => s.sport.key === "kabaddi");
+      return fit ? `${fit.matchScore}/100` : "—";
     };
     filters.push("Sport Fit: Kabaddi");
-  } else if (/best suit|recommend|which sport/i.test(q)) {
-    // Sort by top sport score
+  } else if (/volleyball|volley/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "volleyball");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Volleyball Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "volleyball");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Volleyball");
+  } else if (/swimming|swim/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "swimming");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Swimming Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "swimming");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Swimming");
+  } else if (/wrestling|wrestl/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "wrestling");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Wrestling Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "wrestling");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Wrestling");
+  } else if (/basketball|basket/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "basketball");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Basketball Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "basketball");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Basketball");
+  } else if (/best\s*suit|recommend|which\s*sport|top\s*sport/i.test(q)) {
     sortFn = (a) => -(a.topSportScore ?? 0);
     metricLabel = "Top Sport Fit";
     metricFn = (a) => `${a.topSport} (${a.topSportScore ?? 0})`;
@@ -174,40 +298,37 @@ export function queryAthletes(query: string, athletes: EnrichedAthlete[]): Query
   // Default sort: composite score descending
   if (!sortFn) {
     sortFn = (a) => -a.compositeScore;
-    filters.push("Sort: Composite Score (desc)");
+    if (!bmiFilter) filters.push("Sort: Composite Score ↓");
   }
 
   pool.sort((a, b) => sortFn!(a) - sortFn!(b));
-
-  if (!filters.some((f) => f.startsWith("Limit"))) {
-    filters.push(`Limit: ${limit}`);
-  }
+  filters.push(`Limit: ${limit}`);
 
   const results = pool.slice(0, limit);
 
-  // Build reasoning
-  const genderStr = filters.find((f) => f.startsWith("Gender:"))?.replace("Gender: ", "") ?? "all genders";
-  const ageStr = filters.find((f) => f.startsWith("Age:"))?.replace("Age: ", "ages ") ?? "";
-  const metricStr = filters.find((f) => f.startsWith("Metric:"))?.replace("Metric: ", "") ?? "composite score";
-  const flagStr = filters.find((f) => f.startsWith("Flag:"))?.replace("Flag: ", "") ?? "";
+  // ── Build honest reasoning ──
+  const genderStr = filters.find((f) => f.startsWith("Gender:"))?.replace("Gender: ", "") ?? null;
+  const ageStr = filters.find((f) => f.startsWith("Age:"))?.replace("Age: ", "") ?? null;
+  const metricStr = filters.find((f) => f.startsWith("Metric:") || f.startsWith("Sport Fit:") || f.startsWith("Sort:"))
+    ?.replace(/^(Metric:|Sport Fit:|Sort:)\s*/, "") ?? "composite score";
+  const flagStr = filters.find((f) => f.startsWith("Flag:"))?.replace("Flag: ", "") ?? null;
 
-  let reasoning = `Found ${results.length} athletes`;
-  if (genderStr !== "all genders") reasoning += ` (${genderStr})`;
-  if (ageStr) reasoning += ` aged ${ageStr.replace("ages ", "")}`;
-  reasoning += ` from a pool of ${pool.length} matching athletes`;
+  let reasoning = `Showing ${results.length} of ${poolSize} matching athletes`;
+  if (genderStr) reasoning += ` (${genderStr})`;
+  if (ageStr) reasoning += ` aged ${ageStr}`;
   if (flagStr) reasoning += `, filtered by ${flagStr.toLowerCase()} flag`;
   reasoning += `, ranked by ${metricStr.toLowerCase()}.`;
-  if (threshold !== null) reasoning += ` Only athletes with composite score ≥ ${threshold} included.`;
-  reasoning += ` Results are from the currently active dataset (${athletes.length} athletes total).`;
+  if (threshold !== null) reasoning += ` Composite score ≥ ${threshold} filter applied.`;
+  reasoning += ` Full dataset: ${totalAthletes} athletes.`;
 
-  return { results, filters, reasoning, metricLabel, metricFn };
+  return { results, filters, reasoning, metricLabel, metricFn, poolSize };
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
 const EXAMPLE_QUERIES_EN = [
   "Show top 10 athletes by vertical jump",
-  "Find underweight athletes with high sprint ability",
+  "Find underweight athletes",
   "Which athletes are best suited for cycling?",
   "Show athletes with high potential",
   "Compare male vs female average performance",
@@ -216,17 +337,18 @@ const EXAMPLE_QUERIES_EN = [
 
 const EXAMPLE_QUERIES_HI = [
   "वर्टिकल जंप में शीर्ष 10 खिलाड़ी दिखाएं",
-  "कम वजन वाले लेकिन तेज दौड़ने वाले खिलाड़ी खोजें",
+  "कम वजन वाले खिलाड़ी खोजें",
   "साइकिलिंग के लिए सबसे उपयुक्त खिलाड़ी कौन हैं?",
-  "उच्च क्षमता लेकिन कम सहनशक्ति वाले खिलाड़ी",
-  "पुरुष बनाम महिला औसत प्रदर्शन की तुलना करें",
+  "उच्च क्षमता वाले खिलाड़ी दिखाएं",
+  "पुरुष बनाम महिला प्रदर्शन की तुलना करें",
 ];
 
 const SAVED_TEMPLATES = [
-  { id: 1, name: "Top sprinters", query: "Show top 10 athletes by 30m sprint", lastUsed: "—" },
-  { id: 2, name: "High potential cohort", query: "Show athletes with high potential", lastUsed: "—" },
-  { id: 3, name: "Underweight alert", query: "Find underweight athletes", lastUsed: "—" },
-  { id: 4, name: "Best cycling fit", query: "Which athletes are best suited for cycling", lastUsed: "—" },
+  { id: 1, name: "Top sprinters", query: "Show top 10 athletes by 30m sprint" },
+  { id: 2, name: "High potential cohort", query: "Show athletes with high potential" },
+  { id: 3, name: "Underweight alert", query: "Find underweight athletes" },
+  { id: 4, name: "Best cycling fit", query: "Which athletes are best suited for cycling" },
+  { id: 5, name: "Top volleyball fit", query: "Show top 10 athletes for volleyball" },
 ];
 
 const FOLLOW_UP = [
@@ -235,14 +357,66 @@ const FOLLOW_UP = [
   "Show athletes with high potential",
   "Which athletes are best suited for cycling?",
   "Show top 10 athletes by 30m sprint",
+  "Show top 10 athletes for kabaddi",
 ];
 
 type QueryState = "idle" | "interpreting" | "results";
 
+// ─── Male vs Female Comparison Card ──────────────────────────────────────
+
+function MaleVsFemaleCard({ result }: { result: QueryResult }) {
+  const males = result.maleGroup ?? [];
+  const females = result.femaleGroup ?? [];
+  const avgM = males.length ? Math.round(males.reduce((s, a) => s + a.compositeScore, 0) / males.length) : 0;
+  const avgF = females.length ? Math.round(females.reduce((s, a) => s + a.compositeScore, 0) / females.length) : 0;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Users className="w-4 h-4" /> Male vs Female Comparison
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="bg-primary/10 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-primary">{avgM}</div>
+            <div className="text-xs text-muted-foreground mt-1">Male avg. score ({males.length} athletes)</div>
+          </div>
+          <div className="bg-accent/10 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-accent">{avgF}</div>
+            <div className="text-xs text-muted-foreground mt-1">Female avg. score ({females.length} athletes)</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Top Males</p>
+            {males.slice(0, 5).map((a, i) => (
+              <div key={a.id} className="flex justify-between text-xs py-1 border-b last:border-0">
+                <span className="text-foreground">#{i + 1} {a.name}</span>
+                <span className="font-semibold text-primary">{a.compositeScore}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Top Females</p>
+            {females.slice(0, 5).map((a, i) => (
+              <div key={a.id} className="flex justify-between text-xs py-1 border-b last:border-0">
+                <span className="text-foreground">#{i + 1} {a.name}</span>
+                <span className="font-semibold text-accent">{a.compositeScore}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Page Component ────────────────────────────────────────────────────────
 
 export default function AIQueryPage() {
-  const { t, language } = useTranslation();
+  const { language } = useTranslation();
   const { athletes, datasetMeta } = useAthletes();
   const [query, setQuery] = useState("");
   const [state, setState] = useState<QueryState>("idle");
@@ -260,7 +434,7 @@ export default function AIQueryPage() {
       setQueryResult(result);
       setInterpretedFilters(result.filters);
       setState("results");
-    }, 800);
+    }, 600);
   };
 
   const removeFilter = (f: string) => {
@@ -271,20 +445,14 @@ export default function AIQueryPage() {
     if (!queryResult) return;
     const headers = ["Rank", "Name", "Gender", "Age", "School", "Composite Score", queryResult.metricLabel];
     const rows = queryResult.results.map((r, i) => [
-      i + 1,
-      r.name,
-      r.gender,
-      r.age,
-      r.school,
-      r.compositeScore,
-      queryResult.metricFn(r),
+      i + 1, r.name, r.gender, r.age, r.school, r.compositeScore, queryResult.metricFn(r),
     ]);
     const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `query_results_${Date.now()}.csv`;
+    a.download = `pratibha_query_${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -292,19 +460,17 @@ export default function AIQueryPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-accent" />
-            AI Query Assistant
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Ask questions about your athletes in plain English or Hindi.{" "}
-            <span className="text-xs text-primary font-medium">
-              Active: {datasetMeta.name} · {athletes.length} athletes
-            </span>
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <Sparkles className="w-6 h-6 text-accent" />
+          AI Query Assistant
+        </h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Ask questions about your athletes in plain English or Hindi.{" "}
+          <span className="text-xs text-primary font-medium">
+            Active: {datasetMeta.name} · {athletes.length} athletes
+          </span>
+        </p>
       </div>
 
       {/* Query Input */}
@@ -328,7 +494,7 @@ export default function AIQueryPage() {
 
           {/* Example chips */}
           <div className="flex flex-wrap gap-2">
-            {examples.slice(0, 4).map((ex) => (
+            {examples.map((ex) => (
               <button
                 key={ex}
                 onClick={() => handleQuery(ex)}
@@ -384,68 +550,73 @@ export default function AIQueryPage() {
             </CardContent>
           </Card>
 
-          {/* Results table */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">
-                  Results — {queryResult.results.length} athletes
-                  {queryResult.results.length === 0 && (
-                    <span className="text-muted-foreground font-normal text-sm ml-2">(no matches found)</span>
-                  )}
-                </CardTitle>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="gap-1 text-xs"
-                    onClick={() => {
-                      const text = queryResult.results.map((r, i) => `${i + 1}. ${r.name} — ${queryResult.metricFn(r)}`).join("\n");
-                      navigator.clipboard?.writeText(text);
-                    }}>
-                    <Copy className="w-3 h-3" /> Copy
-                  </Button>
-                  <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={handleExportCSV}>
-                    <Download className="w-3 h-3" /> Export CSV
-                  </Button>
+          {/* Male vs Female special view */}
+          {queryResult.isMaleVsFemale ? (
+            <MaleVsFemaleCard result={queryResult} />
+          ) : (
+            /* Results table */
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">
+                    Results — {queryResult.results.length} of {queryResult.poolSize} athletes
+                    {queryResult.results.length === 0 && (
+                      <span className="text-muted-foreground font-normal text-sm ml-2">(no matches found)</span>
+                    )}
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" className="gap-1 text-xs"
+                      onClick={() => {
+                        const text = queryResult.results.map((r, i) => `${i + 1}. ${r.name} — ${queryResult.metricFn(r)}`).join("\n");
+                        navigator.clipboard?.writeText(text);
+                      }}>
+                      <Copy className="w-3 h-3" /> Copy
+                    </Button>
+                    <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={handleExportCSV}>
+                      <Download className="w-3 h-3" /> Export CSV
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {queryResult.results.length === 0 ? (
-                <div className="py-10 text-center text-muted-foreground text-sm">
-                  <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  <p>No athletes matched this query in the current dataset.</p>
-                  <p className="text-xs mt-1">Try broadening your filters or check a different dataset.</p>
-                </div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Rank</th>
-                      <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Name</th>
-                      <th className="text-left py-2 pr-4 font-medium text-muted-foreground">School</th>
-                      <th className="text-right py-2 pr-4 font-medium text-muted-foreground">Composite</th>
-                      <th className="text-right py-2 font-medium text-muted-foreground">{queryResult.metricLabel}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {queryResult.results.map((r, i) => (
-                      <tr key={r.id} className="hover:bg-muted/30 cursor-pointer">
-                        <td className="py-2 pr-4 font-bold text-muted-foreground">#{i + 1}</td>
-                        <td className="py-2 pr-4 font-medium text-foreground">
-                          {r.name}
-                          <span className="ml-2 text-xs text-muted-foreground">{r.gender} · {r.age}y</span>
-                        </td>
-                        <td className="py-2 pr-4 text-muted-foreground text-xs">{r.school}</td>
-                        <td className="py-2 pr-4 text-right">
-                          <Badge variant="outline" className="text-xs">{r.compositeScore}</Badge>
-                        </td>
-                        <td className="py-2 text-right font-semibold text-primary">{queryResult.metricFn(r)}</td>
+              </CardHeader>
+              <CardContent>
+                {queryResult.results.length === 0 ? (
+                  <div className="py-10 text-center text-muted-foreground text-sm">
+                    <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p>No athletes matched this query in the current dataset.</p>
+                    <p className="text-xs mt-1">Try broadening your filters or check a different dataset.</p>
+                  </div>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 pr-4 font-medium text-muted-foreground w-12">Rank</th>
+                        <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Name</th>
+                        <th className="text-left py-2 pr-4 font-medium text-muted-foreground hidden sm:table-cell">School</th>
+                        <th className="text-right py-2 pr-4 font-medium text-muted-foreground">Score</th>
+                        <th className="text-right py-2 font-medium text-muted-foreground">{queryResult.metricLabel}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </CardContent>
-          </Card>
+                    </thead>
+                    <tbody className="divide-y">
+                      {queryResult.results.map((r, i) => (
+                        <tr key={r.id} className="hover:bg-muted/30">
+                          <td className="py-2 pr-4 font-bold text-muted-foreground">#{i + 1}</td>
+                          <td className="py-2 pr-4 font-medium text-foreground">
+                            {r.name}
+                            <span className="ml-2 text-xs text-muted-foreground">{r.gender} · {r.age}y</span>
+                          </td>
+                          <td className="py-2 pr-4 text-muted-foreground text-xs hidden sm:table-cell">{r.school}</td>
+                          <td className="py-2 pr-4 text-right">
+                            <Badge variant="outline" className="text-xs">{r.compositeScore}</Badge>
+                          </td>
+                          <td className="py-2 text-right font-semibold text-primary">{queryResult.metricFn(r)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* AI Reasoning */}
           <Card>
@@ -457,8 +628,8 @@ export default function AIQueryPage() {
             <CardContent className="text-sm text-muted-foreground space-y-1.5">
               <p>{queryResult.reasoning}</p>
               <p className="text-xs italic">
-                Results are based on the active dataset: <strong>{datasetMeta.name}</strong> ({athletes.length} athletes).
-                Rankings reflect cohort-relative performance within this dataset.
+                Rankings are cohort-relative within the active dataset: <strong>{datasetMeta.name}</strong>.
+                All computation is on-device — no data leaves your browser.
               </p>
             </CardContent>
           </Card>
@@ -496,14 +667,9 @@ export default function AIQueryPage() {
                   <div className="text-sm font-medium">{tpl.name}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">{tpl.query}</div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {tpl.lastUsed}
-                  </span>
-                  <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleQuery(tpl.query)}>
-                    Run
-                  </Button>
-                </div>
+                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleQuery(tpl.query)}>
+                  Run
+                </Button>
               </div>
             ))}
           </div>
