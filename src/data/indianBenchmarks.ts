@@ -417,15 +417,18 @@ export function calcGapToRecords(
 /**
  * Khelo India selection probability score (0–100).
  * Based on national percentile + age advantage (younger = more time to develop).
+ * completeness is 0–100 (percentage of metrics present).
  */
 export function calcKheloIndiaScore(
   nationalComposite: number,
   age: number,
   completeness: number
 ): number {
-  // Age factor: younger athletes get bonus (more development runway)
-  const ageFactor = age <= 14 ? 15 : age <= 16 ? 8 : age <= 18 ? 3 : 0;
-  const raw = nationalComposite + ageFactor + (completeness * 0.05);
+  // Age factor: younger athletes get more weight (more development runway)
+  const ageFactor = age <= 14 ? 12 : age <= 16 ? 6 : age <= 18 ? 2 : 0;
+  // Completeness penalty: if < 50% data, cap score (can't reliably assess)
+  const completenessFactor = completeness >= 80 ? 1.0 : completeness >= 50 ? 0.85 : 0.65;
+  const raw = (nationalComposite + ageFactor) * completenessFactor;
   return Math.min(100, Math.round(raw));
 }
 
@@ -524,31 +527,40 @@ export function calcNationalPercentile(
   row: BenchmarkRow,
   lowerIsBetter = false
 ): number {
-  let bands: [number, number][];
+  // Bands: value thresholds at percentile anchors
+  // For lower-is-better (sprint, run, shuttle): LOWER value = HIGHER percentile
+  // For higher-is-better (jump): HIGHER value = HIGHER percentile
 
   if (lowerIsBetter) {
-    bands = [
-      [row.p20, 20], [row.p40, 40], [row.p60, 60], [row.p70, 70], [row.p85, 85],
-    ];
+    // p85 is the best (lowest time), p20 is worst (highest time)
+    // If athlete beats the p85 threshold → above 85th percentile
     if (value <= row.p85) return Math.min(100, 85 + Math.round((row.p85 - value) / row.nationalStd * 7));
+    // If athlete is worse than p20 → below 20th percentile
     if (value >= row.p20) return Math.max(0,  20 - Math.round((value - row.p20) / row.nationalStd * 7));
-    for (let i = bands.length - 1; i > 0; i--) {
-      const [hi_v, hi_p] = bands[i];
-      const [lo_v, lo_p] = bands[i - 1];
-      if (value <= hi_v && value >= lo_v) {
-        const frac = (hi_v - value) / (hi_v - lo_v);
-        return Math.round(lo_p + frac * (hi_p - lo_p));
+    // Interpolate within bands (p85 < p70 < p60 < p40 < p20 for lower-is-better)
+    const bands: [number, number][] = [
+      [row.p85, 85], [row.p70, 70], [row.p60, 60], [row.p40, 40], [row.p20, 20],
+    ];
+    for (let i = 0; i < bands.length - 1; i++) {
+      const [lo_v, lo_p] = bands[i];   // better end (lower value, higher percentile)
+      const [hi_v, hi_p] = bands[i+1]; // worse end (higher value, lower percentile)
+      if (value >= lo_v && value <= hi_v) {
+        // Linear interpolation: as value goes from lo_v→hi_v, percentile goes lo_p→hi_p
+        const frac = (value - lo_v) / (hi_v - lo_v);
+        return Math.round(lo_p - frac * (lo_p - hi_p));
       }
     }
   } else {
-    bands = [
-      [row.p20, 20], [row.p40, 40], [row.p60, 60], [row.p70, 70], [row.p85, 85],
-    ];
+    // p85 is the best (highest value), p20 is worst (lowest value)
     if (value >= row.p85) return Math.min(100, 85 + Math.round((value - row.p85) / row.nationalStd * 7));
     if (value <= row.p20) return Math.max(0,  20 - Math.round((row.p20 - value) / row.nationalStd * 7));
-    for (let i = 1; i < bands.length; i++) {
-      const [lo_v, lo_p] = bands[i - 1];
-      const [hi_v, hi_p] = bands[i];
+    // Bands: p20 < p40 < p60 < p70 < p85 for higher-is-better
+    const bands: [number, number][] = [
+      [row.p20, 20], [row.p40, 40], [row.p60, 60], [row.p70, 70], [row.p85, 85],
+    ];
+    for (let i = 0; i < bands.length - 1; i++) {
+      const [lo_v, lo_p] = bands[i];
+      const [hi_v, hi_p] = bands[i+1];
       if (value >= lo_v && value <= hi_v) {
         const frac = (value - lo_v) / (hi_v - lo_v);
         return Math.round(lo_p + frac * (hi_p - lo_p));
@@ -556,7 +568,7 @@ export function calcNationalPercentile(
     }
   }
 
-  return 50;
+  return 50; // fallback (should not be reached)
 }
 
 export type SAIBand = "elite" | "national_talent" | "average" | "below_national" | "needs_development";
@@ -590,14 +602,14 @@ export function getSAIBand(nationalPercentile: number): SAIBand {
  */
 export function getLTADProfile(topSportKey: string): LTADProfile | null {
   const map: Record<string, string> = {
-    athletics: "athletics_sprint",
-    football: "football",
-    kabaddi: "kabaddi",
+    athletics:  "athletics_sprint",
+    football:   "football",
+    kabaddi:    "kabaddi",
     volleyball: "volleyball",
-    wrestling: "wrestling",
-    cycling: "athletics_endurance",
-    swimming: "athletics_endurance",
-    basketball: "kabaddi", // closest profile
+    wrestling:  "wrestling",
+    cycling:    "athletics_endurance",  // endurance profile fits cycling best
+    swimming:   "athletics_endurance",  // endurance + power
+    basketball: "volleyball",           // court jumping sport — closer to volleyball than kabaddi
   };
   const key = map[topSportKey];
   return key ? LTAD_PROFILES[key] ?? null : null;

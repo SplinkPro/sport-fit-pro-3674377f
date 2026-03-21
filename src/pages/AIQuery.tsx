@@ -91,7 +91,10 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
   // ── Special: male vs female comparison ──
   const isMvF = /compare\s+male|male\s+vs|male.*female|female.*male/i.test(q);
   if (isMvF) {
-    const males = [...athletes].sort((a, b) => b.compositeScore - a.compositeScore).slice(0, limit);
+    const males = [...athletes]
+      .filter((a) => a.gender === "M")
+      .sort((a, b) => b.compositeScore - a.compositeScore)
+      .slice(0, limit);
     const females = [...athletes]
       .filter((a) => a.gender === "F")
       .sort((a, b) => b.compositeScore - a.compositeScore)
@@ -102,13 +105,13 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
     const avgF = females.length
       ? Math.round(females.reduce((s, a) => s + a.compositeScore, 0) / females.length)
       : 0;
-    const reasoning = `Comparison mode: Top ${males.length} mixed athletes (avg score ${avgM}) vs top ${females.length} female athletes (avg score ${avgF}). ${totalAthletes} athletes in dataset.`;
+    const reasoning = `Comparison mode: Top ${males.length} male athletes (avg score ${avgM}) vs top ${females.length} female athletes (avg score ${avgF}). ${totalAthletes} athletes in dataset.`;
     return {
       results: [...males.slice(0, 5), ...females.slice(0, 5)],
       filters: ["Mode: Male vs Female Comparison"],
       reasoning,
       metricLabel: "Composite Score",
-      metricFn: (a) => `${a.compositeScore} (${a.gender})`,
+      metricFn: (a) => `${a.compositeScore} (${a.gender === "M" ? "Male" : "Female"})`,
       poolSize: totalAthletes,
       isMaleVsFemale: true,
       maleGroup: males,

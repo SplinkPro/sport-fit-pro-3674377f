@@ -12,7 +12,8 @@ import {
 // ─── METRIC KEYS ────────────────────────────────────────────────────────────
 
 export type MetricKey = "verticalJump" | "broadJump" | "sprint30m" | "run800m" | "shuttleRun" | "footballThrow";
-export const METRIC_KEYS: MetricKey[] = ["verticalJump", "broadJump", "sprint30m", "run800m"];
+// CAPI uses these 5 metrics — shuttleRun IS included (5% weight)
+export const METRIC_KEYS: MetricKey[] = ["verticalJump", "broadJump", "sprint30m", "run800m", "shuttleRun"];
 
 // For sprint/run, lower is better — flag them
 export const LOWER_IS_BETTER: Set<MetricKey> = new Set(["sprint30m", "run800m", "shuttleRun"]);
@@ -63,22 +64,35 @@ export function calcPercentile(value: number, stats: CohortStats, lowerIsBetter 
   const n = sorted.length;
   if (n === 0) return 50;
 
-  let lo = 0, hi = n;
   if (lowerIsBetter) {
-    while (lo < hi) {
-      const mid = (lo + hi) >>> 1;
-      if (sorted[mid] <= value) lo = mid + 1;
-      else hi = mid;
+    // Count how many values are STRICTLY WORSE (higher) than this value
+    // A lower time = better rank. If you have the lowest time, everyone is worse → 100th percentile.
+    let countWorse = 0;
+    for (let i = n - 1; i >= 0; i--) {
+      if (sorted[i] > value) countWorse++;
+      else break;
     }
-    const rank = n - lo;
-    return Math.round((rank / n) * 100);
-  } else {
+    // Use standard percentile rank: (number of values below / n) * 100, clamped
+    // Binary search: find first index where sorted[i] >= value (i.e. not strictly better)
+    let lo = 0, hi = n;
     while (lo < hi) {
       const mid = (lo + hi) >>> 1;
       if (sorted[mid] < value) lo = mid + 1;
       else hi = mid;
     }
-    return Math.round((lo / n) * 100);
+    // lo = number of values strictly better (lower) than this athlete → athlete beats everyone above lo
+    // percentile = (n - lo) / n * 100  (how many they beat or tie, including themselves)
+    return Math.min(100, Math.round(((n - lo) / n) * 100));
+  } else {
+    // Count strictly below
+    let lo = 0, hi = n;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (sorted[mid] < value) lo = mid + 1;
+      else hi = mid;
+    }
+    // lo = number of values strictly below this athlete
+    return Math.min(100, Math.round((lo / n) * 100));
   }
 }
 
@@ -132,6 +146,8 @@ export function calcCompositeScore(
   }
 
   if (totalWeight === 0) return 0;
+  // Normalise by actual weights present (handles missing metrics gracefully)
+  // Result is a 0–100 weighted average of percentile scores
   return Math.round(weightedSum / totalWeight);
 }
 
@@ -258,9 +274,30 @@ export function calcDerivedIndices(
     : null;
 
   // Aerobic Capacity Estimate (VO2max proxy from 800m run)
-  // Léger-Lambert adapted: VO2max ≈ (483 / run800m_minutes) + 3.5
-  const aerobicCapacityEst = (r800 != null && r800 > 0)
-    ? parseFloat(((483 / (r800 / 60)) + 3.5).toFixed(1))
+  // Léger-Lambert adapted for 800m: VO2max ≈ (483 / run800m_minutes) + 3.5
+  // run800m is in SECONDS → convert to minutes first
+  // Validation: 3:00 (180s) → 483/3 + 3.5 = 164.5 — impossible
+  // Correct formula (Uth et al. 2004 / Cooper test adaptation for 800m):
+  // VO2max_est = 15 × (HRmax/HRrest) — but we don't have HR
+  // Best available: use time-based: VO2max ≈ (800 / run800m_seconds) × 210
+  // Cross-validated: 3:00 (180s) → 800/180*210 = 933 — still wrong
+  // Using validated Léger-Lambert 800m formula correctly:
+  // VO2max = (0.0225 × (800/run_sec_as_min_decimal)^2) + ... 
+  // Simplest validated approach for school youth: 
+  // VO2max ≈ 31.025 + (3.238 × speed_m/s) - (3.248 × age) + (0.1536 × age × speed)
+  // Simplified: use pace → VO2max = (800m in m) / (time_s) = speed in m/s
+  // Then: VO2max = 3.5 × (speed_m/s / 0.0176) approximation
+  // Most practical: VO2max ≈ (800/run800m_seconds) * 210 is wrong
+  // Using the Cooper/Balke formula adapted for 800m field test:
+  // speed_m_per_min = 800 / (run800m / 60)
+  // VO2max = (speed_m_per_min - 133) * 0.172 + 33.3  (Balke treadmill adaptation)
+  const aerobicCapacityEst = (r800 != null && r800 > 60 && r800 < 600)
+    ? (() => {
+        const speedMperMin = 800 / (r800 / 60); // m/min
+        // Balke formula adapted for 800m sustained run
+        const vo2 = (speedMperMin - 133) * 0.172 + 33.3;
+        return parseFloat(Math.max(10, Math.min(80, vo2)).toFixed(1));
+      })()
     : null;
 
   // Lean Power Score
@@ -458,12 +495,15 @@ function calcCompleteness(athlete: Athlete): number {
 function calcFlags(athlete: Athlete, cohortStats: Partial<Record<MetricKey, CohortStats>>): AthleteFlag[] {
   const flags: AthleteFlag[] = [];
 
-  // BMI flags — using WHO/IAP (Indian Academy of Pediatrics) thresholds for youth
+  // BMI flags — WHO/IAP thresholds adjusted for South Asian youth athletes
+  // Adult South Asian cutoff: overweight >23; for active youth athletes use a higher threshold
+  // IAP: underweight <5th percentile; for field use: <16 = severe, <18.5 = underweight
+  // For youth athletes age 10–18, overweight flag at >25 (conservative, age-adjusted)
   if (athlete.bmi != null) {
-    if (athlete.bmi < 14.5) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — severely underweight (IAP threshold)` });
-    else if (athlete.bmi < 18.5) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — underweight` });
-    else if (athlete.bmi > 27.5) flags.push({ type: "overweight", message: `BMI ${athlete.bmi} — overweight (adjusted for South Asian)` });
-    // Note: WHO recommends BMI >23 as overweight for South Asians; for youth athletes we use 27.5
+    if (athlete.bmi < 14.5) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — severely underweight (IAP)` });
+    else if (athlete.bmi < 16.0) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — underweight for youth` });
+    else if (athlete.bmi < 18.5) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — borderline underweight` });
+    else if (athlete.bmi > 25.0) flags.push({ type: "overweight", message: `BMI ${athlete.bmi} — overweight for youth (South Asian threshold >25)` });
   }
 
   // Missing key metrics flag
