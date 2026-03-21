@@ -495,12 +495,15 @@ function calcCompleteness(athlete: Athlete): number {
 function calcFlags(athlete: Athlete, cohortStats: Partial<Record<MetricKey, CohortStats>>): AthleteFlag[] {
   const flags: AthleteFlag[] = [];
 
-  // BMI flags — using WHO/IAP (Indian Academy of Pediatrics) thresholds for youth
+  // BMI flags — WHO/IAP thresholds adjusted for South Asian youth athletes
+  // Adult South Asian cutoff: overweight >23; for active youth athletes use a higher threshold
+  // IAP: underweight <5th percentile; for field use: <16 = severe, <18.5 = underweight
+  // For youth athletes age 10–18, overweight flag at >25 (conservative, age-adjusted)
   if (athlete.bmi != null) {
-    if (athlete.bmi < 14.5) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — severely underweight (IAP threshold)` });
-    else if (athlete.bmi < 18.5) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — underweight` });
-    else if (athlete.bmi > 27.5) flags.push({ type: "overweight", message: `BMI ${athlete.bmi} — overweight (adjusted for South Asian)` });
-    // Note: WHO recommends BMI >23 as overweight for South Asians; for youth athletes we use 27.5
+    if (athlete.bmi < 14.5) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — severely underweight (IAP)` });
+    else if (athlete.bmi < 16.0) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — underweight for youth` });
+    else if (athlete.bmi < 18.5) flags.push({ type: "underweight", message: `BMI ${athlete.bmi} — borderline underweight` });
+    else if (athlete.bmi > 25.0) flags.push({ type: "overweight", message: `BMI ${athlete.bmi} — overweight for youth (South Asian threshold >25)` });
   }
 
   // Missing key metrics flag
