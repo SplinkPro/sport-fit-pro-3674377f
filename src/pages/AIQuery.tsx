@@ -379,12 +379,12 @@ function MaleVsFemaleCard({ result }: { result: QueryResult }) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-blue-600">{avgM}</div>
+          <div className="bg-primary/10 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-primary">{avgM}</div>
             <div className="text-xs text-muted-foreground mt-1">Male avg. score ({males.length} athletes)</div>
           </div>
-          <div className="bg-pink-50 dark:bg-pink-950/30 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-pink-600">{avgF}</div>
+          <div className="bg-accent/10 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-accent">{avgF}</div>
             <div className="text-xs text-muted-foreground mt-1">Female avg. score ({females.length} athletes)</div>
           </div>
         </div>
@@ -394,7 +394,7 @@ function MaleVsFemaleCard({ result }: { result: QueryResult }) {
             {males.slice(0, 5).map((a, i) => (
               <div key={a.id} className="flex justify-between text-xs py-1 border-b last:border-0">
                 <span className="text-foreground">#{i + 1} {a.name}</span>
-                <span className="font-semibold text-blue-600">{a.compositeScore}</span>
+                <span className="font-semibold text-primary">{a.compositeScore}</span>
               </div>
             ))}
           </div>
@@ -403,7 +403,7 @@ function MaleVsFemaleCard({ result }: { result: QueryResult }) {
             {females.slice(0, 5).map((a, i) => (
               <div key={a.id} className="flex justify-between text-xs py-1 border-b last:border-0">
                 <span className="text-foreground">#{i + 1} {a.name}</span>
-                <span className="font-semibold text-pink-600">{a.compositeScore}</span>
+                <span className="font-semibold text-accent">{a.compositeScore}</span>
               </div>
             ))}
           </div>
