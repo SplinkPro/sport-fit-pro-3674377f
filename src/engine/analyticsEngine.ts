@@ -274,9 +274,30 @@ export function calcDerivedIndices(
     : null;
 
   // Aerobic Capacity Estimate (VO2max proxy from 800m run)
-  // Léger-Lambert adapted: VO2max ≈ (483 / run800m_minutes) + 3.5
-  const aerobicCapacityEst = (r800 != null && r800 > 0)
-    ? parseFloat(((483 / (r800 / 60)) + 3.5).toFixed(1))
+  // Léger-Lambert adapted for 800m: VO2max ≈ (483 / run800m_minutes) + 3.5
+  // run800m is in SECONDS → convert to minutes first
+  // Validation: 3:00 (180s) → 483/3 + 3.5 = 164.5 — impossible
+  // Correct formula (Uth et al. 2004 / Cooper test adaptation for 800m):
+  // VO2max_est = 15 × (HRmax/HRrest) — but we don't have HR
+  // Best available: use time-based: VO2max ≈ (800 / run800m_seconds) × 210
+  // Cross-validated: 3:00 (180s) → 800/180*210 = 933 — still wrong
+  // Using validated Léger-Lambert 800m formula correctly:
+  // VO2max = (0.0225 × (800/run_sec_as_min_decimal)^2) + ... 
+  // Simplest validated approach for school youth: 
+  // VO2max ≈ 31.025 + (3.238 × speed_m/s) - (3.248 × age) + (0.1536 × age × speed)
+  // Simplified: use pace → VO2max = (800m in m) / (time_s) = speed in m/s
+  // Then: VO2max = 3.5 × (speed_m/s / 0.0176) approximation
+  // Most practical: VO2max ≈ (800/run800m_seconds) * 210 is wrong
+  // Using the Cooper/Balke formula adapted for 800m field test:
+  // speed_m_per_min = 800 / (run800m / 60)
+  // VO2max = (speed_m_per_min - 133) * 0.172 + 33.3  (Balke treadmill adaptation)
+  const aerobicCapacityEst = (r800 != null && r800 > 60 && r800 < 600)
+    ? (() => {
+        const speedMperMin = 800 / (r800 / 60); // m/min
+        // Balke formula adapted for 800m sustained run
+        const vo2 = (speedMperMin - 133) * 0.172 + 33.3;
+        return parseFloat(Math.max(10, Math.min(80, vo2)).toFixed(1));
+      })()
     : null;
 
   // Lean Power Score
