@@ -12,7 +12,8 @@ import {
 // ─── METRIC KEYS ────────────────────────────────────────────────────────────
 
 export type MetricKey = "verticalJump" | "broadJump" | "sprint30m" | "run800m" | "shuttleRun" | "footballThrow";
-export const METRIC_KEYS: MetricKey[] = ["verticalJump", "broadJump", "sprint30m", "run800m"];
+// CAPI uses these 5 metrics — shuttleRun IS included (5% weight)
+export const METRIC_KEYS: MetricKey[] = ["verticalJump", "broadJump", "sprint30m", "run800m", "shuttleRun"];
 
 // For sprint/run, lower is better — flag them
 export const LOWER_IS_BETTER: Set<MetricKey> = new Set(["sprint30m", "run800m", "shuttleRun"]);
