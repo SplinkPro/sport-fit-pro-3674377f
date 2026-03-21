@@ -91,9 +91,15 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
   // ── Special: male vs female comparison ──
   const isMvF = /compare\s+male|male\s+vs|male.*female|female.*male/i.test(q);
   if (isMvF) {
-    const males = [...athletes].sort((a, b) => b.compositeScore - a.compositeScore).slice(0, limit);
+    // BUG FIX: males must be filtered to gender=M, not all athletes
+    const males = [...athletes]
+      .filter((a) => a.gender === "M")
+      .sort((a, b) => b.compositeScore - a.compositeScore)
+      .slice(0, limit);
     const females = [...athletes]
       .filter((a) => a.gender === "F")
+      .sort((a, b) => b.compositeScore - a.compositeScore)
+      .slice(0, limit);
       .sort((a, b) => b.compositeScore - a.compositeScore)
       .slice(0, limit);
     const avgM = males.length
