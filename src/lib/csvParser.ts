@@ -355,7 +355,7 @@ export function rowsToAthletes(rows: Record<string, string>[]): ParseResult {
     }
   });
 
-  return { athletes, warnings, errors, skipped, detectedColumns };
+  return { athletes, warnings, errors, skipped, detectedColumns, unmappedColumns, headerSnapshot };
 }
 
 // ─── Template generator ─────────────────────────────────────────────────────
