@@ -384,9 +384,12 @@ const EXAMPLE_QUERIES_EN = [
   "Show top 10 athletes by vertical jump",
   "Find underweight athletes",
   "Which athletes are best suited for cycling?",
-  "Show athletes with high potential",
+  "Show SAI elite candidates",
   "Compare male vs female average performance",
   "Find athletes aged 14–16 with composite score above 60",
+  "Show national talent pool",
+  "Find young talent development pipeline (age ≤ 15)",
+  "Show athletes with highest aerobic capacity",
 ];
 
 const EXAMPLE_QUERIES_HI = [
@@ -395,22 +398,27 @@ const EXAMPLE_QUERIES_HI = [
   "साइकिलिंग के लिए सबसे उपयुक्त खिलाड़ी कौन हैं?",
   "उच्च क्षमता वाले खिलाड़ी दिखाएं",
   "पुरुष बनाम महिला प्रदर्शन की तुलना करें",
+  "राष्ट्रीय प्रतिभा पूल दिखाएं",
 ];
 
 const SAVED_TEMPLATES = [
   { id: 1, name: "Top sprinters", query: "Show top 10 athletes by 30m sprint" },
   { id: 2, name: "High potential cohort", query: "Show athletes with high potential" },
   { id: 3, name: "Underweight alert", query: "Find underweight athletes" },
-  { id: 4, name: "Best cycling fit", query: "Which athletes are best suited for cycling" },
-  { id: 5, name: "Top volleyball fit", query: "Show top 10 athletes for volleyball" },
+  { id: 4, name: "SAI Elite candidates", query: "Show SAI elite candidates" },
+  { id: 5, name: "Khelo India pipeline", query: "Show national talent pool" },
+  { id: 6, name: "Young talent pipeline", query: "Find young talent development pipeline age 15" },
+  { id: 7, name: "Best volleyball fit", query: "Show top 10 athletes for volleyball" },
 ];
 
 const FOLLOW_UP = [
   "Show top 10 athletes by vertical jump",
-  "Find underweight athletes",
-  "Show athletes with high potential",
+  "Show SAI elite candidates",
+  "Find young talent development pipeline",
+  "Show national talent pool",
   "Which athletes are best suited for cycling?",
   "Show top 10 athletes by 30m sprint",
+  "Show athletes with highest aerobic capacity",
   "Show top 10 athletes for kabaddi",
 ];
 
