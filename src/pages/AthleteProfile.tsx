@@ -673,6 +673,11 @@ function TrajectoryTab({ athlete }: { athlete: EnrichedAthlete }) {
 
       {/* Metric selector */}
       <SectionCard title="Performance Trajectory Projection">
+        <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+          Pick a metric below to see a <strong>year-by-year forecast</strong> of where this athlete could reach.
+          The blue line is the projected performance. The green dashed line shows their national percentile rank (right axis).
+          Gold dots mark when they are expected to hit a national milestone.
+        </p>
         <div className="flex gap-1.5 flex-wrap mb-3">
           {METRIC_OPTIONS.map((m) => {
             const hasData = (athlete[m.key] as number | undefined) != null;
