@@ -225,7 +225,7 @@ export default function Landing() {
             }}
           >
             <button
-              onClick={() => navigate("/explorer")}
+              onClick={() => { setAuthenticated(); navigate("/explorer"); }}
               className="group flex items-center gap-3 px-8 py-4 rounded-full text-base font-bold text-white transition-all duration-200 hover:opacity-90 active:scale-[0.97] shadow-lg shadow-orange-200"
               style={{ background: "#F97316" }}
             >
