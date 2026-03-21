@@ -4,6 +4,7 @@ import { useAthletes } from "@/hooks/useAthletes";
 import { useT } from "@/i18n/useTranslation";
 import { EnrichedAthlete, getBenchmarkBand, BENCHMARK_COLORS } from "@/engine/analyticsEngine";
 import { SPORTS_CONFIG } from "@/data/sportsConfig";
+import { SAI_BAND_COLORS, SAI_BAND_LABELS } from "@/data/indianBenchmarks";
 import {
   BenchmarkBadge, DataQualityBadge, FlagBadge, PercentileBar,
   SportFitBar, ConfidenceBar, MetricChip, SectionCard,
@@ -18,7 +19,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine, Cell,
 } from "recharts";
-import { ChevronLeft, ChevronDown, ChevronUp, Brain, AlertTriangle, Lightbulb, Target, Star } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronUp, Brain, AlertTriangle, Lightbulb, Target, Star, Globe, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Page ─────────────────────────────────────────────────────────────────
