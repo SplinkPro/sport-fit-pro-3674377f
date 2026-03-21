@@ -1035,7 +1035,7 @@ function SportFitTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-sm">{fit.sport.nameEn}</span>
-                <span className="font-bold text-sm tabular-nums mr-2">{fit.matchScore}%</span>
+                <span className="font-bold text-sm tabular-nums mr-2">{fit.matchScore.toFixed(1)}%</span>
               </div>
               <div className="mt-1 h-2 bg-muted rounded-full overflow-hidden">
                 <div
