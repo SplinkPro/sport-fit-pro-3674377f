@@ -63,22 +63,35 @@ export function calcPercentile(value: number, stats: CohortStats, lowerIsBetter 
   const n = sorted.length;
   if (n === 0) return 50;
 
-  let lo = 0, hi = n;
   if (lowerIsBetter) {
-    while (lo < hi) {
-      const mid = (lo + hi) >>> 1;
-      if (sorted[mid] <= value) lo = mid + 1;
-      else hi = mid;
+    // Count how many values are STRICTLY WORSE (higher) than this value
+    // A lower time = better rank. If you have the lowest time, everyone is worse → 100th percentile.
+    let countWorse = 0;
+    for (let i = n - 1; i >= 0; i--) {
+      if (sorted[i] > value) countWorse++;
+      else break;
     }
-    const rank = n - lo;
-    return Math.round((rank / n) * 100);
-  } else {
+    // Use standard percentile rank: (number of values below / n) * 100, clamped
+    // Binary search: find first index where sorted[i] >= value (i.e. not strictly better)
+    let lo = 0, hi = n;
     while (lo < hi) {
       const mid = (lo + hi) >>> 1;
       if (sorted[mid] < value) lo = mid + 1;
       else hi = mid;
     }
-    return Math.round((lo / n) * 100);
+    // lo = number of values strictly better (lower) than this athlete → athlete beats everyone above lo
+    // percentile = (n - lo) / n * 100  (how many they beat or tie, including themselves)
+    return Math.min(100, Math.round(((n - lo) / n) * 100));
+  } else {
+    // Count strictly below
+    let lo = 0, hi = n;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (sorted[mid] < value) lo = mid + 1;
+      else hi = mid;
+    }
+    // lo = number of values strictly below this athlete
+    return Math.min(100, Math.round((lo / n) * 100));
   }
 }
 
