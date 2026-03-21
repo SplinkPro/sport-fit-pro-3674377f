@@ -179,8 +179,12 @@ export interface ParseResult {
   detectedColumns: string[]; // for debug / field-map display
 }
 
+// Module-level counter so IDs never collide across multiple imports in the same session
+let _globalIdCounter = Date.now() % 100000; // start from a time-based offset
+
 export function rowsToAthletes(rows: Record<string, string>[]): ParseResult {
-  let _idCounter = 1;
+  // Use module-scoped counter (not reset on each call) to avoid ID collisions on append imports
+  const _idBase = ++_globalIdCounter;
   const athletes: Athlete[] = [];
   const warnings: ParseResult["warnings"] = [];
   const errors:   ParseResult["errors"]   = [];
@@ -283,7 +287,7 @@ export function rowsToAthletes(rows: Record<string, string>[]): ParseResult {
 
     const id = importedId
       ? `ID${importedId.slice(-6)}`  // use last 6 digits of studentId
-      : `IMP${String(_idCounter++).padStart(4, "0")}`;
+      : `IMP${String(_idBase + idx).padStart(6, "0")}`;
 
     const bmi = parseFloat((weight / ((height / 100) ** 2)).toFixed(1));
 
@@ -325,8 +329,9 @@ export function generateCSVTemplate(): string {
     "Thirty mflingstarts", "Standinggbroadjump", "Shuttlerun10Mx6",
     "Verticaljump", "Footballballthrow5No", "Eighthundredmetersrun", "Weight",
   ];
-  const row1 = ["1", "3524024014807", "Rahul Kumar", "158", "5.1", "200", "12.3", "42", "8.5", "3:45:00", "48"];
-  const row2 = ["2", "3524024014808", "Priya Singh", "152", "5.8", "165", "13.1", "35", "6.2", "4:10:00", "42"];
-  const row3 = ["3", "3524024014809", "Arjun Sharma", "165", "4.9", "220", "11.8", "55", "10.0", "3:20:00", "55"];
+  // 800m run in MM:SS format (not H:MM:SS which would be read as hours)
+  const row1 = ["1", "3524024014807", "Rahul Kumar", "158", "5.1", "200", "12.3", "42", "8.5", "3:45", "48"];
+  const row2 = ["2", "3524024014808", "Priya Singh", "152", "5.8", "165", "13.1", "35", "6.2", "4:10", "42"];
+  const row3 = ["3", "3524024014809", "Arjun Sharma", "165", "4.9", "220", "11.8", "55", "10.0", "3:20", "55"];
   return [headers.join(","), row1.join(","), row2.join(","), row3.join(",")].join("\n");
 }

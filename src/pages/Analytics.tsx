@@ -214,10 +214,12 @@ function AnalystDashboard({ athletes, dict }: { athletes: ReturnType<typeof useA
     .map((at) => at[selectedMetric] as number | undefined)
     .filter((v): v is number => v != null);
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const min = values.length ? Math.min(...values) : 0;
+  const max = values.length ? Math.max(...values) : 1;
   const buckets = 10;
-  const step = (max - min) / buckets;
+  // Guard against division by zero when all values are identical
+  const rawStep = (max - min) / buckets;
+  const step = rawStep === 0 ? 1 : rawStep;
   const distData = Array.from({ length: buckets }, (_, i) => {
     const lo = min + i * step;
     const hi = lo + step;
