@@ -14,109 +14,99 @@ import { Athlete } from "@/data/seedAthletes";
 
 type InternalField = keyof Athlete | "_skip" | "_id";
 
+// NOTE: All keys are already fully normalised (lowercase, non-alphanumeric stripped).
+// normaliseHeader() strips ALL non-alphanumeric chars before lookup.
 const COLUMN_MAP: Record<string, InternalField> = {
   // ── Skip columns ──
-  "sl no": "_skip", "sl.no": "_skip", "slno": "_skip",
-  "sr no": "_skip", "sr.no": "_skip", "srno": "_skip", "#": "_skip",
-  "serial no": "_skip", "serial number": "_skip", "s no": "_skip",
+  "slno": "_skip", "srno": "_skip", "serialno": "_skip",
+  "serialnumber": "_skip", "sno": "_skip",
 
   // ── ID ──
-  "studentid": "_id", "student id": "_id", "student_id": "_id",
-  "id": "_id", "athleteid": "_id", "athlete id": "_id",
-  "roll no": "_id", "rollno": "_id", "roll number": "_id",
-  "reg no": "_id", "registration no": "_id", "regno": "_id",
+  "studentid": "_id", "id": "_id", "athleteid": "_id",
+  "rollno": "_id", "rollnumber": "_id", "regno": "_id",
+  "registrationno": "_id",
 
   // ── Name ──
-  "athlete name": "name", "athletename": "name", "name": "name",
-  "full name": "name", "fullname": "name", "student name": "name",
-  "studentname": "name", "player name": "name", "playername": "name",
-  "participant name": "name", "child name": "name", "childname": "name",
-  "naam": "name",
+  "athletename": "name", "name": "name", "fullname": "name",
+  "studentname": "name", "playername": "name",
+  "participantname": "name", "childname": "name", "naam": "name",
 
   // ── Gender ──
-  "gender": "gender", "sex": "gender", "ling": "gender",
-  "gender (m/f)": "gender", "m/f": "gender",
+  "gender": "gender", "sex": "gender", "ling": "gender", "mf": "gender",
 
   // ── Age ──
-  "age": "age", "age (years)": "age", "age years": "age",
-  "ayu": "age", "aayu": "age",
+  "age": "age", "ageyears": "age", "ayu": "age", "aayu": "age",
 
   // ── Height ──
-  "height": "height", "height cm": "height", "height_cm": "height",
-  "heightcm": "height", "height (cm)": "height", "ht": "height",
-  "ht (cm)": "height", "ht cm": "height", "height in cm": "height",
-  "lambai": "height", "lamba": "height",
+  "height": "height", "heightcm": "height", "ht": "height",
+  "heightincm": "height", "lambai": "height", "lamba": "height",
 
   // ── Weight ──
-  "weight": "weight", "weight kg": "weight", "weight_kg": "weight",
-  "weightkg": "weight", "weight (kg)": "weight", "wt": "weight",
-  "wt (kg)": "weight", "wt kg": "weight", "weight in kg": "weight",
-  "bhar": "weight", "vajan": "weight",
+  "weight": "weight", "weightkg": "weight", "wt": "weight",
+  "weightinkg": "weight", "bhar": "weight", "vajan": "weight",
 
-  // ── 30m Sprint — Bihar columns ──
-  "thirty mflingstarts": "sprint30m",
+  // ── 30m Sprint — Bihar: "Thirty mflingstarts" normalises to "thirtymflingstarts" ──
   "thirtymflingstarts": "sprint30m",
-  "thirty meter flying starts": "sprint30m",
-  "30m sprint": "sprint30m", "sprint 30m": "sprint30m",
-  "sprint_30m": "sprint30m", "sprint30m": "sprint30m",
-  "sprint (30m)": "sprint30m", "sprint (sec)": "sprint30m",
-  "30 m sprint": "sprint30m", "30m": "sprint30m",
-  "thirty m flying starts": "sprint30m",
-  "30 meter sprint": "sprint30m", "30 m flying start": "sprint30m",
-  "flying start 30m": "sprint30m", "30m flying start": "sprint30m",
+  "thirtymeterflyingstarts": "sprint30m",
+  "30mflyingstart": "sprint30m",
+  "flyingstart30m": "sprint30m",
+  "30msprint": "sprint30m",
+  "sprint30m": "sprint30m",
+  "sprintsec": "sprint30m",
+  "30m": "sprint30m",
   "sprint": "sprint30m",
 
-  // ── Broad Jump — Bihar columns ──
+  // ── Broad Jump — Bihar: "Standinggbroadjump" ──
   "standinggbroadjump": "broadJump",
-  "standin gbroadjump": "broadJump",
-  "standing broad jump": "broadJump", "standingt broad jump": "broadJump",
-  "broad jump": "broadJump", "broadjump": "broadJump",
-  "broad_jump": "broadJump", "bj": "broadJump",
-  "broad jump (cm)": "broadJump", "standinggbroadjump (cm)": "broadJump",
-  "standing long jump": "broadJump", "standinglongjump": "broadJump",
-  "long jump": "broadJump", "longjump": "broadJump",
-  "standing jump": "broadJump",
+  "standingbroadjump": "broadJump",
+  "broadjump": "broadJump",
+  "bj": "broadJump",
+  "standinglongjump": "broadJump",
+  "longjump": "broadJump",
+  "standingjump": "broadJump",
 
-  // ── Shuttle Run — Bihar column ──
+  // ── Shuttle Run — Bihar: "Shuttlerun10Mx6" ──
   "shuttlerun10mx6": "shuttleRun",
-  "shuttle run 10mx6": "shuttleRun", "shuttle run": "shuttleRun",
-  "shuttlerun": "shuttleRun", "shuttle_run": "shuttleRun",
-  "shuttle run (sec)": "shuttleRun", "shuttle": "shuttleRun",
-  "10mx6 shuttle": "shuttleRun", "agility run": "shuttleRun",
+  "shuttlerun": "shuttleRun",
+  "shuttle": "shuttleRun",
+  "10mx6shuttle": "shuttleRun",
+  "agilityrun": "shuttleRun",
 
-  // ── Vertical Jump — Bihar column ──
+  // ── Vertical Jump — Bihar: "Verticaljump" ──
   "verticaljump": "verticalJump",
-  "vertical jump": "verticalJump", "vertical_jump": "verticalJump",
-  "vj": "verticalJump", "v jump": "verticalJump", "v_jump": "verticalJump",
-  "vertical jump (cm)": "verticalJump", "vert jump": "verticalJump",
+  "vj": "verticalJump",
+  "vjump": "verticalJump",
+  "vertjump": "verticalJump",
 
-  // ── Football Throw — Bihar column ──
+  // ── Football Throw — Bihar: "Footballballthrow5No" ──
   "footballballthrow5no": "footballThrow",
-  "football ball throw 5 no": "footballThrow",
-  "football throw": "footballThrow", "footballthrow": "footballThrow",
-  "football_throw": "footballThrow", "football throw (m)": "footballThrow",
-  "ball throw": "footballThrow", "throw": "footballThrow",
+  "footballballthrow": "footballThrow",
+  "footballthrow": "footballThrow",
+  "ballthrow": "footballThrow",
+  "throw": "footballThrow",
 
-  // ── 800m Run — Bihar column ──
+  // ── 800m Run — Bihar: "Eighthundredmetersrun" ──
   "eighthundredmetersrun": "run800m",
-  "eight hundred meters run": "run800m",
-  "800m run": "run800m", "run800m": "run800m", "run_800m": "run800m",
-  "800m run (sec)": "run800m", "800m": "run800m", "800 m run": "run800m",
-  "800m run (min)": "run800m", "800 meter run": "run800m",
-  "800m endurance": "run800m", "endurance run": "run800m",
+  "eighthundredmeterrun": "run800m",
+  "800mrun": "run800m",
+  "run800m": "run800m",
+  "800m": "run800m",
+  "800meterrun": "run800m",
+  "800mendurance": "run800m",
+  "endurancerun": "run800m",
 
   // ── School / District ──
-  "school": "school", "school name": "school", "schoolname": "school",
+  "school": "school", "schoolname": "school",
   "district": "district", "dist": "district", "zila": "district",
 
   // ── DoB / Assessment date ──
-  "dob": "dob", "date of birth": "dob", "birthdate": "dob",
-  "assessment date": "assessmentDate", "assessmentdate": "assessmentDate",
-  "date": "assessmentDate",
+  "dob": "dob", "dateofbirth": "dob", "birthdate": "dob",
+  "assessmentdate": "assessmentDate", "date": "assessmentDate",
 };
 
 function normaliseHeader(h: string): string {
-  return h.trim().toLowerCase().replace(/\s+/g, " ").replace(/[_-]/g, " ");
+  // Strip ALL non-alphanumeric chars so "Thirty mflingstarts" == "thirtymflingstarts"
+  return h.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 // ─── Time conversion helpers ────────────────────────────────────────────────
@@ -225,6 +215,11 @@ export function rowsToAthletes(rows: Record<string, string>[]): ParseResult {
   }
   const detectedColumns = Object.keys(headerMap);
   const unmappedColumns = headerSnapshot.filter((h) => !headerMap[h]);
+
+  // Debug: log what was mapped and what wasn't
+  console.log("[csvParser] Header snapshot:", headerSnapshot);
+  console.log("[csvParser] Detected (mapped):", detectedColumns);
+  console.log("[csvParser] Unmapped:", unmappedColumns);
 
   /** Get raw string value for an internal field */
   const getField = (row: Record<string, string>, field: InternalField): string => {
