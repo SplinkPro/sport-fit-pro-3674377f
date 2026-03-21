@@ -173,14 +173,12 @@ describe("rowsToAthletes — validation", () => {
 
 describe("generateCSVTemplate", () => {
   it("generates valid CSV that can be re-parsed", () => {
-    const { generateCSVTemplate } = require("../lib/csvParser");
     const csv = generateCSVTemplate();
     const rows = parseCSVText(csv);
     expect(rows.length).toBeGreaterThan(0);
   });
 
   it("template has required Bihar columns", () => {
-    const { generateCSVTemplate } = require("../lib/csvParser");
     const csv = generateCSVTemplate();
     expect(csv).toContain("Athlete Name");
     expect(csv).toContain("Verticaljump");
@@ -189,7 +187,6 @@ describe("generateCSVTemplate", () => {
   });
 
   it("template sample data parses to valid athletes", () => {
-    const { generateCSVTemplate } = require("../lib/csvParser");
     const csv = generateCSVTemplate();
     const rows = parseCSVText(csv);
     const result = rowsToAthletes(rows);
