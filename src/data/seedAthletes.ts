@@ -30,6 +30,13 @@ export interface AthleteFlag {
   message: string;
 }
 
+// ─── Data quality flags (set during import, stored on athlete record) ────────
+export type Run800mFlag = "OK" | "AUTO_CORRECTED" | "IMPLAUSIBLE_VERIFY" | "FORMAT_UNREADABLE";
+export type VJFlag = "OK" | "AUTO_CORRECTED" | "UNCLEAR_VERIFY";
+export type Sprint30mFlag = "OK" | "OUTLIER_VERIFY";
+export type BroadJumpFlag = "OK" | "OUTLIER_VERIFY";
+export type ShuttleRunFlag = "OK" | "OUTLIER_VERIFY";
+
 export interface AssessmentRecord {
   date: string;
   verticalJump?: number;
