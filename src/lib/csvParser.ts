@@ -338,9 +338,11 @@ export interface BatchMeta {
   gender: "M" | "F" | "Mixed";
 }
 
-/** Maps age group label to midpoint age for norm table lookup */
+/** Maps age group label to midpoint age for norm table lookup.
+ * BUG FIX: U12→12, U14→14, U16→16, U18→18 (was 11/13/15/17 — off-by-one
+ * causing each group to match the row BELOW its actual age band in INDIAN_BENCHMARKS). */
 const AGE_GROUP_MIDPOINT: Record<BatchMeta["ageGroup"], number> = {
-  U10: 9, U12: 11, U14: 13, U16: 15, U18: 17, Open: 20,
+  U10: 10, U12: 12, U14: 14, U16: 16, U18: 18, Open: 20,
 };
 
 export function rowsToAthletes(
