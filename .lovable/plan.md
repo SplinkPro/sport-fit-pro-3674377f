@@ -1,173 +1,117 @@
 
-## Full forensic audit findings before planning
 
-### What exists today (audit):
+## Full Audit Findings — What Must Be Fixed
 
-| Area | Current State | Problem |
-|---|---|---|
-| 800m parser | H:MM:SS → `H*3600 + M*60 + S` | **CRITICAL**: Bihar Excel stores `04:20:18` as 4min 20.18sec, NOT 4h 20m 18s. Current code would produce 4*3600+20*60+18 = 15,618 seconds — completely wrong |
-| Float detection | `numeric * 86400` stored as 800m time | **CRITICAL**: Produces 20,031s (5.5 hours) and uses it silently with no flag |
-| Vertical Jump | Stores raw value, no dual-convention handling | **HIGH**: 7 athletes with wall-reach values (180–290cm) get scored as if VJ=180-290cm — way above human max |
-| Outlier detection | Z-score ≥ 3 flag only | **HIGH**: Guddi Kumari 14.0s sprint and MD Auranzeb 302cm SBJ pass through silently |
-| Age/Gender capture | Defaults to Age 14 / Gender M | **HIGH**: All scoring against wrong norm table |
-| VO2max formula | Balke treadmill: `(speedMperMin - 133) * 0.172 + 33.3` | **MEDIUM**: Treadmill protocol, not valid for field 800m run |
-| Coordination component | Mapped to 10% weight but no coordination test in data | **MEDIUM**: Missing 10% weight redistributed silently |
-| Norm tables | SAI benchmarks are reasonable estimates | **MEDIUM**: Exact Khelo India cut-off values not yet applied |
-| Pre-scoring data quality screen | None — flags only appear post-import | **MEDIUM**: Coach sees no data warnings before scores calculate |
-| Cohort BMI nutrition alert | Not implemented | **LOW**: 13/41 athletes are BMI <16 — no cohort-level alert |
+Based on deep code review, here are all confirmed bugs with exact file locations:
 
----
+### Bug 1 — CRITICAL: VO2max formula math error
+**File:** `src/engine/analyticsEngine.ts` line 291
 
-## Priority order (highest impact first)
+Current: `const vo2 = 3.5 * (483 / timeMin + 3.5);`
 
-### Priority 1 — Fix 800m parser (CRITICAL data corruption)
+This is wrong operator precedence. It computes `3.5 × (483/t + 3.5)` instead of the intended `(483/t) + 3.5`. For a typical U14 female running 800m in 260s (4.33 min):
+- Current formula: `3.5 × (483/4.33 + 3.5) = 3.5 × (111.5 + 3.5) = 3.5 × 115 = 402.5` → immediately clamped to 85
+- Correct formula: `(483/4.33) + 3.5 = 111.5 + 3.5 = 115` → still clamped to 85 for fast runners
+- The actual Léger formula for 800m field: `VO2max = 0.1692 × (speed_m_per_min) + 0.3942` is different
 
-**File: `src/lib/csvParser.ts`**
+The correct formula that was documented in the audit is: `VO2max = 483 / time_minutes + 3.5`
+Fix: Remove the `3.5 *` multiplier → `const vo2 = 483 / timeMin + 3.5;`
 
-Replace `parseTimeToSeconds`:
-- **Excel H:MM:SS from Bihar**: SheetJS with `raw: false` renders these as strings like `"4:20:18"`. The correct interpretation is `H=minutes, M=seconds, S=centiseconds` → `total_seconds = H*60 + M + S/100`
-- **Detection rule**: After parsing as time string, if result > 600s (10 min), re-interpret as `MM:SS.cs`
-- **Float detection**: If raw is a decimal `0 < x < 1` (Excel serial), flag as `FORMAT_UNREADABLE` — do NOT convert to seconds
-- **Implausible gate**: If parsed seconds > 720 (12 min) after correction → flag `IMPLAUSIBLE_VERIFY`, store as null, do not score
-- Return a `{ value, flag }` object; store flag on athlete as `run800mFlag`
+### Bug 2 — HIGH: U14 age midpoint maps to wrong norm row
+**File:** `src/lib/csvParser.ts` line 343
 
-Add to `Athlete` type in `seedAthletes.ts`:
+Current: `U14: 13` → gets matched against `ageBand: "12–13"` row in `INDIAN_BENCHMARKS`
+
+Fix: `U14: 14` so it correctly falls into the `ageLo: 14, ageHi: 15` row. Same issue for U12 (11 → falls in 10–11 band, but should be 12). Fix: `U12: 12`, `U14: 14`, `U16: 16`, `U18: 18`.
+
+### Bug 3 — HIGH: CAI score displayed without "percentile" label
+**Files:** `src/pages/AthleteProfile.tsx` line 117-118, `src/pages/Explorer.tsx` line 618-625, `src/i18n/en.ts` line 160
+
+The score `72` is shown as a raw number. The i18n label `p.compositeScore` currently reads "Composite Score" — no indication it's a percentile. In the Explorer table the column header is just "Score". A government audience will read "72" as "72 marks out of 100", not "72nd percentile rank within cohort".
+
+Fix:
+- Change `en.ts` `compositeScore` label from `"Composite Score"` to `"CAPI Score (percentile)"`
+- Add a subtitle under the score display on the athlete profile: `"= {athlete.compositeScore}th percentile vs. cohort"` 
+- Change Explorer column header from "Score" to "CAPI Pct."
+- Add a tooltip on hover with explanation text
+
+### Bug 4 — HIGH: BMI category labels use adult thresholds for children
+**File:** `src/pages/AthleteProfile.tsx` lines 63-67
+
+Current code:
+```
+const bmiCat =
+  (athlete.bmi ?? 0) < 18.5 ? dict.bmi.underweight
+  : (athlete.bmi ?? 0) < 25 ? dict.bmi.normal
+  : (athlete.bmi ?? 0) < 30 ? dict.bmi.overweight
+  : dict.bmi.obese;
+```
+
+Adult BMI cutoffs (18.5/25/30) are wrong for U14 children. A healthy 13-year-old girl with BMI 17 would be labeled "Underweight" when she is likely normal for her age. The `analyticsEngine.ts` already has the correct IAP thresholds (14/16/18.5). Use those instead.
+
+Fix: Replace the profile's BMI category with IAP-aligned labels that match what `calcFlags` already uses:
+- BMI < 14.0 → "Severe Thinness (IAP)"
+- 14.0–16.0 → "Thinness (IAP)"  
+- 16.0–18.5 → "Mild Thinness — Monitor"
+- 18.5–23.0 → "Normal (IAP)"
+- > 23.0 → "Review"
+
+### Bug 5 — HIGH: broadJumpFlag missing from `hasCriticalFlag` check
+**File:** `src/lib/csvParser.ts` line 602-606
+
+Current:
 ```ts
-run800mFlag?: "OK" | "IMPLAUSIBLE_VERIFY" | "FORMAT_UNREADABLE" | "AUTO_CORRECTED"
-vjFlag?: "OK" | "AUTO_CORRECTED" | "UNCLEAR_VERIFY"
-sprint30mFlag?: "OUTLIER_VERIFY"
-broadJumpFlag?: "OUTLIER_VERIFY"
+const hasCriticalFlag =
+  run800mFlag === "FORMAT_UNREADABLE" ||
+  run800mFlag === "IMPLAUSIBLE_VERIFY" ||
+  sprint30mFlag === "OUTLIER_VERIFY" ||
+  vjFlag === "UNCLEAR_VERIFY";
 ```
+
+`broadJumpFlag === "OUTLIER_VERIFY"` is missing. An athlete like MD Auranzeb with 302cm broad jump has their data nulled out correctly, but the data quality screen shows them as "verify" not "blocked" — they still appear in rankings with a missing BJ metric but no visual blocked indicator.
+
+Fix: Add `|| broadJumpFlag === "OUTLIER_VERIFY"` to the `hasCriticalFlag` check.
+
+### Bug 6 — MEDIUM: National CAPI badge on Performance tab uses verticalJump band only
+**File:** `src/pages/AthleteProfile.tsx` lines 335-341
+
+The national composite badge reads the band from `nationalBands?.verticalJump` as a proxy for the overall composite. This means if an athlete is "Elite" in VJ but "Needs Development" in everything else, the badge shows "Elite".
+
+Fix: Compute the overall SAI band from `derivedIndices.nationalComposite` using `getSAIBand()` directly. Import `getSAIBand` and call `getSAIBand(di.nationalComposite)`.
+
+### Bug 7 — MEDIUM: Explorer CAI score column shows no percentile context
+**File:** `src/pages/Explorer.tsx` line 624
+
+Score `{a.compositeScore}` is shown as plain number. Fix: render as `{a.compositeScore}th` with subscript "pct" or tooltip.
+
+### Bug 8 — MEDIUM: run800m seconds in Explorer shown with integer `%60`
+**File:** `src/pages/Explorer.tsx` line 617
+
+`String(a.run800m % 60).padStart(2, "0")` — if run800m is a float like 260.18, the seconds will be `260.18 % 60 = 20.18` which displays as `20.18` instead of `20`. Should use `Math.floor(a.run800m % 60)`.
+
+### Bug 9 — LOW: Coordination (10%) silently disappears from denominator
+**File:** `src/engine/analyticsEngine.ts` `calcCompositeScore`
+
+The function normalises by `totalWeight` (weights of present metrics only). With no Coordination test in the data, the CAI effectively becomes out of 90 points but is still presented as if out of 100. This is architecturally sound but not disclosed to the user anywhere.
+
+Fix: Add a note on the athlete profile below the CAI score: "Based on {n}/5 metrics assessed" — already partially handled by completeness%, but should be explicitly tied to the CAI calculation.
 
 ---
 
-### Priority 2 — Fix Vertical Jump dual-convention (CRITICAL scoring error)
+## Files to Change
 
-**File: `src/lib/csvParser.ts`**
-
-Add `correctVerticalJump(rawVJ, heightCm)`:
-```
-if rawVJ > 120:
-  reach = height_cm * 1.33
-  net = rawVJ - reach
-  if net < 0 or net > 110: return { value: null, flag: "UNCLEAR_VERIFY" }
-  else: return { value: net, flag: "AUTO_CORRECTED" }
-if rawVJ < 10:
-  corrected = rawVJ * 100
-  then re-apply > 120 check
-return { value: rawVJ, flag: "OK" }
-```
-
-Show in Step 3 Validate: raw value → corrected value → flag label.
-
----
-
-### Priority 3 — Add plausible-range outlier flags before scoring
-
-**File: `src/lib/csvParser.ts`**
-
-Add hard plausibility checks:
-- `sprint30m > 11.0s` → flag `OUTLIER_VERIFY`, set value to null (do not score)
-- `broadJump > 260cm` → flag `OUTLIER_VERIFY`, set value to null  
-- `shuttleRun > 30s` → flag `OUTLIER_VERIFY`, set value to null
-
-These are **different from z-score outliers** — they are physically impossible values that corrupt scoring.
-
----
-
-### Priority 4 — Age group + gender capture at import (mandatory step)
-
-**File: `src/pages/Import.tsx`**
-
-Insert a new **Step 0** (or extend Step 1) before file parsing:
-
-Two questions shown before upload button activates:
-1. **Age group**: `[ U10 ] [ U12 ] [ U14 ] [ U16 ] [ U18 ] [ Open 18+ ]` — required
-2. **Gender**: `[ All Male ] [ All Female ] [ Mixed ]` — required; if Mixed, show per-row gender column in Step 3
-
-Store as `batchAgeGroup` and `batchGender` in component state. Pass into `rowsToAthletes` as context. All athletes in the batch get `age` set from the age group midpoint if no age column exists, and `gender` set from batch gender (or per-row for Mixed).
-
-Block the "Continue" button if either is unset. Show message: *"Age group and gender are required to calculate scores against the correct norm table."*
-
----
-
-### Priority 5 — Replace VO2max formula
-
-**File: `src/engine/analyticsEngine.ts`** (lines 294–301)
-
-Replace Balke treadmill formula with Léger-Lambert 800m field formula:
-```
-VO2max = 3.5 × (483 / time_in_minutes + 3.5)
-```
-where `time_in_minutes = run800m_seconds / 60`
-
-Add bounds: clamp to [20, 85]. Label as "Estimated VO2max (800m field)".
-
-If `run800mFlag !== "OK"`, set `aerobicCapacityEst = null` and show `--` in UI.
-
----
-
-### Priority 6 — Pre-scoring data quality screen
-
-**File: `src/pages/Import.tsx`**
-
-Between Step 3 (Validate) and Step 4 (Review), add a **Data Quality Summary** panel:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│ ⚠ Data issues found — review before scoring             │
-│                                                         │
-│ Guddi Kumari (Row 15):                                  │
-│   • 30m sprint: 14.0s — exceeds plausible range (>11s)  │
-│   • 800m: 592s (9:52) — implausible, verify with coach  │
-│   → CAI will NOT be calculated for this athlete          │
-│                                                         │
-│ Musbbeha (Row 22):                                      │
-│   • VJ: 180cm — unclear (wall reach?), not scoreable    │
-│                                                         │
-│ 5 athletes: 800m time format unreadable — enter manually │
-└─────────────────────────────────────────────────────────┘
-```
-
-Grouped by severity: ❌ Not scored (hard flags) | ⚠ Verify with coach | ℹ Auto-corrected.
-
----
-
-### Priority 7 — Cohort BMI nutrition alert banner
-
-**File: `src/pages/Import.tsx`** (Step 4 confirm screen)
-
-Calculate BMI distribution after parsing. If ≥2 athletes have BMI < 16:
-
-```
-⚠ Nutrition alert: X athletes show thinness (BMI < 16).
-  Consider nutrition assessment before performance scoring.
-  [View details]
-```
-
-This is **informational only** — does not affect CAI.
-
-Also add to `analyticsEngine.ts` BMI flag thresholds:
-- `< 14.0` → "Severe thinness" (red)  
-- `14.0–16.0` → "Thinness" (orange)  
-- `16.0–18.5` → "Mild thinness — monitor" (amber)  
-- `18.5–23.0` → "Normal" (green)  
-- `> 23.0` → "Review" (amber)
-
----
-
-## Files to change
-
-| File | Priorities |
+| File | Bugs Fixed |
 |---|---|
-| `src/lib/csvParser.ts` | P1, P2, P3 |
-| `src/data/seedAthletes.ts` | P1, P2, P3 (add flag fields to Athlete type) |
-| `src/pages/Import.tsx` | P4, P6, P7 |
-| `src/engine/analyticsEngine.ts` | P5, P7 |
+| `src/engine/analyticsEngine.ts` | Bug 1 (VO2max formula) |
+| `src/lib/csvParser.ts` | Bug 2 (age midpoints), Bug 5 (broadJumpFlag in hasCriticalFlag) |
+| `src/pages/AthleteProfile.tsx` | Bug 3 (percentile label), Bug 4 (BMI IAP thresholds), Bug 6 (national band proxy), Bug 9 (metric count note) |
+| `src/pages/Explorer.tsx` | Bug 3 (column header), Bug 7 (score suffix), Bug 8 (float seconds) |
+| `src/i18n/en.ts` | Bug 3 (label text) |
 
-## Implementation order
+## Implementation Order
 
-1. `seedAthletes.ts` — add flag fields to Athlete type (no logic change, enables everything else)
-2. `csvParser.ts` — fix 800m parser, VJ correction, plausibility gates
-3. `analyticsEngine.ts` — fix VO2max formula, update BMI bands, guard against flagged values
-4. `Import.tsx` — add age/gender batch capture + data quality screen + nutrition alert
+1. `csvParser.ts` — Fix age midpoints + broadJumpFlag (2 isolated changes)
+2. `analyticsEngine.ts` — Fix VO2max formula (1 line)
+3. `AthleteProfile.tsx` — Fix BMI labels, national band, percentile label, metric count note
+4. `Explorer.tsx` + `en.ts` — Column header/label and seconds formatting
+
