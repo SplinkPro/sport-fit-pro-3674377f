@@ -273,9 +273,12 @@ export function calcDerivedIndices(
     ? parseFloat(((vj / height) * 100).toFixed(1))
     : null;
 
-  // Aerobic Capacity Estimate — Léger-Lambert 800m FIELD formula
-  // Formula: VO2max = 3.5 × (483 / time_in_minutes + 3.5)
-  // Source: Léger & Lambert (1982) adapted for school-age 800m field test.
+  // Aerobic Capacity Estimate — 800m field VO2max estimation
+  // Formula: VO2max (ml/kg/min) = 483 / time_in_minutes + 3.5
+  // Adapted from distance-run field test estimates for school-age athletes.
+  // NOTE: This is an ESTIMATE — not a clinical VO2max measurement.
+  // Source comment corrected: Léger & Lambert (1982) covers the 20m shuttle beep test,
+  //   not 800m field runs. This formula is an independent 800m field adaptation.
   // REPLACES: Balke treadmill formula (not valid for field 800m runs).
   // Guard: skip calculation if 800m was flagged as unreadable or implausible.
   const run800mFlag = (athlete as Athlete & { run800mFlag?: string }).run800mFlag;
@@ -288,7 +291,9 @@ export function calcDerivedIndices(
   )
     ? (() => {
         const timeMin = r800 / 60;
-        const vo2 = 3.5 * (483 / timeMin + 3.5);
+        // BUG FIX: removed erroneous 3.5× outer multiplier (was 3.5*(483/t+3.5)
+        // which clamped every athlete to 85). Correct: (483/t) + 3.5
+        const vo2 = 483 / timeMin + 3.5;
         // Clamp to physiologically plausible range [20, 85] ml/kg/min
         return parseFloat(Math.max(20, Math.min(85, vo2)).toFixed(1));
       })()

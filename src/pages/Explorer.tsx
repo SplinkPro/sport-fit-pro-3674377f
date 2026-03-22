@@ -232,7 +232,7 @@ export default function ExplorerPage() {
     { key: "broadJump", label: e.columns.broadJump, sortKey: "broadJump", width: "w-20" },
     { key: "sprint30m", label: e.columns.sprint30m, sortKey: "sprint30m", width: "w-22" },
     { key: "run800m", label: e.columns.run800m, sortKey: "run800m", width: "w-22" },
-    { key: "compositeScore", label: e.columns.compositeScore, sortKey: "compositeScore", width: "w-18" },
+    { key: "compositeScore", label: "CAPI Pct.", sortKey: "compositeScore", width: "w-18" },
     { key: "topSport", label: e.columns.topSport, sortKey: "topSport", width: "w-28" },
     { key: "completeness", label: e.columns.completeness, width: "w-20" },
     { key: "flags", label: e.columns.flags, width: "w-24" },
@@ -614,7 +614,7 @@ function renderCell(
     case "verticalJump": return <span>{a.verticalJump?.toFixed(1) ?? <span className="text-muted-foreground">—</span>}</span>;
     case "broadJump": return <span>{a.broadJump?.toFixed(1) ?? <span className="text-muted-foreground">—</span>}</span>;
     case "sprint30m": return <span>{a.sprint30m?.toFixed(2) ?? <span className="text-muted-foreground">—</span>}</span>;
-    case "run800m": return <span>{a.run800m ? `${Math.floor(a.run800m / 60)}:${String(a.run800m % 60).padStart(2, "0")}` : <span className="text-muted-foreground">—</span>}</span>;
+    case "run800m": return <span>{a.run800m ? `${Math.floor(a.run800m / 60)}:${String(Math.floor(a.run800m % 60)).padStart(2, "0")}` : <span className="text-muted-foreground">—</span>}</span>;
     case "compositeScore":
       return (
         <span className={cn(
@@ -622,6 +622,7 @@ function renderCell(
           a.compositeScore >= 70 ? "text-green-600" : a.compositeScore >= 50 ? "text-yellow-600" : "text-red-500"
         )}>
           {a.compositeScore}
+          <span className="text-[9px] font-normal text-muted-foreground ml-0.5">pct</span>
         </span>
       );
     case "topSport":

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useT } from "@/i18n/useTranslation";
 import { EnrichedAthlete, getBenchmarkBand, BENCHMARK_COLORS } from "@/engine/analyticsEngine";
+import { getSAIBand } from "@/data/indianBenchmarks";
 import { SPORTS_CONFIG } from "@/data/sportsConfig";
 import {
   SAI_BAND_COLORS, SAI_BAND_LABELS, NationalBenchmarkMetric,
@@ -60,11 +61,14 @@ export default function AthleteProfilePage() {
   }
 
   const p = dict.profile;
+  // BUG FIX: replaced adult BMI cutoffs (18.5/25/30) with IAP India youth thinness grades.
+  // Adult thresholds mislabel healthy children: a normal 13-yr-old with BMI 17 is NOT underweight.
   const bmiCat =
-    (athlete.bmi ?? 0) < 18.5 ? dict.bmi.underweight
-    : (athlete.bmi ?? 0) < 25 ? dict.bmi.normal
-    : (athlete.bmi ?? 0) < 30 ? dict.bmi.overweight
-    : dict.bmi.obese;
+    (athlete.bmi ?? 0) < 14.0 ? "Severe Thinness (IAP)"
+    : (athlete.bmi ?? 0) < 16.0 ? "Thinness (IAP)"
+    : (athlete.bmi ?? 0) < 18.5 ? "Mild Thinness — Monitor"
+    : (athlete.bmi ?? 0) <= 23.0 ? "Normal (IAP)"
+    : "Review";
 
   return (
     <div className="flex flex-col h-full">
@@ -115,7 +119,15 @@ export default function AthleteProfilePage() {
 
           <div className="shrink-0 text-right">
             <div className="text-3xl font-bold text-primary tabular-nums">{athlete.compositeScore}</div>
-            <div className="text-xs text-muted-foreground">{p.compositeScore}</div>
+            {/* BUG FIX: label explicitly shows "percentile" — government audience must not
+                read "72" as "72 marks out of 100". It means 72nd percentile vs. cohort. */}
+            <div className="text-xs text-muted-foreground">CAPI Score</div>
+            <div className="text-[10px] text-muted-foreground/70">
+              {athlete.compositeScore}th percentile vs. cohort
+            </div>
+            <div className="text-[10px] text-muted-foreground/60 mt-0.5">
+              Based on {Object.values(athlete.percentiles ?? {}).filter((v) => v != null).length}/5 metrics
+            </div>
             {athlete.isHighPotential && (
               <Badge className="mt-1 bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
                 ⭐ High Potential
@@ -328,18 +340,24 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
             <div className="text-xs text-muted-foreground">vs. all-India standard</div>
           </div>
           <div className="text-right">
-            {di?.nationalComposite != null && (
-              <Badge
-                className="text-[10px]"
-                style={{
-                  backgroundColor: SAI_BAND_COLORS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"] + "20",
-                  color: SAI_BAND_COLORS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"],
-                  borderColor: SAI_BAND_COLORS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"] + "40",
-                }}
-              >
-                {SAI_BAND_LABELS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"]}
-              </Badge>
-            )}
+            {di?.nationalComposite != null && (() => {
+              // BUG FIX: was using nationalBands?.verticalJump as a proxy for the overall composite.
+              // An athlete "Elite" in VJ but "Development" in everything else showed "Elite".
+              // Correct: derive the overall SAI band directly from nationalComposite score.
+              const overallBand = getSAIBand(di.nationalComposite);
+              return (
+                <Badge
+                  className="text-[10px]"
+                  style={{
+                    backgroundColor: SAI_BAND_COLORS[overallBand] + "20",
+                    color: SAI_BAND_COLORS[overallBand],
+                    borderColor: SAI_BAND_COLORS[overallBand] + "40",
+                  }}
+                >
+                  {SAI_BAND_LABELS[overallBand]}
+                </Badge>
+              );
+            })()}
           </div>
         </div>
       </div>
