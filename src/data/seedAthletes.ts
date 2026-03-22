@@ -22,6 +22,12 @@ export interface Athlete {
   flags?: AthleteFlag[];
   assessmentDate: string;
   assessmentHistory?: AssessmentRecord[];
+  // Data quality flags (set at import time)
+  run800mFlag?: "OK" | "AUTO_CORRECTED" | "IMPLAUSIBLE_VERIFY" | "FORMAT_UNREADABLE";
+  vjFlag?: "OK" | "AUTO_CORRECTED" | "UNCLEAR_VERIFY";
+  sprint30mFlag?: "OK" | "OUTLIER_VERIFY";
+  broadJumpFlag?: "OK" | "OUTLIER_VERIFY";
+  shuttleRunFlag?: "OK" | "OUTLIER_VERIFY";
 }
 
 export interface AthleteFlag {
