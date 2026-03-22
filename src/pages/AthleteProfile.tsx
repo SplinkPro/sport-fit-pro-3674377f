@@ -61,11 +61,14 @@ export default function AthleteProfilePage() {
   }
 
   const p = dict.profile;
+  // BUG FIX: replaced adult BMI cutoffs (18.5/25/30) with IAP India youth thinness grades.
+  // Adult thresholds mislabel healthy children: a normal 13-yr-old with BMI 17 is NOT underweight.
   const bmiCat =
-    (athlete.bmi ?? 0) < 18.5 ? dict.bmi.underweight
-    : (athlete.bmi ?? 0) < 25 ? dict.bmi.normal
-    : (athlete.bmi ?? 0) < 30 ? dict.bmi.overweight
-    : dict.bmi.obese;
+    (athlete.bmi ?? 0) < 14.0 ? "Severe Thinness (IAP)"
+    : (athlete.bmi ?? 0) < 16.0 ? "Thinness (IAP)"
+    : (athlete.bmi ?? 0) < 18.5 ? "Mild Thinness — Monitor"
+    : (athlete.bmi ?? 0) <= 23.0 ? "Normal (IAP)"
+    : "Review";
 
   return (
     <div className="flex flex-col h-full">
