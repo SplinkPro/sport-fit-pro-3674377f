@@ -601,10 +601,14 @@ export function rowsToAthletes(
     // Build quality issue record
     if (qualityIssues.length > 0) {
       // Determine severity: blocked if CAI cannot be calculated (critical metrics missing/flagged)
+      // BUG FIX: added broadJumpFlag === "OUTLIER_VERIFY" — was missing, allowing
+      // athletes with impossible broad jump values (e.g. 302cm) to show as "verify"
+      // instead of "blocked" and remain in rankings with a null BJ metric.
       const hasCriticalFlag =
         run800mFlag === "FORMAT_UNREADABLE" ||
         run800mFlag === "IMPLAUSIBLE_VERIFY" ||
         sprint30mFlag === "OUTLIER_VERIFY" ||
+        broadJumpFlag === "OUTLIER_VERIFY" ||
         vjFlag === "UNCLEAR_VERIFY";
 
       const hasAutoCorrection =
