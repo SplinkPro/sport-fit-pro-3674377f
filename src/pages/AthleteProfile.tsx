@@ -119,7 +119,15 @@ export default function AthleteProfilePage() {
 
           <div className="shrink-0 text-right">
             <div className="text-3xl font-bold text-primary tabular-nums">{athlete.compositeScore}</div>
-            <div className="text-xs text-muted-foreground">{p.compositeScore}</div>
+            {/* BUG FIX: label explicitly shows "percentile" — government audience must not
+                read "72" as "72 marks out of 100". It means 72nd percentile vs. cohort. */}
+            <div className="text-xs text-muted-foreground">CAPI Score</div>
+            <div className="text-[10px] text-muted-foreground/70">
+              {athlete.compositeScore}th percentile vs. cohort
+            </div>
+            <div className="text-[10px] text-muted-foreground/60 mt-0.5">
+              Based on {Object.values(athlete.percentiles ?? {}).filter((v) => v != null).length}/5 metrics
+            </div>
             {athlete.isHighPotential && (
               <Badge className="mt-1 bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
                 ⭐ High Potential
