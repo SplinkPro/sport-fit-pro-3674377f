@@ -614,7 +614,7 @@ function renderCell(
     case "verticalJump": return <span>{a.verticalJump?.toFixed(1) ?? <span className="text-muted-foreground">—</span>}</span>;
     case "broadJump": return <span>{a.broadJump?.toFixed(1) ?? <span className="text-muted-foreground">—</span>}</span>;
     case "sprint30m": return <span>{a.sprint30m?.toFixed(2) ?? <span className="text-muted-foreground">—</span>}</span>;
-    case "run800m": return <span>{a.run800m ? `${Math.floor(a.run800m / 60)}:${String(a.run800m % 60).padStart(2, "0")}` : <span className="text-muted-foreground">—</span>}</span>;
+    case "run800m": return <span>{a.run800m ? `${Math.floor(a.run800m / 60)}:${String(Math.floor(a.run800m % 60)).padStart(2, "0")}` : <span className="text-muted-foreground">—</span>}</span>;
     case "compositeScore":
       return (
         <span className={cn(
@@ -622,6 +622,7 @@ function renderCell(
           a.compositeScore >= 70 ? "text-green-600" : a.compositeScore >= 50 ? "text-yellow-600" : "text-red-500"
         )}>
           {a.compositeScore}
+          <span className="text-[9px] font-normal text-muted-foreground ml-0.5">pct</span>
         </span>
       );
     case "topSport":
