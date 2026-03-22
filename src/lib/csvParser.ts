@@ -1,11 +1,12 @@
 /**
  * CSV / TSV parser for athlete import.
- * Handles the Bihar assessment format from Sample_data_12.xlsx:
- *   Sl No | studentId | Athlete Name | Height | Thirty mflingstarts |
- *   Standinggbroadjump | Shuttlerun10Mx6 | Verticaljump |
- *   Footballballthrow5No | Eighthundredmetersrun | Weight
- *
+ * Handles the Bihar assessment format from Sample_data_12.xlsx.
  * Also accepts the standard template format.
+ *
+ * KEY CORRECTIONS vs prior version:
+ *  - 800m: Bihar Excel stores "4:20:18" as M:SS:cs (NOT H:MM:SS). Correct formula: M*60+S+cs/100
+ *  - VJ: Dual-convention handling (net jump vs wall-reach total)
+ *  - Plausibility gates: sprint > 11s, SBJ > 260cm, shuttle > 30s → nulled + flagged
  */
 import { Athlete } from "@/data/seedAthletes";
 
