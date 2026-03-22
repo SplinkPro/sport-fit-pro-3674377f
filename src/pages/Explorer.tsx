@@ -232,7 +232,7 @@ export default function ExplorerPage() {
     { key: "broadJump", label: e.columns.broadJump, sortKey: "broadJump", width: "w-20" },
     { key: "sprint30m", label: e.columns.sprint30m, sortKey: "sprint30m", width: "w-22" },
     { key: "run800m", label: e.columns.run800m, sortKey: "run800m", width: "w-22" },
-    { key: "compositeScore", label: e.columns.compositeScore, sortKey: "compositeScore", width: "w-18" },
+    { key: "compositeScore", label: "CAPI Pct.", sortKey: "compositeScore", width: "w-18" },
     { key: "topSport", label: e.columns.topSport, sortKey: "topSport", width: "w-28" },
     { key: "completeness", label: e.columns.completeness, width: "w-20" },
     { key: "flags", label: e.columns.flags, width: "w-24" },
