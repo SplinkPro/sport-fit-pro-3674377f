@@ -340,18 +340,24 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
             <div className="text-xs text-muted-foreground">vs. all-India standard</div>
           </div>
           <div className="text-right">
-            {di?.nationalComposite != null && (
-              <Badge
-                className="text-[10px]"
-                style={{
-                  backgroundColor: SAI_BAND_COLORS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"] + "20",
-                  color: SAI_BAND_COLORS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"],
-                  borderColor: SAI_BAND_COLORS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"] + "40",
-                }}
-              >
-                {SAI_BAND_LABELS[athlete.derivedIndices?.nationalBands?.verticalJump ?? "average"]}
-              </Badge>
-            )}
+            {di?.nationalComposite != null && (() => {
+              // BUG FIX: was using nationalBands?.verticalJump as a proxy for the overall composite.
+              // An athlete "Elite" in VJ but "Development" in everything else showed "Elite".
+              // Correct: derive the overall SAI band directly from nationalComposite score.
+              const overallBand = getSAIBand(di.nationalComposite);
+              return (
+                <Badge
+                  className="text-[10px]"
+                  style={{
+                    backgroundColor: SAI_BAND_COLORS[overallBand] + "20",
+                    color: SAI_BAND_COLORS[overallBand],
+                    borderColor: SAI_BAND_COLORS[overallBand] + "40",
+                  }}
+                >
+                  {SAI_BAND_LABELS[overallBand]}
+                </Badge>
+              );
+            })()}
           </div>
         </div>
       </div>
