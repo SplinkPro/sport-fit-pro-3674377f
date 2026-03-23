@@ -194,14 +194,21 @@ export default function ImportPage() {
   const handleConfirmImport = () => {
     if (!parseResult || !uploadedFile) return;
     const incoming = enrichAthletes(parseResult.athletes);
-    const final = importMode === "append" ? [...currentAthletes, ...incoming] : incoming;
     const version = `v${importHistory.length + 1}`;
     const todayStr = new Date().toISOString().slice(0, 10);
 
-    addDataset(
-      { name: uploadedFile.name, version, count: final.length, importedAt: todayStr, source: "import" },
-      final,
-    );
+    if (importMode === "batch_update") {
+      addBatchUpdate(
+        { name: uploadedFile.name, version, count: incoming.length, importedAt: todayStr, source: "import", isBatchUpdate: true },
+        incoming,
+      );
+    } else {
+      const final = importMode === "append" ? [...currentAthletes, ...incoming] : incoming;
+      addDataset(
+        { name: uploadedFile.name, version, count: final.length, importedAt: todayStr, source: "import" },
+        final,
+      );
+    }
 
     const entry: HistoryEntry = {
       id: `h${Date.now()}`, date: todayStr, file: uploadedFile.name,
