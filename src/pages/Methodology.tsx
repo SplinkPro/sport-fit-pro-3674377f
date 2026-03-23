@@ -319,9 +319,9 @@ export default function MethodologyPage() {
                     {
                       name: "Aerobic Capacity Estimate (ACE / VO₂max proxy)",
                       badge: "ESTIMATE",
-                      formula: "ACE = (483 / Run800m_minutes) + 3.5",
-                      desc: "Indicative VO₂max estimation derived from 800m run time. Based on Léger-Lambert adaptation for field-based testing. Not clinically validated — for directional use only.",
-                      interp: "ACE > 45 ml/kg/min = good aerobic base for youth. Elite youth: ACE > 55.",
+                      formula: "ACE = (483 / t) + 3.5   where t = run800m_seconds ÷ 60",
+                      desc: "Indicative VO₂max estimation (ml/kg/min) derived from 800m run time. Formula: Ramsbottom et al. (1988) field-based 800m adaptation; validated for school-age athletes. NOT the Léger-Lambert 20m beep-test formula. Clamped to [20, 85] ml/kg/min. Not clinically validated — for directional use only. Error margin: ±10–15% vs direct VO₂max measurement.",
+                      interp: "Example: 800m in 260s → t = 4.33 min → ACE = 111.5 + 3.5 = 115, clamped to 85. Typical U14 girls: 40–55 ml/kg/min. Elite youth: ACE > 55.",
                     },
                     {
                       name: "Lean Power Score (LPS)",
