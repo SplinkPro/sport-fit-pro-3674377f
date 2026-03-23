@@ -149,8 +149,8 @@ export const INDIAN_RECORDS: Record<"M" | "F", Partial<Record<NationalBenchmarkM
      * Olympic standard 9.99s 100m ≈ 3.68s for 30m flying start
      */
     sprint30m: [
-      { label: "District Avg (U-14 Boys)",           value: 5.10, context: "district" },
-      { label: "State Level (U-17 Boys)",             value: 4.65, context: "state" },
+      { label: "District Level Standard",           value: 5.10, context: "district" },
+      { label: "State Level Standard",             value: 4.65, context: "state" },
       { label: "National Junior Record",              value: 3.95, holder: "~10.51s 100m equiv.", year: 2023, context: "national_junior" },
       { label: "Senior National Best",               value: 3.82, holder: "Amlan Borboruah (10.25s)", year: 2023, context: "national_senior" },
       { label: "Olympic Standard (sub-10.00s)",      value: 3.68, context: "olympic" },
@@ -164,8 +164,8 @@ export const INDIAN_RECORDS: Record<"M" | "F", Partial<Record<NationalBenchmarkM
      * NOTE: Junior record > Senior record > Olympic standard (all in seconds, lower = faster = better)
      */
     run800m: [
-      { label: "District Avg (U-14 Boys)",           value: 258,    context: "district" },
-      { label: "State Level (U-17 Boys)",             value: 210,    context: "state" },
+      { label: "District Level Standard",           value: 258,    context: "district" },
+      { label: "State Level Standard",             value: 210,    context: "state" },
       { label: "National Junior Record",              value: 106.5,  holder: "India U20 (1:46.5)", year: 2023, context: "national_junior" },
       { label: "Olympic Standard (1:45.20)",          value: 105.2,  context: "olympic" },
       { label: "Senior National Record",              value: 100.28, holder: "Jinson Johnson (1:40.28)", year: 2018, context: "national_senior" },
@@ -175,8 +175,8 @@ export const INDIAN_RECORDS: Record<"M" | "F", Partial<Record<NationalBenchmarkM
      * Hierarchy: District (lowest) → State → SAI Elite Junior → Senior Elite (highest)
      */
     verticalJump: [
-      { label: "District Avg (U-14 Boys)",    value: 38, context: "district" },
-      { label: "State Level (U-17 Boys)",     value: 52, context: "state" },
+      { label: "District Level Standard",    value: 38, context: "district" },
+      { label: "State Level Standard",     value: 52, context: "state" },
       { label: "SAI Elite / Khelo India",     value: 65, context: "national_junior" },
       { label: "Indian Senior Elite",         value: 75, context: "national_senior" },
     ],
@@ -184,8 +184,8 @@ export const INDIAN_RECORDS: Record<"M" | "F", Partial<Record<NationalBenchmarkM
      * Broad Jump — higher is better (cm)
      */
     broadJump: [
-      { label: "District Avg (U-14 Boys)",    value: 170, context: "district" },
-      { label: "State Level (U-17 Boys)",     value: 205, context: "state" },
+      { label: "District Level Standard",    value: 170, context: "district" },
+      { label: "State Level Standard",     value: 205, context: "state" },
       { label: "SAI Elite / Khelo India",     value: 240, context: "national_junior" },
       { label: "Indian Senior Elite",         value: 265, context: "national_senior" },
     ],
@@ -194,8 +194,8 @@ export const INDIAN_RECORDS: Record<"M" | "F", Partial<Record<NationalBenchmarkM
      * Hierarchy: District (slowest) → State → SAI Elite (fastest)
      */
     shuttleRun: [
-      { label: "District Avg (U-14 Boys)",    value: 16.2, context: "district" },
-      { label: "State Level (U-17 Boys)",     value: 14.5, context: "state" },
+      { label: "District Level Standard",    value: 16.2, context: "district" },
+      { label: "State Level Standard",     value: 14.5, context: "state" },
       { label: "SAI Elite Standard",          value: 12.5, context: "national_junior" },
       { label: "Indian Senior Elite",         value: 11.8, context: "national_senior" },
     ],
@@ -209,8 +209,8 @@ export const INDIAN_RECORDS: Record<"M" | "F", Partial<Record<NationalBenchmarkM
      * NOTE: Corrected so Senior NR < Olympic standard numerically (both ~4.10s range)
      */
     sprint30m: [
-      { label: "District Avg (U-14 Girls)",          value: 5.70, context: "district" },
-      { label: "State Level (U-17 Girls)",            value: 5.10, context: "state" },
+      { label: "District Level Standard",          value: 5.70, context: "district" },
+      { label: "State Level Standard",            value: 5.10, context: "state" },
       { label: "National Junior Record",              value: 4.28, holder: "India U20 (~11.65s 100m)", year: 2023, context: "national_junior" },
       { label: "Senior National Best",               value: 4.10, holder: "Dutee Chand (11.17s)", year: 2021, context: "national_senior" },
       { label: "Olympic Standard (sub-11.15s)",      value: 4.09, context: "olympic" },
@@ -223,27 +223,27 @@ export const INDIAN_RECORDS: Record<"M" | "F", Partial<Record<NationalBenchmarkM
      * Hierarchy: District → State → Junior ≈ Olympic standard → Senior NR (fastest)
      */
     run800m: [
-      { label: "District Avg (U-14 Girls)",          value: 278,    context: "district" },
-      { label: "State Level (U-17 Girls)",            value: 228,    context: "state" },
+      { label: "District Level Standard",          value: 278,    context: "district" },
+      { label: "State Level Standard",            value: 228,    context: "state" },
       { label: "National Junior Record",              value: 119.0,  holder: "India U20 (~1:59.0)", year: 2023, context: "national_junior" },
       { label: "Olympic Standard (1:59.50)",          value: 119.5,  context: "olympic" },
       { label: "Senior National Record",              value: 113.54, holder: "Tintu Luka (1:53.54)", year: 2015, context: "national_senior" },
     ],
     verticalJump: [
-      { label: "District Avg (U-14 Girls)",   value: 30, context: "district" },
-      { label: "State Level (U-17 Girls)",    value: 42, context: "state" },
+      { label: "District Level Standard",   value: 30, context: "district" },
+      { label: "State Level Standard",    value: 42, context: "state" },
       { label: "SAI Elite / Khelo India",     value: 55, context: "national_junior" },
       { label: "Indian Senior Elite",         value: 63, context: "national_senior" },
     ],
     broadJump: [
-      { label: "District Avg (U-14 Girls)",   value: 148, context: "district" },
-      { label: "State Level (U-17 Girls)",    value: 180, context: "state" },
+      { label: "District Level Standard",   value: 148, context: "district" },
+      { label: "State Level Standard",    value: 180, context: "state" },
       { label: "SAI Elite / Khelo India",     value: 210, context: "national_junior" },
       { label: "Indian Senior Elite",         value: 235, context: "national_senior" },
     ],
     shuttleRun: [
-      { label: "District Avg (U-14 Girls)",   value: 17.5, context: "district" },
-      { label: "State Level (U-17 Girls)",    value: 15.5, context: "state" },
+      { label: "District Level Standard",   value: 17.5, context: "district" },
+      { label: "State Level Standard",    value: 15.5, context: "state" },
       { label: "SAI Elite / Khelo India",     value: 13.5, context: "national_junior" },
       { label: "Indian Senior Elite",         value: 12.8, context: "national_senior" },
     ],
@@ -373,8 +373,16 @@ export interface GapToRecord {
   gap: number;
   gapPercent: number;
   achieved: boolean;
+  agedOut: boolean; // athlete is older than the age window for this level
   yearsToAchieve: number | null; // estimated years based on LTAD rates
 }
+
+// Age ceiling per context — above this age the level is no longer age-eligible
+const CONTEXT_AGE_CEILING: Partial<Record<string, number>> = {
+  district: 14,  // U-14 district standard
+  state: 17,     // U-17 state standard
+  // national_junior, national_senior, olympic, world have no age ceiling
+};
 
 export function calcGapToRecords(
   currentValue: number,
@@ -393,9 +401,15 @@ export function calcGapToRecords(
     const gapPercent = Math.abs(gap / rec.value) * 100;
     const achieved = lowerIsBetter ? currentValue <= rec.value : currentValue >= rec.value;
 
-    // Estimate years to achieve using LTAD rates
+    // Check if the athlete has aged out of this level's competition window
+    const ageCeiling = CONTEXT_AGE_CEILING[rec.context];
+    const agedOut = ageCeiling != null && currentAge > ageCeiling;
+
+    // Estimate years to achieve — skip for aged-out levels
     let yearsToAchieve: number | null = null;
-    if (!achieved && gap > 0) {
+    if (achieved) {
+      yearsToAchieve = 0;
+    } else if (!agedOut && gap > 0) {
       let simValue = currentValue;
       let years = 0;
       while (years < 20) {
@@ -409,8 +423,6 @@ export function calcGapToRecords(
         }
         years++;
       }
-    } else if (achieved) {
-      yearsToAchieve = 0;
     }
 
     return {
@@ -420,6 +432,7 @@ export function calcGapToRecords(
       gap: parseFloat(Math.abs(gap).toFixed(3)),
       gapPercent: parseFloat(gapPercent.toFixed(1)),
       achieved,
+      agedOut,
       yearsToAchieve,
     };
   });

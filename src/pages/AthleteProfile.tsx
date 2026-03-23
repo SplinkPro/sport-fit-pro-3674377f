@@ -829,13 +829,30 @@ function TrajectoryTab({ athlete }: { athlete: EnrichedAthlete }) {
                   <span className="text-xs font-mono text-muted-foreground">{metaOpt.fmt(gap.targetValue)}</span>
                   {gap.achieved ? (
                     <span className="text-[10px] font-semibold text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded shrink-0">✓ Achieved</span>
+                  ) : gap.agedOut ? (
+                    <span className="text-[10px] font-semibold text-muted-foreground bg-muted border border-border px-1.5 py-0.5 rounded shrink-0">Age category passed</span>
                   ) : (
                     <span className="text-[10px] text-muted-foreground shrink-0">
                       {gap.yearsToAchieve != null ? `~${gap.yearsToAchieve} yr to reach` : "10+ yrs"}
                     </span>
                   )}
                 </div>
-                {!gap.achieved ? (
+                {gap.agedOut ? (
+                  <div className="ml-4">
+                    <div className="h-2 bg-muted/60 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full opacity-40"
+                        style={{
+                          width: `${Math.min(100, Math.max(4, 100 - gap.gapPercent))}%`,
+                          backgroundColor: contextColors[gap.context] ?? "#94A3B8",
+                        }}
+                      />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 italic">
+                      Performance standard: {metaOpt.fmt(gap.targetValue)} — athlete has moved past this age category
+                    </div>
+                  </div>
+                ) : !gap.achieved ? (
                   <div className="ml-4">
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
