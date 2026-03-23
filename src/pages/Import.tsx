@@ -67,10 +67,8 @@ function loadHistory(): HistoryEntry[] {
     const saved = localStorage.getItem(IMPORT_HISTORY_KEY);
     if (saved) return JSON.parse(saved);
   } catch { /* ignore */ }
-  return [
-    { id: "h1", date: "2024-03-10", file: "athletes_batch_3.csv",  rows: 82, valid: 79, warnings: 3, errors: 0, status: "success", version: "v3" },
-    { id: "h2", date: "2024-01-15", file: "athletes_batch_2.xlsx", rows: 45, valid: 42, warnings: 2, errors: 1, status: "partial", version: "v2" },
-  ];
+  // Return empty array — no fake/hardcoded history
+  return [];
 }
 function saveHistory(entries: HistoryEntry[]) {
   try { localStorage.setItem(IMPORT_HISTORY_KEY, JSON.stringify(entries)); } catch { /* ignore */ }

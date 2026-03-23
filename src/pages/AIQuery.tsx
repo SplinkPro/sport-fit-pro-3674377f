@@ -91,27 +91,52 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
   // ── Special: male vs female comparison ──
   const isMvF = /compare\s+male|male\s+vs|male.*female|female.*male/i.test(q);
   if (isMvF) {
-    const males = [...athletes]
-      .filter((a) => a.gender === "M")
-      .sort((a, b) => b.compositeScore - a.compositeScore)
-      .slice(0, limit);
-    const females = [...athletes]
-      .filter((a) => a.gender === "F")
-      .sort((a, b) => b.compositeScore - a.compositeScore)
-      .slice(0, limit);
-    const avgM = males.length
-      ? Math.round(males.reduce((s, a) => s + a.compositeScore, 0) / males.length)
-      : 0;
-    const avgF = females.length
-      ? Math.round(females.reduce((s, a) => s + a.compositeScore, 0) / females.length)
-      : 0;
-    const reasoning = `Comparison mode: Top ${males.length} male athletes (avg score ${avgM}) vs top ${females.length} female athletes (avg score ${avgF}). ${totalAthletes} athletes in dataset.`;
+    const allMales = athletes.filter((a) => a.gender === "M");
+    const allFemales = athletes.filter((a) => a.gender === "F");
+    const males = [...allMales].sort((a, b) => b.compositeScore - a.compositeScore).slice(0, limit);
+    const females = [...allFemales].sort((a, b) => b.compositeScore - a.compositeScore).slice(0, limit);
+
+    // Handle single-gender datasets gracefully
+    if (allMales.length === 0 && allFemales.length > 0) {
+      const avgF = Math.round(allFemales.reduce((s, a) => s + a.compositeScore, 0) / allFemales.length);
+      const reasoning = `This dataset contains ${allFemales.length} female athletes (avg CAPI: ${avgF} pct). No male athletes are present in this cohort — showing female rankings instead.`;
+      return {
+        results: females,
+        filters: ["Mode: Female Athletes (no male data in this cohort)"],
+        reasoning,
+        metricLabel: "CAPI Score (percentile)",
+        metricFn: (a) => `${a.compositeScore} pct`,
+        poolSize: allFemales.length,
+        isMaleVsFemale: true,
+        maleGroup: [],
+        femaleGroup: females,
+      };
+    }
+    if (allFemales.length === 0 && allMales.length > 0) {
+      const avgM = Math.round(allMales.reduce((s, a) => s + a.compositeScore, 0) / allMales.length);
+      const reasoning = `This dataset contains ${allMales.length} male athletes (avg CAPI: ${avgM} pct). No female athletes are present in this cohort — showing male rankings instead.`;
+      return {
+        results: males,
+        filters: ["Mode: Male Athletes (no female data in this cohort)"],
+        reasoning,
+        metricLabel: "CAPI Score (percentile)",
+        metricFn: (a) => `${a.compositeScore} pct`,
+        poolSize: allMales.length,
+        isMaleVsFemale: true,
+        maleGroup: males,
+        femaleGroup: [],
+      };
+    }
+
+    const avgM = males.length ? Math.round(males.reduce((s, a) => s + a.compositeScore, 0) / males.length) : 0;
+    const avgF = females.length ? Math.round(females.reduce((s, a) => s + a.compositeScore, 0) / females.length) : 0;
+    const reasoning = `Comparison mode: ${allMales.length} male athletes (avg CAPI: ${avgM} pct) vs ${allFemales.length} female athletes (avg CAPI: ${avgF} pct). Showing top ${Math.max(males.length, females.length)} from each group. Total dataset: ${totalAthletes} athletes.`;
     return {
       results: [...males.slice(0, 5), ...females.slice(0, 5)],
       filters: ["Mode: Male vs Female Comparison"],
       reasoning,
-      metricLabel: "Composite Score",
-      metricFn: (a) => `${a.compositeScore} (${a.gender === "M" ? "Male" : "Female"})`,
+      metricLabel: "CAPI Score (percentile)",
+      metricFn: (a) => `${a.compositeScore} pct (${a.gender === "M" ? "Male" : "Female"})`,
       poolSize: totalAthletes,
       isMaleVsFemale: true,
       maleGroup: males,

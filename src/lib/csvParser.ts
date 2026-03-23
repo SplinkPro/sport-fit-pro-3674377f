@@ -373,10 +373,7 @@ export function rowsToAthletes(
   const detectedColumns = Object.keys(headerMap);
   const unmappedColumns = headerSnapshot.filter((h) => !headerMap[h]);
 
-  console.log("[csvParser] Header snapshot:", headerSnapshot);
-  console.log("[csvParser] Detected (mapped):", detectedColumns);
-  console.log("[csvParser] Unmapped:", unmappedColumns);
-  if (batchMeta) console.log("[csvParser] Batch meta:", batchMeta);
+  // Debug logs removed — kept for reference during development only
 
   const getField = (row: Record<string, string>, field: InternalField): string => {
     for (const [header, mapped] of Object.entries(headerMap)) {
