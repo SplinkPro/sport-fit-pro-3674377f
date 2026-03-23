@@ -487,8 +487,8 @@ export default function BadmintonAthleteProfile() {
                     : Gr;
 
                   return (
-                    <div key={key} className={cn("p-2.5 rounded-lg", primary && "ring-1 ring-inset", primary && hasLeniency && "ring-amber-300 bg-amber-50")}
-                      style={primary ? { ringColor: `${G}30`, background: `${G}06` } : {}}>
+                    <div key={key} className={cn("p-2.5 rounded-lg border", primary && !hasLeniency && "border-transparent", primary && hasLeniency && "border-amber-300 bg-amber-50")}
+                      style={primary && !hasLeniency ? { borderColor: `${G}30`, background: `${G}06` } : {}}>
                       <div className="flex justify-between text-xs mb-1.5">
                         <div className="flex items-center gap-1.5">
                           <span className={cn("font-semibold", primary && "font-black")}>{label}</span>
