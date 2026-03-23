@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import {
   Upload, FileText, CheckCircle, Download,
   ChevronRight, RotateCcw, CheckCircle2, ArrowRight,
-  Info, AlertTriangle, AlertCircle, Wrench, Users,
+  Info, AlertTriangle, AlertCircle, Wrench, Users, GitMerge,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
