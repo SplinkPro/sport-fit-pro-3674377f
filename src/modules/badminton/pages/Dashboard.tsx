@@ -1,517 +1,492 @@
-// ─── Badminton Dashboard — PGBA Demo Quality ────────────────────────────────
-import React, { useMemo } from "react";
+// ─── Badminton Dashboard ─────────────────────────────────────────────────────
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
   Tooltip as RTooltip, ResponsiveContainer, ReferenceLine,
   BarChart, Bar, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar,
+  Cell, LineChart, Line,
 } from "recharts";
 import { processAll, rankAthletes } from "../engine";
 import { SEED_ATHLETES } from "../data/athletes";
 import type { ProcessedBadmintonAthlete } from "../types";
+import { cn } from "@/lib/utils";
 
-const COURT_GREEN = "#1A5C38";
-const SHUTTLE_GOLD = "#D4A017";
-const ALERT_RED   = "#C0392B";
-const RAW_BLUE    = "#1D4ED8";
-const SKILL_GREEN = "#15803D";
-const DEV_GREY    = "#6B7280";
+// ─── Design tokens aligned with PGBA identity ────────────────────────────────
+const G = "#1A5C38";   // court green
+const Au = "#D4A017";  // shuttlecock gold
+const R  = "#C0392B";  // alert red
+const B  = "#1D4ED8";  // raw talent blue
+const Gr = "#6B7280";  // dev grey
+const Sk = "#15803D";  // skill first green
 
 const Q_COLOUR: Record<string, string> = {
-  CHAMPION_PROFILE:   SHUTTLE_GOLD,
-  RAW_PHYSICAL_TALENT: RAW_BLUE,
-  SKILL_FIRST:        SKILL_GREEN,
-  EARLY_DEVELOPMENT:  DEV_GREY,
+  CHAMPION_PROFILE:    Au,
+  RAW_PHYSICAL_TALENT: B,
+  SKILL_FIRST:         Sk,
+  EARLY_DEVELOPMENT:   Gr,
 };
-
 const Q_LABEL: Record<string, string> = {
   CHAMPION_PROFILE:    "Champion Profile",
   RAW_PHYSICAL_TALENT: "Raw Physical Talent",
   SKILL_FIRST:         "Skill First",
   EARLY_DEVELOPMENT:   "Early Development",
 };
+const Q_DESC: Record<string, string> = {
+  CHAMPION_PROFILE:    "BII ≥ 60 · SQ ≥ 60",
+  RAW_PHYSICAL_TALENT: "BII ≥ 60 · SQ < 60",
+  SKILL_FIRST:         "BII < 60 · SQ ≥ 60",
+  EARLY_DEVELOPMENT:   "BII < 60 · SQ < 60",
+};
 
-// ─── Custom scatter dot with optional name label ─────────────────────────────
-function AthleteLabel(props: {
-  cx?: number; cy?: number; payload?: ProcessedBadmintonAthlete & { rank: number };
-}) {
+// ─── Custom scatter dot ───────────────────────────────────────────────────────
+function AthleteNode(props: { cx?: number; cy?: number; payload?: ProcessedBadmintonAthlete & { rank: number } }) {
   const { cx = 0, cy = 0, payload } = props;
   if (!payload) return null;
-  const rank = payload.rank;
   const blocked = payload.isBlocked;
-  const colour = blocked ? ALERT_RED : (payload.quadrant ? Q_COLOUR[payload.quadrant] : DEV_GREY);
-  const showLabel = !blocked && rank <= 8;
+  const colour = blocked ? R : (payload.quadrant ? Q_COLOUR[payload.quadrant] : Gr);
+  const isTop = !blocked && payload.rank <= 5;
+  const r = blocked ? 6 : isTop ? 9 : 7;
 
   return (
     <g>
-      <circle
-        cx={cx} cy={cy} r={blocked ? 7 : 8}
-        fill={colour} stroke="white" strokeWidth={2}
-        opacity={blocked ? 0.7 : 0.92}
-      />
-      {blocked && (
-        <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
-          fontSize={7} fill="white" fontWeight="bold">⛔</text>
+      {/* Glow ring for top athletes */}
+      {isTop && (
+        <circle cx={cx} cy={cy} r={r + 5} fill={colour} opacity={0.15} />
       )}
-      {showLabel && (
-        <text
-          x={cx + 10} y={cy - 8}
-          fontSize={9} fill={colour} fontWeight="600"
-          style={{ pointerEvents: "none", userSelect: "none" }}
-        >
-          {payload.raw.name.split(" ")[0]}
-        </text>
+      <circle cx={cx} cy={cy} r={r} fill={colour} stroke="white" strokeWidth={1.5} opacity={blocked ? 0.6 : 1} />
+      {blocked && (
+        <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fontSize={7} fill="white" fontWeight="bold">✕</text>
+      )}
+      {isTop && (
+        <>
+          <text
+            x={cx} y={cy - r - 7}
+            textAnchor="middle" fontSize={9} fill={colour} fontWeight="700"
+            style={{ pointerEvents: "none", userSelect: "none" }}
+          >
+            {payload.raw.name.split(" ")[0]}
+          </text>
+          <text
+            x={cx} y={cy - r - 18}
+            textAnchor="middle" fontSize={8} fill={colour} opacity={0.8}
+            style={{ pointerEvents: "none", userSelect: "none" }}
+          >
+            #{payload.rank}
+          </text>
+        </>
       )}
     </g>
   );
 }
 
-// ─── Tooltip ─────────────────────────────────────────────────────────────────
-function QuadrantTooltip({ active, payload }: { active?: boolean; payload?: { payload: ProcessedBadmintonAthlete }[] }) {
+// ─── Rich tooltip ─────────────────────────────────────────────────────────────
+function QuadTooltip({ active, payload }: { active?: boolean; payload?: { payload: ProcessedBadmintonAthlete & { rank: number } }[] }) {
   if (!active || !payload?.length) return null;
   const a = payload[0].payload;
+  const colour = a.isBlocked ? R : (a.quadrant ? Q_COLOUR[a.quadrant] : Gr);
   return (
-    <div className="text-xs rounded-xl border shadow-xl p-3 bg-background min-w-[190px] space-y-1">
-      <div className="font-bold text-sm flex items-center gap-1.5">
-        <span className="w-2.5 h-2.5 rounded-full inline-block"
-          style={{ background: a.isBlocked ? ALERT_RED : (a.quadrant ? Q_COLOUR[a.quadrant] : DEV_GREY) }} />
-        {a.raw.name}
+    <div className="rounded-xl border shadow-2xl bg-card p-4 min-w-[210px] space-y-2 text-xs">
+      <div className="flex items-center gap-2 border-b border-border pb-2">
+        <span className="w-3 h-3 rounded-full" style={{ background: colour }} />
+        <span className="font-bold text-sm">{a.raw.name}</span>
+        {!a.isBlocked && a.rank && (
+          <span className="ml-auto font-mono text-muted-foreground">#{a.rank}</span>
+        )}
       </div>
       <div className="text-muted-foreground">{a.age_band} · {a.raw.gender} · {a.raw.academy_batch}</div>
       {a.isBlocked ? (
-        <div className="text-red-600 font-bold py-1">⛔ Blocked — data error</div>
+        <div className="font-bold text-red-600 bg-red-50 rounded p-1.5">⛔ Blocked — data error</div>
       ) : (
-        <>
-          <div className="grid grid-cols-2 gap-x-3 pt-0.5">
-            <div><span className="text-muted-foreground">BII</span> <span className="font-mono font-bold" style={{ color: COURT_GREEN }}>{a.bii.bii?.toFixed(1) ?? "—"}</span></div>
-            <div><span className="text-muted-foreground">SQ</span> <span className="font-mono font-bold" style={{ color: SHUTTLE_GOLD }}>{a.sq.pct?.toFixed(1) ?? "—"}</span></div>
-            {a.corrected.reaction_time_ms && (
-              <div><span className="text-muted-foreground">RT</span> <span className="font-mono">{a.corrected.reaction_time_ms.toFixed(0)}ms</span></div>
-            )}
-            {a.secondary.agility && (
-              <div><span className="text-muted-foreground">Agility</span> <span className="font-mono">{a.secondary.agility.toFixed(0)}th</span></div>
-            )}
-          </div>
-          {a.quadrant && (
-            <div className="font-semibold mt-1 pt-1 border-t border-border/60" style={{ color: Q_COLOUR[a.quadrant] }}>
-              {Q_LABEL[a.quadrant]}
-            </div>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+          <div className="font-medium text-muted-foreground">BII</div>
+          <div className="font-bold font-mono" style={{ color: G }}>{a.bii.bii?.toFixed(1) ?? "—"}</div>
+          <div className="font-medium text-muted-foreground">SQ</div>
+          <div className="font-bold font-mono" style={{ color: Au }}>{a.sq.pct?.toFixed(1) ?? "—"}</div>
+          {a.corrected.reaction_time_ms && (
+            <>
+              <div className="font-medium text-muted-foreground">RT</div>
+              <div className="font-mono">{a.corrected.reaction_time_ms.toFixed(0)}ms</div>
+            </>
           )}
-          <div className="text-muted-foreground text-[11px]">{a.recommendation.icon} {a.recommendation.label}</div>
-        </>
+          {a.secondary.agility !== undefined && (
+            <>
+              <div className="font-medium text-muted-foreground">Agility Pct.</div>
+              <div className="font-mono">{a.secondary.agility.toFixed(0)}th</div>
+            </>
+          )}
+        </div>
+      )}
+      {a.quadrant && (
+        <div className="font-semibold border-t border-border pt-1.5" style={{ color: colour }}>
+          {Q_LABEL[a.quadrant]}
+        </div>
+      )}
+      {!a.isBlocked && (
+        <div className="text-[10px] text-muted-foreground italic">{a.recommendation.icon} {a.recommendation.label}</div>
       )}
     </div>
   );
 }
 
-// ─── Prospect Card ────────────────────────────────────────────────────────────
+// ─── Metric mini bar ─────────────────────────────────────────────────────────
+function MiniBar({ value, max = 100, colour }: { value: number; max?: number; colour: string }) {
+  return (
+    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+      <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (value / max) * 100)}%`, background: colour }} />
+    </div>
+  );
+}
+
+// ─── Top Prospect Card ────────────────────────────────────────────────────────
 function ProspectCard({ athlete, rank }: { athlete: ProcessedBadmintonAthlete; rank: number }) {
   const navigate = useNavigate();
   const medals = ["🥇", "🥈", "🥉"];
-  const recC = { gold: SHUTTLE_GOLD, blue: RAW_BLUE, green: SKILL_GREEN, grey: DEV_GREY, amber: "#D97706" };
+  const bii = athlete.bii.bii ?? 0;
+  const sq = athlete.sq.pct ?? 0;
+  const colour = athlete.quadrant ? Q_COLOUR[athlete.quadrant] : Gr;
+
   return (
     <button
       onClick={() => navigate(`/sports/badminton/athlete/${athlete.raw.id}`)}
-      className="w-full text-left p-3 rounded-xl border border-border hover:border-border/80 bg-background hover:bg-muted/40 transition-all group"
+      className="w-full text-left p-3 rounded-xl border bg-card hover:shadow-md transition-all group"
+      style={{ borderLeftColor: colour, borderLeftWidth: 3 }}
     >
-      <div className="flex items-start gap-2">
-        <span className="text-lg leading-tight">{medals[rank - 1] ?? `#${rank}`}</span>
+      <div className="flex items-start gap-2.5">
+        <span className="text-xl leading-tight flex-shrink-0">{medals[rank - 1] ?? `#${rank}`}</span>
         <div className="flex-1 min-w-0">
           <div className="font-bold text-sm truncate group-hover:underline">{athlete.raw.name}</div>
-          <div className="text-[11px] text-muted-foreground">{athlete.age_band} · {athlete.raw.gender} · {athlete.raw.academy_batch}</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">{athlete.age_band} · {athlete.raw.gender} · {athlete.raw.years_playing_badminton}yr</div>
         </div>
-        <div className="text-right shrink-0">
-          <div className="text-xl font-bold font-mono leading-tight" style={{ color: COURT_GREEN }}>
-            {athlete.bii.bii?.toFixed(1)}
+      </div>
+      <div className="mt-2.5 grid grid-cols-2 gap-2">
+        <div>
+          <div className="flex justify-between text-[10px] mb-0.5">
+            <span className="text-muted-foreground">BII</span>
+            <span className="font-bold font-mono" style={{ color: G }}>{bii.toFixed(1)}</span>
           </div>
-          <div className="text-[10px] text-muted-foreground">BII</div>
+          <MiniBar value={bii} colour={G} />
+        </div>
+        <div>
+          <div className="flex justify-between text-[10px] mb-0.5">
+            <span className="text-muted-foreground">SQ</span>
+            <span className="font-bold font-mono" style={{ color: Au }}>{sq.toFixed(0)}</span>
+          </div>
+          <MiniBar value={sq} colour={Au} />
         </div>
       </div>
-      <div className="mt-2 flex items-center justify-between">
-        <span className="text-[10px] font-semibold" style={{ color: recC[athlete.recommendation.colour] }}>
-          {athlete.recommendation.icon} {athlete.recommendation.label}
-        </span>
-        <span className="text-[10px] text-muted-foreground">SQ {athlete.sq.pct?.toFixed(0) ?? "—"}</span>
+      <div className="mt-1.5 text-[10px] font-semibold" style={{ color: colour }}>
+        {athlete.recommendation.icon} {athlete.recommendation.label}
       </div>
     </button>
   );
 }
 
-// ─── Alert Card ───────────────────────────────────────────────────────────────
-function AlertCard({ athlete }: { athlete: ProcessedBadmintonAthlete }) {
-  const navigate = useNavigate();
-  const isBlocked = athlete.isBlocked;
-  const isAuto = athlete.flags.some((f) => f.startsWith("AUTO_"));
-  const isVerify = athlete.flags.some((f) => f.startsWith("VERIFY_"));
-  const colour = isBlocked ? ALERT_RED : "#D97706";
-  const icon = isBlocked ? "⛔" : isAuto ? "🟠" : "⚠";
-  const reason = isBlocked
-    ? "Blocked — data error requires correction"
-    : isAuto
-    ? "Auto-corrected — value converted, review"
-    : "Flagged — verify before scoring";
-
-  return (
-    <button
-      onClick={() => navigate(`/sports/badminton/athlete/${athlete.raw.id}`)}
-      className="w-full text-left p-2.5 rounded-lg border hover:bg-muted/30 transition-colors"
-      style={{ borderColor: `${colour}40`, background: `${colour}08` }}
-    >
-      <div className="flex items-center gap-2">
-        <span className="text-sm">{icon}</span>
-        <div className="flex-1 min-w-0">
-          <div className="text-xs font-semibold truncate" style={{ color: colour }}>{athlete.raw.name}</div>
-          <div className="text-[10px] text-muted-foreground">{reason}</div>
-        </div>
-        <span className="text-[10px] bg-muted rounded px-1.5 py-0.5 shrink-0">{athlete.age_band}</span>
-      </div>
-    </button>
-  );
-}
-
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function BadmintonDashboard() {
   const navigate = useNavigate();
   const athletes = useMemo(() => rankAthletes(processAll(SEED_ATHLETES)), []);
-
-  // Ranked list excludes blocked
-  const scored = useMemo(() => athletes.filter((a) => !a.isBlocked && a.bii.bii !== undefined), [athletes]);
-  const rankedWithIdx = useMemo(() => scored.map((a, i) => ({ ...a, rank: i + 1 })), [scored]);
+  const scored   = useMemo(() => athletes.filter((a) => !a.isBlocked && a.bii.bii !== undefined), [athletes]);
+  const ranked   = useMemo(() => scored.map((a, i) => ({ ...a, rank: i + 1 })), [scored]);
 
   const stats = useMemo(() => ({
     total:     athletes.length,
-    scored:    scored.length,
     champions: athletes.filter((a) => a.quadrant === "CHAMPION_PROFILE").length,
-    rawTalent: athletes.filter((a) => a.quadrant === "RAW_PHYSICAL_TALENT").length,
-    skillFirst: athletes.filter((a) => a.quadrant === "SKILL_FIRST").length,
-    earlyDev:  athletes.filter((a) => a.quadrant === "EARLY_DEVELOPMENT").length,
-    alerts:    athletes.filter((a) => a.isBlocked || a.flags.some((f) => f.startsWith("VERIFY_") || f.startsWith("AUTO_"))).length,
-  }), [athletes, scored]);
+    raw:       athletes.filter((a) => a.quadrant === "RAW_PHYSICAL_TALENT").length,
+    skill:     athletes.filter((a) => a.quadrant === "SKILL_FIRST").length,
+    dev:       athletes.filter((a) => a.quadrant === "EARLY_DEVELOPMENT").length,
+    alerts:    athletes.filter((a) => a.isBlocked || a.flags.length > 0).length,
+    blocked:   athletes.filter((a) => a.isBlocked).length,
+  }), [athletes]);
 
-  const top3 = scored.slice(0, 3);
-  const alertAthletes = athletes.filter((a) => a.isBlocked || a.flags.length > 0).slice(0, 4);
+  const top3    = scored.slice(0, 3);
+  const rawList = athletes.filter((a) => a.quadrant === "RAW_PHYSICAL_TALENT");
 
-  // Scatter data with rank
+  // Scatter
   const scatterData = useMemo(
-    () => athletes.map((a, idx) => ({
-      ...a,
-      rank: scored.indexOf(a) + 1 || 99,
-      x: a.bii.bii ?? 0,
-      y: a.sq.pct ?? 0,
+    () => athletes.map((a) => ({
+      ...a, rank: scored.indexOf(a) + 1 || 99, x: a.bii.bii ?? 0, y: a.sq.pct ?? 0,
     })),
     [athletes, scored]
   );
 
-  // BII distribution
-  const barData = useMemo(() => {
-    return (["U10", "U12", "U14", "U16"] as const).map((band) => {
+  // BII bar by age band
+  const barData = useMemo(() =>
+    (["U10", "U12", "U14", "U16"] as const).map((band) => {
       const inBand = scored.filter((a) => a.age_band === band);
-      const m = inBand.filter((a) => a.raw.gender === "Male");
-      const f = inBand.filter((a) => a.raw.gender === "Female");
       const avg = (arr: ProcessedBadmintonAthlete[]) =>
-        arr.length ? Math.round(arr.reduce((s, a) => s + (a.bii.bii ?? 0), 0) / arr.length * 10) / 10 : 0;
-      return { band, Male: avg(m), Female: avg(f) };
-    });
-  }, [scored]);
+        arr.length ? +(arr.reduce((s, a) => s + (a.bii.bii ?? 0), 0) / arr.length).toFixed(1) : 0;
+      return { band, "Male BII": avg(inBand.filter((a) => a.raw.gender === "Male")), "Female BII": avg(inBand.filter((a) => a.raw.gender === "Female")) };
+    }), [scored]);
 
-  // 5-Pillar radar
+  // Age progression line
+  const progressData = useMemo(() =>
+    (["U10", "U12", "U14", "U16"] as const).map((band) => {
+      const inBand = scored.filter((a) => a.age_band === band);
+      const avg = (arr: ProcessedBadmintonAthlete[]) =>
+        arr.length ? +(arr.reduce((s, a) => s + (a.bii.bii ?? 0), 0) / arr.length).toFixed(1) : null;
+      return {
+        band,
+        Male:   avg(inBand.filter((a) => a.raw.gender === "Male")),
+        Female: avg(inBand.filter((a) => a.raw.gender === "Female")),
+      };
+    }), [scored]);
+
+  // 5-Pillar
   const pillarData = useMemo(() => {
-    const avg = (vals: number[]) => vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+    const avg = (vals: number[]) => vals.length ? +(vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(0) : 0;
     return [
-      { axis: "Physical",    cohort: Math.round(avg(scored.map((a) => a.bii.bii ?? 0))), target: 85 },
-      { axis: "Technical",   cohort: Math.round(avg(scored.map((a) => {
+      { axis: "Physical",  cohort: avg(scored.map((a) => a.bii.bii ?? 0)), target: 85 },
+      { axis: "Technical", cohort: avg(scored.map((a) => {
         const r = a.raw;
         const v = [r.stroke_mechanics, r.smash_quality, r.net_play, r.serve_accuracy].filter(Boolean) as number[];
-        return v.length ? avg(v) * 10 : 0;
-      }))), target: 85 },
-      { axis: "Mental",       cohort: Math.round(avg(scored.map((a) => (a.raw.mental_resilience ?? 0) * 10))), target: 85 },
-      { axis: "Discipline",   cohort: Math.round(avg(scored.map((a) => (a.raw.coachability ?? 0) * 10))), target: 85 },
-      { axis: "Tactical",     cohort: Math.round(avg(scored.map((a) => (a.raw.court_awareness ?? 0) * 10))), target: 85 },
+        return v.length ? (v.reduce((s, x) => s + x, 0) / v.length) * 10 : 0;
+      })), target: 85 },
+      { axis: "Mental",      cohort: avg(scored.map((a) => (a.raw.mental_resilience ?? 0) * 10)), target: 85 },
+      { axis: "Discipline",  cohort: avg(scored.map((a) => (a.raw.coachability ?? 0) * 10)), target: 85 },
+      { axis: "Tactical",    cohort: avg(scored.map((a) => (a.raw.court_awareness ?? 0) * 10)), target: 85 },
     ];
   }, [scored]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="p-5 space-y-5">
 
-      {/* ─── Hero Header ─────────────────────────────────────────────────── */}
-      <div style={{ background: `linear-gradient(135deg, ${COURT_GREEN} 0%, #0d3d25 100%)` }}
-        className="px-6 py-5 text-white">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <span className="text-3xl">🏸</span>
-              <div>
-                <h1 className="text-2xl font-black tracking-tight leading-tight">
-                  BADMINTON INTELLIGENCE PLATFORM
-                </h1>
-                <p className="text-sm opacity-80 font-medium">
-                  Gopichand Academy Methodology · PGBA Hyderabad · Cohort Analysis
-                </p>
-              </div>
+      {/* ─── KPI Strip ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-6 gap-3">
+        {[
+          { label: "Total Assessed",   value: stats.total,    accent: G,  icon: "👤", sub: "all cohorts" },
+          { label: "Champion Profile", value: stats.champions, accent: Au, icon: "🏆", sub: Q_DESC.CHAMPION_PROFILE },
+          { label: "Raw Talent",       value: stats.raw,      accent: B,  icon: "💪", sub: Q_DESC.RAW_PHYSICAL_TALENT },
+          { label: "Skill First",      value: stats.skill,    accent: Sk, icon: "🎯", sub: Q_DESC.SKILL_FIRST },
+          { label: "Early Dev",        value: stats.dev,      accent: Gr, icon: "📈", sub: Q_DESC.EARLY_DEVELOPMENT },
+          { label: "Action Required",  value: stats.alerts,   accent: R,  icon: "⚠️",  sub: "flags + blocked" },
+        ].map(({ label, value, accent, icon, sub }) => (
+          <div key={label} className="rounded-xl border p-3" style={{ borderColor: `${accent}25`, background: `${accent}09` }}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-base">{icon}</span>
+              <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide leading-tight">{label}</span>
             </div>
-            <div className="flex flex-wrap gap-3 mt-3">
-              {[
-                { label: "Total Athletes", value: stats.total },
-                { label: "Scored", value: stats.scored },
-                { label: "Age Bands", value: "U10–U16" },
-              ].map(({ label, value }) => (
-                <div key={label} className="text-xs opacity-70">
-                  <span className="font-bold text-white">{value}</span>
-                  <span className="ml-1 opacity-80">{label}</span>
-                </div>
-              ))}
-            </div>
+            <div className="text-3xl font-black font-mono" style={{ color: accent }}>{value}</div>
+            <div className="text-[10px] text-muted-foreground mt-0.5">{sub}</div>
           </div>
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <span className="text-xs font-black px-2 py-1 rounded border"
-              style={{ color: SHUTTLE_GOLD, borderColor: SHUTTLE_GOLD }}>BETA</span>
-            <button
-              onClick={() => navigate("/sports/badminton/explorer")}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/30 bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              View All Athletes →
-            </button>
-          </div>
-        </div>
+        ))}
       </div>
 
-      <div className="p-5 space-y-5">
+      {/* ─── Main: Quadrant + Right Panel ──────────────────────────────── */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4">
 
-        {/* ─── KPI Strip ────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            {
-              label: "Champion Profiles",
-              value: stats.champions,
-              sub: "BII ≥ 60 · SQ ≥ 60",
-              accent: SHUTTLE_GOLD,
-              bg: `${SHUTTLE_GOLD}12`,
-              icon: "🏆",
-            },
-            {
-              label: "Raw Physical Talents",
-              value: stats.rawTalent,
-              sub: "High BII · Technical training needed",
-              accent: RAW_BLUE,
-              bg: "#1D4ED812",
-              icon: "💪",
-            },
-            {
-              label: "Skill First",
-              value: stats.skillFirst,
-              sub: "High SQ · Physical conditioning needed",
-              accent: SKILL_GREEN,
-              bg: "#15803D12",
-              icon: "🎯",
-            },
-            {
-              label: "Action Required",
-              value: stats.alerts,
-              sub: "Flagged · Blocked · Verify",
-              accent: ALERT_RED,
-              bg: `${ALERT_RED}12`,
-              icon: "⚠️",
-            },
-          ].map(({ label, value, sub, accent, bg, icon }) => (
-            <div key={label} className="rounded-xl border p-4" style={{ borderColor: `${accent}30`, background: bg }}>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">{icon}</span>
-                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</span>
-              </div>
-              <div className="text-4xl font-black font-mono" style={{ color: accent }}>{value}</div>
-              <div className="text-[10px] text-muted-foreground mt-0.5">{sub}</div>
+        {/* Talent Quadrant */}
+        <div className="rounded-xl border bg-card p-5">
+          <div className="flex items-start justify-between mb-1">
+            <div>
+              <h2 className="font-black text-sm tracking-wide">TALENT QUADRANT MATRIX</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                BII (Physical) × SQ (Skill) · Midpoint 60/60 per PGBA methodology · Hover: details · Click: open profile
+              </p>
             </div>
-          ))}
-        </div>
+            <button
+              onClick={() => navigate("/sports/badminton/explorer")}
+              className="text-xs text-muted-foreground hover:text-foreground underline flex-shrink-0 ml-4"
+            >View all →</button>
+          </div>
 
-        {/* ─── Main two-column: Quadrant + Right Panel ──────────────────── */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-4">
-
-          {/* Talent Quadrant */}
-          <div className="rounded-xl border bg-card p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h2 className="font-black text-base tracking-tight">TALENT QUADRANT</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  X: BII Physical Potential · Y: SQ Skill Quotient · Midpoint 60/60 · Hover for details · Click to open profile
-                </p>
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-3">
-              {Object.entries(Q_LABEL).map(([k, v]) => (
-                <span key={k} className="flex items-center gap-1.5 text-xs">
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: Q_COLOUR[k] }} />
-                  <span className="font-medium">{v}</span>
-                  <span className="text-muted-foreground font-mono text-[10px]">
-                    ({athletes.filter((a) => a.quadrant === k).length})
-                  </span>
+          {/* Legend */}
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5 my-3 p-2.5 rounded-lg bg-muted/30">
+            {Object.entries(Q_LABEL).map(([k, v]) => (
+              <span key={k} className="flex items-center gap-1.5 text-xs">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: Q_COLOUR[k] }} />
+                <span className="font-medium">{v}</span>
+                <span className="text-muted-foreground text-[10px]">
+                  ({athletes.filter((a) => a.quadrant === k).length})
                 </span>
-              ))}
-              <span className="flex items-center gap-1.5 text-xs">
-                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: ALERT_RED, opacity: 0.7 }} />
-                <span className="font-medium text-red-600">⛔ Blocked</span>
               </span>
+            ))}
+            <span className="flex items-center gap-1.5 text-xs">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 opacity-60" />
+              <span className="font-medium text-red-600">Blocked ({stats.blocked})</span>
+            </span>
+          </div>
+
+          {/* Quadrant zone labels */}
+          <div className="relative">
+            <div className="absolute inset-0 pointer-events-none z-10" style={{ top: 15, right: 30, bottom: 58, left: 50 }}>
+              <div className="absolute text-[9px] font-bold opacity-25" style={{ top: "4%", right: "4%", color: Au }}>CHAMPION PROFILE</div>
+              <div className="absolute text-[9px] font-bold opacity-25" style={{ top: "4%", left: "4%", color: Sk }}>SKILL FIRST</div>
+              <div className="absolute text-[9px] font-bold opacity-25" style={{ bottom: "8%", right: "4%", color: B }}>RAW PHYSICAL TALENT</div>
+              <div className="absolute text-[9px] font-bold opacity-25" style={{ bottom: "8%", left: "4%", color: Gr }}>EARLY DEVELOPMENT</div>
             </div>
 
-            <ResponsiveContainer width="100%" height={400}>
-              <ScatterChart margin={{ top: 15, right: 30, bottom: 30, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-
-                {/* Quadrant shading */}
+            <ResponsiveContainer width="100%" height={420}>
+              <ScatterChart margin={{ top: 15, right: 30, bottom: 40, left: 50 }}>
                 <defs>
-                  <pattern id="gold-hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-                    <rect width="3" height="6" fill={`${SHUTTLE_GOLD}08`} />
-                  </pattern>
-                  <pattern id="blue-hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-                    <rect width="3" height="6" fill={`${RAW_BLUE}08`} />
-                  </pattern>
+                  <linearGradient id="bgGold" x1="1" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor={Au} stopOpacity={0.06} />
+                    <stop offset="100%" stopColor={Au} stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="bgBlue" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0%" stopColor={B} stopOpacity={0.06} />
+                    <stop offset="100%" stopColor={B} stopOpacity={0.02} />
+                  </linearGradient>
                 </defs>
-
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
                 <XAxis type="number" dataKey="x" domain={[0, 100]} name="BII"
                   tick={{ fontSize: 11 }}
-                  label={{ value: "BII — Physical Potential Index", position: "insideBottom", offset: -18, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  label={{ value: "BII — Badminton Intelligence Index (Physical Potential)", position: "insideBottom", offset: -28, fontSize: 10.5, fill: "hsl(var(--muted-foreground))" }}
                 />
                 <YAxis type="number" dataKey="y" domain={[0, 100]} name="SQ"
                   tick={{ fontSize: 11 }}
-                  label={{ value: "SQ — Skill Quotient", angle: -90, position: "insideLeft", offset: 15, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  label={{ value: "SQ — Skill Quotient (Coach Assessment)", angle: -90, position: "insideLeft", offset: 15, dx: -10, fontSize: 10.5, fill: "hsl(var(--muted-foreground))" }}
                 />
-
-                {/* Quadrant labels in background */}
-                <ReferenceLine x={60} stroke="#9CA3AF" strokeDasharray="5 5" strokeWidth={1.5}
-                  label={{ value: "← Dev  |  Talent →", position: "top", fontSize: 9, fill: "#9CA3AF" }} />
-                <ReferenceLine y={60} stroke="#9CA3AF" strokeDasharray="5 5" strokeWidth={1.5}
-                  label={{ value: "← Physical  |  Champion →", position: "right", fontSize: 9, fill: "#9CA3AF", angle: -90 }} />
-
-                <RTooltip content={<QuadrantTooltip />} cursor={false} />
+                <ReferenceLine x={60} stroke="#9CA3AF" strokeDasharray="6 4" strokeWidth={1.5} />
+                <ReferenceLine y={60} stroke="#9CA3AF" strokeDasharray="6 4" strokeWidth={1.5} />
+                <RTooltip content={<QuadTooltip />} cursor={false} />
                 <Scatter
                   data={scatterData}
-                  shape={(props: { cx?: number; cy?: number; payload?: ProcessedBadmintonAthlete & { rank: number } }) =>
-                    <AthleteLabel {...props} />}
-                  onClick={(data: ProcessedBadmintonAthlete) => navigate(`/sports/badminton/athlete/${data.raw.id}`)}
+                  shape={(p: { cx?: number; cy?: number; payload?: ProcessedBadmintonAthlete & { rank: number } }) => <AthleteNode {...p} />}
+                  onClick={(d: ProcessedBadmintonAthlete) => navigate(`/sports/badminton/athlete/${d.raw.id}`)}
                   style={{ cursor: "pointer" }}
                 />
               </ScatterChart>
             </ResponsiveContainer>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              BII weights: Specialized Physical Fitness (65.1%) + Basic Physical Fitness (27.2%) + Body Morphology (7.7%) · Source: PMC 2024 AHP Study
-            </p>
+          </div>
+          <div className="text-[10px] text-muted-foreground mt-1">
+            BII weights: SPF 65.1% (Agility·Strength·Endurance·Flexibility·Speed) + BPF 27.2% + BM 7.7% · Source: PMC 2024 AHP Study
+          </div>
+        </div>
+
+        {/* Right panel */}
+        <div className="flex flex-col gap-4">
+
+          {/* Top Prospects */}
+          <div className="rounded-xl border bg-card p-4">
+            <h2 className="font-black text-xs tracking-wide mb-3 uppercase text-muted-foreground">
+              🏅 Top Prospects
+            </h2>
+            <div className="space-y-2">
+              {top3.map((a, i) => <ProspectCard key={a.raw.id} athlete={a} rank={i + 1} />)}
+            </div>
           </div>
 
-          {/* Right panel */}
-          <div className="flex flex-col gap-4">
-
-            {/* Top 3 Prospects */}
-            <div className="rounded-xl border bg-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="font-black text-sm tracking-tight">TOP PROSPECTS</h2>
-                <button onClick={() => navigate("/sports/badminton/explorer")}
-                  className="text-[10px] text-muted-foreground hover:underline">View all →</button>
-              </div>
-              <div className="space-y-2">
-                {top3.map((a, i) => (
-                  <ProspectCard key={a.raw.id} athlete={a} rank={i + 1} />
+          {/* Raw Physical Talents */}
+          {rawList.length > 0 && (
+            <div className="rounded-xl border p-4" style={{ borderColor: `${B}30`, background: `${B}07` }}>
+              <h2 className="font-black text-xs tracking-wide mb-1" style={{ color: B }}>💪 RAW PHYSICAL TALENTS</h2>
+              <p className="text-[10px] text-muted-foreground mb-3">Elite athleticism · Fast-track technical coaching recommended</p>
+              <div className="space-y-1.5">
+                {rawList.map((a) => (
+                  <button key={a.raw.id} onClick={() => navigate(`/sports/badminton/athlete/${a.raw.id}`)}
+                    className="w-full text-left px-3 py-2 rounded-lg bg-background border border-border/60 hover:bg-muted/30 transition-colors">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="text-xs font-bold">{a.raw.name}</div>
+                        <div className="text-[10px] text-muted-foreground">{a.age_band} · {a.raw.years_playing_badminton}yr playing</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-black font-mono" style={{ color: B }}>{a.bii.bii?.toFixed(1)}</div>
+                        <div className="text-[9px] text-muted-foreground">BII</div>
+                      </div>
+                    </div>
+                    <div className="mt-1.5">
+                      <MiniBar value={a.bii.bii ?? 0} colour={B} />
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
+          )}
 
-            {/* Raw Physical Talents */}
-            {stats.rawTalent > 0 && (
-              <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: `${RAW_BLUE}30`, background: `${RAW_BLUE}06` }}>
-                <h2 className="font-black text-sm tracking-tight" style={{ color: RAW_BLUE }}>
-                  💪 RAW PHYSICAL TALENTS
-                </h2>
-                <p className="text-[10px] text-muted-foreground">Exceptional athletic base — fast-track technical coaching recommended</p>
-                <div className="space-y-2">
-                  {athletes.filter((a) => a.quadrant === "RAW_PHYSICAL_TALENT").map((a) => (
+          {/* Alerts */}
+          {stats.alerts > 0 && (
+            <div className="rounded-xl border p-4" style={{ borderColor: `${R}30`, background: `${R}07` }}>
+              <h2 className="font-black text-xs tracking-wide mb-2" style={{ color: R }}>⚠ ACTION REQUIRED</h2>
+              <div className="space-y-1.5">
+                {athletes.filter((a) => a.isBlocked || a.flags.length > 0).slice(0, 5).map((a) => {
+                  const colour = a.isBlocked ? R : "#D97706";
+                  return (
                     <button key={a.raw.id} onClick={() => navigate(`/sports/badminton/athlete/${a.raw.id}`)}
-                      className="w-full text-left p-2.5 rounded-lg bg-background border border-border/60 hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-xs font-bold">{a.raw.name}</div>
-                          <div className="text-[10px] text-muted-foreground">{a.age_band} · {a.raw.years_playing_badminton}y playing</div>
+                      className="w-full text-left px-2.5 py-2 rounded-lg border hover:bg-muted/30 transition-colors"
+                      style={{ borderColor: `${colour}30`, background: `${colour}07` }}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">{a.isBlocked ? "⛔" : "⚠"}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold truncate" style={{ color: colour }}>{a.raw.name}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {a.isBlocked ? "Blocked — data error" : a.flags.some((f) => f.startsWith("AUTO_")) ? "Auto-corrected" : "Needs verification"}
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold font-mono" style={{ color: RAW_BLUE }}>{a.bii.bii?.toFixed(1)}</div>
-                          <div className="text-[10px] text-muted-foreground">BII</div>
-                        </div>
+                        <span className="text-[10px] bg-muted rounded px-1.5 shrink-0">{a.age_band}</span>
                       </div>
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            )}
+            </div>
+          )}
+        </div>
+      </div>
 
-            {/* Alerts */}
-            {alertAthletes.length > 0 && (
-              <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: `${ALERT_RED}30`, background: `${ALERT_RED}06` }}>
-                <h2 className="font-black text-sm tracking-tight" style={{ color: ALERT_RED }}>
-                  ACTION REQUIRED
-                </h2>
-                <div className="space-y-2">
-                  {alertAthletes.map((a) => <AlertCard key={a.raw.id} athlete={a} />)}
-                </div>
-              </div>
-            )}
-          </div>
+      {/* ─── Secondary Analytics Row ───────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        {/* BII by Age Band */}
+        <div className="rounded-xl border bg-card p-5">
+          <h2 className="font-black text-xs tracking-wide uppercase text-muted-foreground mb-0.5">Physical Potential by Age Band</h2>
+          <p className="text-[10px] text-muted-foreground mb-3">Average BII — Male vs Female</p>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={barData} margin={{ top: 5, right: 10, bottom: 5, left: -10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+              <XAxis dataKey="band" tick={{ fontSize: 10 }} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+              <RTooltip formatter={(v: number) => [v.toFixed(1), ""]} />
+              <Legend wrapperStyle={{ fontSize: 10 }} />
+              <Bar dataKey="Male BII" fill={G} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="Female BII" fill={Au} radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* ─── Secondary Analytics Row ──────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* BII distribution */}
-          <div className="rounded-xl border bg-card p-5">
-            <h2 className="font-black text-sm mb-0.5">PHYSICAL POTENTIAL BY AGE BAND</h2>
-            <p className="text-xs text-muted-foreground mb-3">Average BII score — Male vs Female</p>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={barData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-                <XAxis dataKey="band" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <RTooltip formatter={(v: number) => [`${v.toFixed(1)}`, ""]} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="Male" fill={COURT_GREEN} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Female" fill={SHUTTLE_GOLD} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Gopichand 5-Pillar */}
-          <div className="rounded-xl border bg-card p-5">
-            <h2 className="font-black text-sm mb-0.5">GOPICHAND 5-PILLAR FRAMEWORK</h2>
-            <p className="text-xs text-muted-foreground mb-1">
-              Cohort average vs Champion Target (85) — aspirational benchmark
-            </p>
-            <ResponsiveContainer width="100%" height={210}>
-              <RadarChart data={pillarData} margin={{ top: 10, right: 25, bottom: 10, left: 25 }}>
-                <PolarGrid stroke="hsl(var(--border))" />
-                <PolarAngleAxis dataKey="axis" tick={{ fontSize: 10 }} />
-                <Radar name="Cohort Avg" dataKey="cohort" stroke={COURT_GREEN} fill={COURT_GREEN} fillOpacity={0.3} />
-                <Radar name="Champion Target (85)" dataKey="target" stroke={SHUTTLE_GOLD}
-                  fill="none" strokeDasharray="4 4" strokeWidth={2} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
-                <RTooltip formatter={(v: number) => [`${v}`, ""]} />
-              </RadarChart>
-            </ResponsiveContainer>
-            <p className="text-[10px] text-muted-foreground">
-              Champion Target = 85 is an aspirational internal benchmark, not an external published norm.
-            </p>
-          </div>
+        {/* Gopichand 5-Pillar */}
+        <div className="rounded-xl border bg-card p-5">
+          <h2 className="font-black text-xs tracking-wide uppercase text-muted-foreground mb-0.5">Gopichand 5-Pillar Framework</h2>
+          <p className="text-[10px] text-muted-foreground mb-3">Cohort avg vs Champion Target (85) — aspirational</p>
+          <ResponsiveContainer width="100%" height={180}>
+            <RadarChart data={pillarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
+              <PolarGrid stroke="hsl(var(--border))" />
+              <PolarAngleAxis dataKey="axis" tick={{ fontSize: 9 }} />
+              <Radar name="Cohort" dataKey="cohort" stroke={G} fill={G} fillOpacity={0.3} />
+              <Radar name="Target (85)" dataKey="target" stroke={Au} fill="none" strokeDasharray="4 4" strokeWidth={2} />
+              <Legend wrapperStyle={{ fontSize: 9 }} />
+            </RadarChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* ─── Phase 2 footer ────────────────────────────────────────────── */}
-        <div className="rounded-xl border border-dashed border-border p-4">
-          <div className="flex flex-wrap gap-x-6 gap-y-1 items-center">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Phase 2 Pipeline</span>
-            {["Video Analysis", "Match Statistics", "Injury Tracking", "Training Programme Generator", "Tournament Results", "Multi-Academy Comparison"].map((f) => (
-              <span key={f} className="text-xs text-muted-foreground flex items-center gap-1">
-                <span className="text-[10px]">○</span>{f}
-              </span>
-            ))}
-          </div>
+        {/* BII Progression */}
+        <div className="rounded-xl border bg-card p-5">
+          <h2 className="font-black text-xs tracking-wide uppercase text-muted-foreground mb-0.5">BII Progression U10→U16</h2>
+          <p className="text-[10px] text-muted-foreground mb-3">Expected upward trend — flat = pipeline gap</p>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={progressData} margin={{ top: 5, right: 15, bottom: 5, left: -10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+              <XAxis dataKey="band" tick={{ fontSize: 10 }} />
+              <YAxis domain={[20, 100]} tick={{ fontSize: 10 }} />
+              <RTooltip formatter={(v: number) => [v?.toFixed(1), ""]} />
+              <Legend wrapperStyle={{ fontSize: 10 }} />
+              <Line type="monotone" dataKey="Male" stroke={G} strokeWidth={2.5} dot={{ r: 4, fill: G }} connectNulls />
+              <Line type="monotone" dataKey="Female" stroke={Au} strokeWidth={2.5} dot={{ r: 4, fill: Au }} connectNulls />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
+      </div>
 
+      {/* ─── Phase 2 footer ─────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-dashed border-border/60 p-3">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Phase 2 Roadmap</span>
+          {["Video Analysis", "Match Statistics", "Injury Tracking", "Training Programme Generator", "Tournament Results", "Multi-Academy Comparison"].map((f) => (
+            <span key={f} className="text-[10px] text-muted-foreground/70 flex items-center gap-1">
+              <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />{f}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
