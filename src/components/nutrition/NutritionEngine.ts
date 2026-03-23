@@ -131,7 +131,9 @@ export interface NutritionAlert {
   severity: "red" | "orange" | "green";
   icon: string;
   title: string;
+  titleHi?: string;
   body: string;
+  bodyHi?: string;
 }
 
 // ─── Age-band helpers ─────────────────────────────────────────────────────
