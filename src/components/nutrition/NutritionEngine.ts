@@ -119,6 +119,7 @@ export interface HydrationPlan {
   trainingTopUpML: number;
   hotWeatherTopUpML: number;
   electrolyteNote: string;
+  electrolyteNoteHi?: string;
   recommendations: HydrationRec[];
 }
 
