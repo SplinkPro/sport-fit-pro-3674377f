@@ -772,27 +772,59 @@ export default function ImportPage() {
               {/* Import mode */}
               <div>
                 <p className="text-sm font-medium mb-2">Import Mode</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {(["replace", "append"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => setImportMode(mode)}
-                      className={cn(
-                        "border rounded-xl p-4 text-left transition-all",
-                        importMode === mode
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border hover:border-primary/40 hover:bg-muted/20"
-                      )}
-                    >
-                      <div className="font-semibold capitalize text-sm mb-0.5">{mode}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {mode === "replace"
-                          ? "Remove all existing athletes and load only this file's data."
-                          : "Keep existing athletes and add new ones from this file."}
-                      </div>
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => setImportMode("replace")}
+                    className={cn(
+                      "border rounded-xl p-4 text-left transition-all",
+                      importMode === "replace"
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/40 hover:bg-muted/20"
+                    )}
+                  >
+                    <div className="font-semibold text-sm mb-0.5">Replace</div>
+                    <div className="text-xs text-muted-foreground">
+                      Remove all existing athletes and load only this file's data.
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setImportMode("append")}
+                    className={cn(
+                      "border rounded-xl p-4 text-left transition-all",
+                      importMode === "append"
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/40 hover:bg-muted/20"
+                    )}
+                  >
+                    <div className="font-semibold text-sm mb-0.5">Append</div>
+                    <div className="text-xs text-muted-foreground">
+                      Keep existing athletes and add new ones from this file.
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setImportMode("batch_update")}
+                    className={cn(
+                      "border rounded-xl p-4 text-left transition-all",
+                      importMode === "batch_update"
+                        ? "border-emerald-600 bg-emerald-50 shadow-sm"
+                        : "border-border hover:border-emerald-400 hover:bg-muted/20"
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5 font-semibold text-sm mb-0.5">
+                      <GitMerge className="w-3.5 h-3.5" />
+                      Batch Update
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Match athletes by name, add new assessment to history. Powers TTI improvement tracking.
+                    </div>
+                  </button>
                 </div>
+                {importMode === "batch_update" && (
+                  <div className="mt-2 flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-xs text-emerald-700">
+                    <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    Athletes are matched by name. A new assessment record will be added to each matched athlete's history, enabling the Talent Trajectory Index (TTI) to track improvement over time.
+                  </div>
+                )}
               </div>
 
               <div className="bg-muted/30 rounded-lg p-3 text-sm flex items-center gap-2">
