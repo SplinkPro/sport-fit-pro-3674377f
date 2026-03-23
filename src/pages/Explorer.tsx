@@ -494,42 +494,59 @@ export default function ExplorerPage() {
               </tr>
             </thead>
             <tbody>
-              {paginated.map((athlete, rowIdx) => (
-                <tr
-                  key={athlete.id}
-                  className={cn(
-                    "border-b table-row-hover",
-                    rowIdx % 2 === 0 ? "bg-background" : "bg-muted/20",
-                    selected.has(athlete.id) && "bg-primary/5"
-                  )}
-                >
-                  <td className="px-2 py-2">
-                    <Checkbox
-                      checked={selected.has(athlete.id)}
-                      onCheckedChange={(c) => handleSelect(athlete.id, !!c)}
-                      className="h-3.5 w-3.5"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </td>
-                  {visibleCols.map((col) => (
-                    <td
-                      key={col.key}
-                      className="px-2 py-2 text-xs"
-                      onClick={() => navigate(`/athlete/${athlete.id}`)}
-                    >
-                      {renderCell(col.key, athlete, dict, language)}
+              {paginated.map((athlete, rowIdx) => {
+                // Determine if this athlete has a critical import-time data block
+                const isBlocked =
+                  athlete.sprint30mFlag === "OUTLIER_VERIFY" ||
+                  athlete.broadJumpFlag === "OUTLIER_VERIFY" ||
+                  athlete.run800mFlag === "FORMAT_UNREADABLE" ||
+                  athlete.run800mFlag === "IMPLAUSIBLE_VERIFY" ||
+                  athlete.vjFlag === "UNCLEAR_VERIFY";
+
+                return (
+                  <tr
+                    key={athlete.id}
+                    className={cn(
+                      "border-b table-row-hover",
+                      isBlocked
+                        ? "bg-red-50/40 border-l-4 border-l-red-400"
+                        : rowIdx % 2 === 0 ? "bg-background" : "bg-muted/20",
+                      selected.has(athlete.id) && "bg-primary/5"
+                    )}
+                  >
+                    <td className="px-2 py-2">
+                      <Checkbox
+                        checked={selected.has(athlete.id)}
+                        onCheckedChange={(c) => handleSelect(athlete.id, !!c)}
+                        className="h-3.5 w-3.5"
+                        onClick={(e) => e.stopPropagation()}
+                      />
                     </td>
-                  ))}
-                  <td className="px-2 py-2">
-                    <button
-                      onClick={() => navigate(`/athlete/${athlete.id}`)}
-                      className="text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <ChevronRight size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    {visibleCols.map((col) => (
+                      <td
+                        key={col.key}
+                        className="px-2 py-2 text-xs"
+                        onClick={() => navigate(`/athlete/${athlete.id}`)}
+                      >
+                        {renderCell(col.key, athlete, dict, language)}
+                      </td>
+                    ))}
+                    <td className="px-2 py-2 text-right">
+                      {isBlocked && (
+                        <span className="inline-block mr-1 px-1 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-600 border border-red-200">
+                          BLOCKED
+                        </span>
+                      )}
+                      <button
+                        onClick={() => navigate(`/athlete/${athlete.id}`)}
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
