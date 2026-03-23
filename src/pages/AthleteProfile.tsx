@@ -547,7 +547,7 @@ function TrajectoryTab({ athlete }: { athlete: EnrichedAthlete }) {
 
   const METRIC_OPTIONS: Array<{ key: NationalBenchmarkMetric; label: string; lowerBetter: boolean; fmt: (v: number) => string }> = [
     { key: "sprint30m",    label: "30m Sprint",     lowerBetter: true,  fmt: (v) => `${v.toFixed(2)}s` },
-    { key: "run800m",      label: "800m Run",        lowerBetter: true,  fmt: (v) => { const m = Math.floor(v/60); const s = Math.round(v%60); return `${m}:${s.toString().padStart(2,"0")}`; } },
+    { key: "run800m",      label: "800m Run",        lowerBetter: true,  fmt: (v) => { const m = Math.floor(v/60); const s = Math.floor(v%60); return `${m}:${s.toString().padStart(2,"0")}`; } },
     { key: "verticalJump", label: "Vertical Jump",   lowerBetter: false, fmt: (v) => `${v.toFixed(1)}cm` },
     { key: "broadJump",    label: "Broad Jump",      lowerBetter: false, fmt: (v) => `${v.toFixed(0)}cm` },
     { key: "shuttleRun",   label: "Shuttle Run",     lowerBetter: true,  fmt: (v) => `${v.toFixed(2)}s` },
@@ -1115,11 +1115,13 @@ function SportFitTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
 function HealthTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnType<typeof useT>["dict"] }) {
   const p = dict.profile;
   const bmi = athlete.bmi ?? 0;
+  // IAP (Indian Academy of Pediatrics) youth BMI thresholds — NOT adult WHO cutoffs
   const bmiCat =
-    bmi < 18.5 ? { label: dict.bmi.underweight, color: "bg-blue-100 text-blue-800 border-blue-200" }
-    : bmi < 25 ? { label: dict.bmi.normal, color: "bg-green-100 text-green-800 border-green-200" }
-    : bmi < 30 ? { label: dict.bmi.overweight, color: "bg-yellow-100 text-yellow-800 border-yellow-200" }
-    : { label: dict.bmi.obese, color: "bg-red-100 text-red-800 border-red-200" };
+    bmi < 14.0 ? { label: "Severe Thinness (IAP)", color: "bg-red-100 text-red-800 border-red-200" }
+    : bmi < 16.0 ? { label: "Thinness (IAP)", color: "bg-orange-100 text-orange-800 border-orange-200" }
+    : bmi < 18.5 ? { label: "Mild Thinness — Monitor", color: "bg-yellow-100 text-yellow-800 border-yellow-200" }
+    : bmi < 23.0 ? { label: "Normal (IAP)", color: "bg-green-100 text-green-800 border-green-200" }
+    : { label: "Review — Above Normal", color: "bg-amber-100 text-amber-800 border-amber-200" };
 
   const wellness = [
     { icon: "😴", label: p.sleep, en: "8–10 hours recommended for athletes aged 10–18. Quality sleep directly improves recovery and performance.", hi: "10-18 आयु के एथलीटों के लिए 8-10 घंटे की नींद की सिफारिश है।" },
@@ -1195,9 +1197,170 @@ function ReportsTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnT
   const [lang, setLang] = useState<"en" | "hi">("en");
   const [generating, setGenerating] = useState(false);
 
-  const handleGenerate = () => {
+  const topSports = (athlete.sportFit ?? []).slice(0, 3).map(sf => sf.sport.nameEn).join(", ") || "Athletics";
+  const bmi = athlete.bmi ?? 0;
+  const bmiLabel = bmi < 14 ? "Severe Thinness (IAP)" : bmi < 16 ? "Thinness (IAP)" : bmi < 18.5 ? "Mild Thinness — Monitor" : bmi < 23 ? "Normal (IAP)" : "Review — Above Normal";
+  const fmtRun = (v: number) => { const m = Math.floor(v/60); const s = Math.floor(v%60); return `${m}:${s.toString().padStart(2,"0")}`; };
+  const flagMessages = (athlete.flags ?? []).map(f => f.message).join("; ");
+  const ageBand = athlete.age < 12 ? "U12" : athlete.age < 14 ? "U14" : athlete.age < 16 ? "U16" : athlete.age < 18 ? "U18" : "Open";
+
+  const handleExportPDF = () => {
     setGenerating(true);
-    setTimeout(() => setGenerating(false), 2000);
+    const hi = lang === "hi";
+    const sportTags = (athlete.sportFit ?? []).slice(0, 3).map(sf => `<span class="sport-tag">${sf.sport.nameEn} · ${sf.matchScore.toFixed(0)}%</span>`).join("");
+    const reportHtml = `<!DOCTYPE html><html lang="${lang}"><head><meta charset="utf-8"/>
+<title>${hi ? "एथलीट रिपोर्ट" : "Athlete Intelligence Report"} — ${athlete.name}</title>
+<style>
+  body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:32px;color:#111;background:#fff;font-size:13px}
+  .header{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:28px 32px;border-radius:12px;margin-bottom:24px}
+  .header h1{margin:0 0 4px;font-size:22px;font-weight:700}
+  .header p{margin:0;opacity:.85;font-size:13px}
+  .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;margin-top:10px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+  .card{border:1px solid #e5e7eb;border-radius:10px;padding:16px}
+  .card h3{margin:0 0 10px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+  .row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f3f4f6}
+  .row:last-child{border:none}
+  .label{color:#374151;font-weight:500}
+  .value{font-weight:700;color:#1e3a5f}
+  .capi{text-align:center;background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;border-radius:12px;padding:20px}
+  .capi .score{font-size:52px;font-weight:800;line-height:1}
+  .capi .sub{font-size:12px;opacity:.85;margin-top:6px}
+  .sport-tag{display:inline-block;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:6px;padding:4px 12px;margin:3px;font-size:12px;font-weight:600}
+  .flag{background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-top:16px;font-size:12px;color:#92400e}
+  .footer{margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center;color:#9ca3af;font-size:11px}
+  @media print{body{padding:16px}.header{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<div class="header">
+  <h1>${hi ? "🏅 एथलीट रिपोर्ट" : "🏅 Athlete Intelligence Report"}</h1>
+  <p>${athlete.name} · ${athlete.school ?? ""} · ${hi ? "आयु" : "Age"} ${athlete.age} · ${athlete.gender === "F" ? (hi ? "महिला" : "Female") : (hi ? "पुरुष" : "Male")}</p>
+  <div class="badge">PRATIBHA · ${hi ? "प्रतिभा" : "SAI Talent ID"} · ${new Date().toLocaleDateString("en-IN")}</div>
+</div>
+<div class="grid2">
+  <div class="card">
+    <h3>${hi ? "शारीरिक माप" : "Anthropometrics"}</h3>
+    <div class="row"><span class="label">${hi ? "ऊंचाई" : "Height"}</span><span class="value">${athlete.height?.toFixed(1) ?? "—"} cm</span></div>
+    <div class="row"><span class="label">${hi ? "वजन" : "Weight"}</span><span class="value">${athlete.weight?.toFixed(1) ?? "—"} kg</span></div>
+    <div class="row"><span class="label">BMI</span><span class="value">${bmi.toFixed(1)} · ${bmiLabel}</span></div>
+    <div class="row"><span class="label">${hi ? "आयु वर्ग" : "Age Band"}</span><span class="value">${ageBand} (Age ${athlete.age})</span></div>
+  </div>
+  <div class="capi">
+    <div>${hi ? "CAPI स्कोर (पर्सेंटाइल)" : "CAPI Score (percentile)"}</div>
+    <div class="score">${athlete.compositeScore ?? "—"}</div>
+    <div class="sub">${hi ? "साथियों में पर्सेंटाइल रैंक" : "Percentile rank vs same-cohort peers"}</div>
+    <div class="sub" style="margin-top:8px;font-size:11px">National CAPI: ${athlete.derivedIndices?.nationalComposite?.toFixed(0) ?? "—"}</div>
+  </div>
+</div>
+<div class="card" style="margin-bottom:16px">
+  <h3>${hi ? "प्रदर्शन मेट्रिक्स" : "Performance Metrics"}</h3>
+  <div class="row"><span class="label">30m Sprint</span><span class="value">${athlete.sprint30m?.toFixed(2) ?? "—"} s</span></div>
+  <div class="row"><span class="label">800m Run</span><span class="value">${athlete.run800m != null ? fmtRun(athlete.run800m) : "—"}</span></div>
+  <div class="row"><span class="label">Vertical Jump</span><span class="value">${athlete.verticalJump?.toFixed(1) ?? "—"} cm</span></div>
+  <div class="row"><span class="label">Broad Jump</span><span class="value">${athlete.broadJump?.toFixed(0) ?? "—"} cm</span></div>
+  <div class="row"><span class="label">Shuttle Run</span><span class="value">${athlete.shuttleRun?.toFixed(2) ?? "—"} s</span></div>
+</div>
+<div class="card" style="margin-bottom:16px">
+  <h3>${hi ? "खेल अनुशंसाएँ" : "Sport-Fit Recommendations"}</h3>
+  <p style="color:#6b7280;font-size:12px;margin:0 0 10px">${hi ? "शीर्ष 3 अनुशंसित खेल:" : "Top 3 recommended sports based on physical profile:"}</p>
+  ${sportTags}
+</div>
+<div class="card">
+  <h3>${hi ? "कोच नोट्स" : "Coach Notes"}</h3>
+  <p style="font-size:12px;color:#374151;margin:0 0 8px">${hi ? "प्रमुख ताकत:" : "Key Strengths:"} ${topSports}</p>
+  <p style="font-size:12px;color:#374151;margin:0">BMI ${bmi.toFixed(1)} — ${bmiLabel}. ${hi ? "स्वास्थ्य के लिए IAP दिशानिर्देश देखें।" : "See IAP pediatric guidelines for nutritional guidance."}</p>
+</div>
+${flagMessages ? `<div class="flag">⚠️ ${hi ? "डेटा गुणवत्ता नोट:" : "Data Quality Note:"} ${flagMessages}</div>` : ""}
+<div class="footer">Pratibha · Sports Authority of India Talent Identification Platform · Generated ${new Date().toLocaleDateString("en-IN")} · For official use only</div>
+</body></html>`;
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(reportHtml);
+      win.document.close();
+      setTimeout(() => { win.print(); setGenerating(false); }, 400);
+    } else {
+      setGenerating(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    const headers = ["Name","School","Age","AgeBand","Gender","Height_cm","Weight_kg","BMI","BMI_Category","Sprint30m_s","Run800m_s","VerticalJump_cm","BroadJump_cm","ShuttleRun_s","CAPI_Percentile","National_CAPI","TopSport1","TopSport2","TopSport3","Flags"];
+    const sportFitSlice = (athlete.sportFit ?? []).slice(0, 3);
+    const row = [
+      athlete.name,
+      athlete.school ?? "",
+      athlete.age,
+      ageBand,
+      athlete.gender,
+      athlete.height?.toFixed(1) ?? "",
+      athlete.weight?.toFixed(1) ?? "",
+      bmi.toFixed(1),
+      bmiLabel,
+      athlete.sprint30m?.toFixed(2) ?? "",
+      athlete.run800m?.toFixed(0) ?? "",
+      athlete.verticalJump?.toFixed(1) ?? "",
+      athlete.broadJump?.toFixed(0) ?? "",
+      athlete.shuttleRun?.toFixed(2) ?? "",
+      athlete.compositeScore ?? "",
+      athlete.derivedIndices?.nationalComposite?.toFixed(1) ?? "",
+      sportFitSlice[0]?.sport.nameEn ?? "",
+      sportFitSlice[1]?.sport.nameEn ?? "",
+      sportFitSlice[2]?.sport.nameEn ?? "",
+      flagMessages,
+    ];
+    const csv = [headers.join(","), row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${athlete.name.replace(/\s+/g, "_")}_Pratibha_Report.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrintCoachSummary = () => {
+    const capiTier = (athlete.compositeScore ?? 0) >= 70 ? "🟢 HIGH POTENTIAL — Consider for advanced training programme"
+      : (athlete.compositeScore ?? 0) >= 50 ? "🟡 AVERAGE — Monitor and provide structured coaching"
+      : "🔴 NEEDS DEVELOPMENT — Foundational fitness intervention required";
+    const sportRows = (athlete.sportFit ?? []).slice(0, 3).map(sf => `${sf.sport.nameEn} (${sf.matchScore.toFixed(0)}%)`).join(" · ") || "—";
+    const summaryHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<title>Coach Summary — ${athlete.name}</title>
+<style>
+  body{font-family:'Segoe UI',Arial,sans-serif;padding:24px;font-size:13px;color:#111}
+  h1{font-size:18px;font-weight:700;border-bottom:2px solid #2563eb;padding-bottom:8px;margin-bottom:16px}
+  .tier{padding:10px 14px;border-radius:8px;font-weight:600;margin-bottom:16px;background:#f0fdf4;border:1px solid #86efac}
+  table{width:100%;border-collapse:collapse;margin-bottom:16px}
+  th{text-align:left;padding:6px 10px;background:#f3f4f6;font-size:11px;color:#6b7280;text-transform:uppercase}
+  td{padding:6px 10px;border-bottom:1px solid #f3f4f6}
+  .notes{border:1px solid #e5e7eb;border-radius:8px;padding:12px;min-height:60px;margin-top:8px}
+  .footer{margin-top:24px;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:8px}
+  @media print{body{padding:12px}}
+</style></head><body>
+<h1>📋 Coach Summary — ${athlete.name}</h1>
+<div>${athlete.school ?? ""} · Age ${athlete.age} (${ageBand}) · ${athlete.gender === "F" ? "Female" : "Male"}</div>
+<div class="tier" style="margin-top:12px">${capiTier}</div>
+<table>
+  <tr><th>Metric</th><th>Value</th><th>National Percentile</th></tr>
+  <tr><td>30m Sprint</td><td>${athlete.sprint30m?.toFixed(2) ?? "—"} s</td><td>${athlete.derivedIndices?.nationalPercentiles?.sprint30m?.toFixed(0) ?? "—"}</td></tr>
+  <tr><td>800m Run</td><td>${athlete.run800m != null ? fmtRun(athlete.run800m) : "—"}</td><td>${athlete.derivedIndices?.nationalPercentiles?.run800m?.toFixed(0) ?? "—"}</td></tr>
+  <tr><td>Vertical Jump</td><td>${athlete.verticalJump?.toFixed(1) ?? "—"} cm</td><td>${athlete.derivedIndices?.nationalPercentiles?.verticalJump?.toFixed(0) ?? "—"}</td></tr>
+  <tr><td>Broad Jump</td><td>${athlete.broadJump?.toFixed(0) ?? "—"} cm</td><td>${athlete.derivedIndices?.nationalPercentiles?.broadJump?.toFixed(0) ?? "—"}</td></tr>
+  <tr><td>Shuttle Run</td><td>${athlete.shuttleRun?.toFixed(2) ?? "—"} s</td><td>${athlete.derivedIndices?.nationalPercentiles?.shuttleRun?.toFixed(0) ?? "—"}</td></tr>
+  <tr><td><strong>CAPI (Percentile)</strong></td><td colspan="2"><strong>${athlete.compositeScore ?? "—"}th percentile</strong></td></tr>
+</table>
+<p><strong>Top Sport Recommendations:</strong> ${sportRows}</p>
+<p><strong>BMI:</strong> ${bmi.toFixed(1)} — ${bmiLabel}</p>
+${flagMessages ? `<p style="color:#b45309"><strong>⚠️ Flags:</strong> ${flagMessages}</p>` : ""}
+<div><strong>Coach Notes:</strong><div class="notes"></div></div>
+<div class="footer">Pratibha · SAI Talent ID · ${new Date().toLocaleDateString("en-IN")} · Confidential — For coach use only</div>
+</body></html>`;
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(summaryHtml);
+      win.document.close();
+      setTimeout(() => win.print(), 400);
+    }
   };
 
   return (
@@ -1212,11 +1375,11 @@ function ReportsTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnT
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" className="gap-1.5" onClick={handleGenerate} disabled={generating}>
+            <Button size="sm" className="gap-1.5" onClick={handleExportPDF} disabled={generating}>
               {generating ? <>{p.generating}</> : <>{p.exportPDF}</>}
             </Button>
-            <Button size="sm" variant="outline" className="gap-1.5">{p.exportCSV}</Button>
-            <Button size="sm" variant="outline" className="gap-1.5">{p.printSummary}</Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={handleExportCSV}>{p.exportCSV}</Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={handlePrintCoachSummary}>{p.printSummary}</Button>
           </div>
         </div>
       </SectionCard>
@@ -1225,13 +1388,15 @@ function ReportsTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnT
         <p className="font-medium text-foreground">Report includes:</p>
         <ul className="space-y-0.5 list-disc list-inside">
           <li>Athlete overview & anthropometrics</li>
-          <li>Performance metrics with benchmarks</li>
+          <li>Performance metrics with national percentiles</li>
           <li>Sport-fit recommendations (top 3)</li>
-          <li>Health & wellness guidance</li>
-          <li>Coach talking points</li>
-          <li>Disclaimers (Pratibha by SPLINK branding)</li>
+          <li>Health & wellness guidance (IAP BMI classification)</li>
+          <li>Coach talking points & notes section</li>
+          <li>Pratibha · SAI branding & official disclaimers</li>
         </ul>
       </div>
     </div>
   );
 }
+
+

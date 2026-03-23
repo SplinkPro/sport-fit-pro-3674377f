@@ -30,23 +30,31 @@ function TrophyIcon({ className }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 22v-4"/><path d="M14 22v-4"/><path d="M6 4h12v8a6 6 0 01-12 0V4z"/></svg>;
 }
 
+// All 15 sports — synced from SPORTS_CONFIG (SAI Circular 07/2023)
 const SPORT_WEIGHTS: Record<string, Record<string, number>> = {
-  "Athletics":    { speed: 35, power: 25, endurance: 25, agility: 10, bodyComposition:  5 },
-  "Football":     { speed: 30, power: 20, endurance: 30, agility: 15, bodyComposition:  5 },
-  "Kabaddi":      { speed: 25, power: 30, endurance: 20, agility: 20, bodyComposition:  5 },
-  "Volleyball":   { speed: 20, power: 35, endurance: 15, agility: 20, bodyComposition: 10 },
-  "Cycling":      { speed: 15, power: 30, endurance: 45, agility:  5, bodyComposition:  5 },
-  "Wrestling":    { speed: 10, power: 45, endurance: 20, agility: 15, bodyComposition: 10 },
-  "Swimming":     { speed: 25, power: 30, endurance: 30, agility:  5, bodyComposition: 10 },
-  "Basketball":   { speed: 25, power: 30, endurance: 20, agility: 20, bodyComposition:  5 },
+  "Athletics":      { speed: 35, power: 25, endurance: 25, agility: 10, bodyComposition:  5 },
+  "Football":       { speed: 30, power: 20, endurance: 30, agility: 15, bodyComposition:  5 },
+  "Kabaddi":        { speed: 25, power: 30, endurance: 20, agility: 20, bodyComposition:  5 },
+  "Volleyball":     { speed: 20, power: 35, endurance: 15, agility: 20, bodyComposition: 10 },
+  "Cycling":        { speed: 15, power: 30, endurance: 45, agility:  5, bodyComposition:  5 },
+  "Wrestling":      { speed: 10, power: 45, endurance: 20, agility: 15, bodyComposition: 10 },
+  "Swimming":       { speed: 25, power: 30, endurance: 30, agility:  5, bodyComposition: 10 },
+  "Basketball":     { speed: 25, power: 30, endurance: 20, agility: 20, bodyComposition:  5 },
+  "Badminton":      { speed: 30, power: 25, endurance: 15, agility: 25, bodyComposition:  5 },
+  "Boxing":         { speed: 30, power: 30, endurance: 20, agility: 15, bodyComposition:  5 },
+  "Hockey":         { speed: 30, power: 20, endurance: 30, agility: 15, bodyComposition:  5 },
+  "Archery":        { speed:  5, power: 25, endurance: 25, agility: 10, bodyComposition: 35 },
+  "Kho Kho":        { speed: 35, power: 20, endurance: 20, agility: 20, bodyComposition:  5 },
+  "Table Tennis":   { speed: 30, power: 20, endurance: 10, agility: 35, bodyComposition:  5 },
+  "Weightlifting":  { speed:  5, power: 55, endurance: 10, agility:  5, bodyComposition: 25 },
 };
 
 const METRIC_DISPLAY: Record<string, { label: string; unit: string; lowerBetter: boolean }> = {
-  verticalJump: { label: "Vertical Jump",     unit: "cm",  lowerBetter: false },
-  broadJump:    { label: "Standing Long Jump", unit: "cm",  lowerBetter: false },
-  sprint30m:    { label: "30m Sprint",         unit: "sec", lowerBetter: true  },
-  run800m:      { label: "800m Run",           unit: "sec", lowerBetter: true  },
-  shuttleRun:   { label: "10×5m Shuttle Run",  unit: "sec", lowerBetter: true  },
+  verticalJump: { label: "Vertical Jump",      unit: "cm",  lowerBetter: false },
+  broadJump:    { label: "Standing Long Jump",  unit: "cm",  lowerBetter: false },
+  sprint30m:    { label: "30m Sprint",          unit: "sec", lowerBetter: true  },
+  run800m:      { label: "800m Run",            unit: "sec", lowerBetter: true  },
+  shuttleRun:   { label: "10m×6 Shuttle Run",   unit: "sec", lowerBetter: true  },
 };
 
 function fmtMetricValue(metric: string, value: number): string {
