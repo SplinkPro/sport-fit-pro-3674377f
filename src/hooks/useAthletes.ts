@@ -96,6 +96,7 @@ export const AthleteContext = createContext<AthleteContextValue>({
   setAthletes: () => {},
   setDatasetMeta: () => {},
   addDataset: () => {},
+  addBatchUpdate: () => {},
   loadDataset: () => {},
 });
 
