@@ -107,8 +107,11 @@ export interface NutritionPlan {
   homeRemedies: HomeRemedy[];
   alerts: NutritionAlert[];
   weeklyTips: string[];
+  weeklyTipsHi?: string[];
   preworkoutGuidance: string;
+  preworkoutGuidanceHi?: string;
   postworkoutGuidance: string;
+  postworkoutGuidanceHi?: string;
 }
 
 export interface HydrationPlan {
