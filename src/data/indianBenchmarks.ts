@@ -373,8 +373,16 @@ export interface GapToRecord {
   gap: number;
   gapPercent: number;
   achieved: boolean;
+  agedOut: boolean; // athlete is older than the age window for this level
   yearsToAchieve: number | null; // estimated years based on LTAD rates
 }
+
+// Age ceiling per context — above this age the level is no longer age-eligible
+const CONTEXT_AGE_CEILING: Partial<Record<string, number>> = {
+  district: 14,  // U-14 district standard
+  state: 17,     // U-17 state standard
+  // national_junior, national_senior, olympic, world have no age ceiling
+};
 
 export function calcGapToRecords(
   currentValue: number,
@@ -393,9 +401,15 @@ export function calcGapToRecords(
     const gapPercent = Math.abs(gap / rec.value) * 100;
     const achieved = lowerIsBetter ? currentValue <= rec.value : currentValue >= rec.value;
 
-    // Estimate years to achieve using LTAD rates
+    // Check if the athlete has aged out of this level's competition window
+    const ageCeiling = CONTEXT_AGE_CEILING[rec.context];
+    const agedOut = ageCeiling != null && currentAge > ageCeiling;
+
+    // Estimate years to achieve — skip for aged-out levels
     let yearsToAchieve: number | null = null;
-    if (!achieved && gap > 0) {
+    if (achieved) {
+      yearsToAchieve = 0;
+    } else if (!agedOut && gap > 0) {
       let simValue = currentValue;
       let years = 0;
       while (years < 20) {
@@ -409,8 +423,6 @@ export function calcGapToRecords(
         }
         years++;
       }
-    } else if (achieved) {
-      yearsToAchieve = 0;
     }
 
     return {
@@ -420,6 +432,7 @@ export function calcGapToRecords(
       gap: parseFloat(Math.abs(gap).toFixed(3)),
       gapPercent: parseFloat(gapPercent.toFixed(1)),
       achieved,
+      agedOut,
       yearsToAchieve,
     };
   });
