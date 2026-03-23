@@ -246,8 +246,18 @@ export default function BadmintonImport() {
         <div className="rounded-xl border bg-card p-5 space-y-4">
           <h2 className="font-semibold text-sm">Step 3 — Validation & Confirmation</h2>
           <p className="text-xs text-muted-foreground">
-            File: <strong>{fileName}</strong> · Cohort: <strong>{ageBand} {gender}</strong>
+            File: <strong>{fileName}</strong> · Cohort: <strong>{ageBand} {gender === "Mixed" ? "Mixed — boys scored vs male norms, girls vs female norms" : gender}</strong>
           </p>
+          {gender === "Mixed" && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg text-xs"
+              style={{ background: "#1A5C3810", border: "1px solid #1A5C3830" }}>
+              <span style={{ color: COURT_GREEN }}>✓</span>
+              <span className="text-muted-foreground">
+                <strong style={{ color: COURT_GREEN }}>Per-gender norms confirmed:</strong> each athlete's
+                BII uses their individual gender field — no mixed-pool scoring.
+              </span>
+            </div>
+          )}
 
           {/* Demo validation preview */}
           <div className="space-y-2">
