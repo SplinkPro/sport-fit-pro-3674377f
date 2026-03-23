@@ -127,7 +127,8 @@ export default function BadmintonImport() {
         <div className="rounded-xl border bg-card p-5 space-y-5">
           <h2 className="font-semibold text-sm">Step 1 — Select Age Band & Gender</h2>
           <p className="text-xs text-muted-foreground">
-            Required before upload. Determines which norm tables are applied to compute BII scores.
+            Required before upload. Norm lookup uses each athlete's individual <code className="bg-muted px-1 rounded">gender</code> field —
+            select <strong>Mixed</strong> when your file contains both male and female athletes.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -143,11 +144,29 @@ export default function BadmintonImport() {
               <select value={gender} onChange={(e) => setGender(e.target.value)}
                 className="w-full text-sm border border-border rounded-md px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring">
                 <option value="">— Select —</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
+                <option value="Male">Male only</option>
+                <option value="Female">Female only</option>
+                <option value="Mixed">Mixed (M + F in same file)</option>
               </select>
             </div>
           </div>
+
+          {/* Mixed gender info banner */}
+          {gender === "Mixed" && (
+            <div className="flex items-start gap-2.5 p-3 rounded-lg text-xs"
+              style={{ background: "#1A5C3812", border: "1px solid #1A5C3830" }}>
+              <span className="text-lg leading-none">ℹ</span>
+              <div className="space-y-1">
+                <p className="font-semibold" style={{ color: COURT_GREEN }}>Per-athlete gender norms applied</p>
+                <p className="text-muted-foreground">
+                  Each athlete's BII is computed using their own <code className="bg-muted px-1 rounded">gender</code> column
+                  against the corresponding male or female norm table. Boys are benchmarked against boy norms,
+                  girls against girl norms — scientifically accurate even in a mixed file.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3">
             <button
               onClick={() => fileRef.current?.click()}
@@ -181,7 +200,7 @@ export default function BadmintonImport() {
             <span className="text-xs text-muted-foreground">{fileName}</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Cohort: <strong>{ageBand} {gender}</strong> · Review mappings before proceeding.
+            Cohort: <strong>{ageBand} {gender === "Mixed" ? "Mixed (M+F — per-athlete gender norms)" : gender}</strong> · Review mappings before proceeding.
             Unmapped columns will be ignored.
           </p>
           <div className="overflow-hidden rounded-lg border border-border">
@@ -227,8 +246,18 @@ export default function BadmintonImport() {
         <div className="rounded-xl border bg-card p-5 space-y-4">
           <h2 className="font-semibold text-sm">Step 3 — Validation & Confirmation</h2>
           <p className="text-xs text-muted-foreground">
-            File: <strong>{fileName}</strong> · Cohort: <strong>{ageBand} {gender}</strong>
+            File: <strong>{fileName}</strong> · Cohort: <strong>{ageBand} {gender === "Mixed" ? "Mixed — boys scored vs male norms, girls vs female norms" : gender}</strong>
           </p>
+          {gender === "Mixed" && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg text-xs"
+              style={{ background: "#1A5C3810", border: "1px solid #1A5C3830" }}>
+              <span style={{ color: COURT_GREEN }}>✓</span>
+              <span className="text-muted-foreground">
+                <strong style={{ color: COURT_GREEN }}>Per-gender norms confirmed:</strong> each athlete's
+                BII uses their individual gender field — no mixed-pool scoring.
+              </span>
+            </div>
+          )}
 
           {/* Demo validation preview */}
           <div className="space-y-2">
