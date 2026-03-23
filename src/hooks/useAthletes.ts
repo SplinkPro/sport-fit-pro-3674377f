@@ -1,7 +1,7 @@
 // useAthletes.ts — athlete context, localStorage persistence, dataset management
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
-import type { ReactNode, Dispatch, SetStateAction } from "react";
-import { getSeedAthletes } from "../data/seedAthletes";
+import type { Dispatch, SetStateAction } from "react";
+import { getSeedAthletes, AssessmentRecord } from "../data/seedAthletes";
 import { enrichAthletes, EnrichedAthlete } from "../engine/analyticsEngine";
 import { toast } from "@/hooks/use-toast";
 
