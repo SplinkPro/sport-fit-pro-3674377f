@@ -1166,13 +1166,9 @@ function HealthTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnTy
   );
 }
 
-// ─── Tab 6: Nutrition ─────────────────────────────────────────────────────
-function NutritionTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnType<typeof useT>["dict"] }) {
-  const p = dict.profile;
-  const [goal, setGoal] = useState<"performance" | "weightGain" | "maintenance">("performance");
+// ─── Tab 6: Nutrition — replaced with enhanced component ──────────────────
+// NutritionTab is now in src/components/nutrition/NutritionTab.tsx
 
-  const bmi = athlete.bmi ?? 0;
-  const suggestedGoal = bmi < 18.5 ? "weightGain" : "performance";
 
   const mealPlans: Record<string, Array<{ meal: string; enItems: string[]; hiItems: string[] }>> = {
     performance: [
