@@ -143,7 +143,7 @@ export default function AthleteProfilePage() {
         <TabsList className="mx-6 mt-4 w-auto inline-flex shrink-0 justify-start bg-muted/60 p-1 rounded-lg gap-0.5 flex-wrap">
           {(["overview", "performance", "trajectory", "insights", "sportFit", "health", "nutrition", "reports"] as const).map((t) => (
             <TabsTrigger key={t} value={t} className="text-xs px-3 py-1.5 data-[state=active]:shadow-sm">
-              {t === "trajectory" ? "🎯 Trajectory" : p.tabs[t as keyof typeof p.tabs] ?? t}
+              {t === "trajectory" ? p.trajectoryTab : p.tabs[t as keyof typeof p.tabs] ?? t}
             </TabsTrigger>
           ))}
         </TabsList>

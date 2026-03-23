@@ -74,7 +74,9 @@ export interface RegionalFood {
   kcalPer100g: number;
   proteinPer100g: number;
   keyNutrient: string;
+  keyNutrientHi?: string;
   sportBenefit: string;
+  sportBenefitHi?: string;
   vegSafe: boolean;
   preparation: string;
   preparationHi: string;
@@ -107,8 +109,11 @@ export interface NutritionPlan {
   homeRemedies: HomeRemedy[];
   alerts: NutritionAlert[];
   weeklyTips: string[];
+  weeklyTipsHi?: string[];
   preworkoutGuidance: string;
+  preworkoutGuidanceHi?: string;
   postworkoutGuidance: string;
+  postworkoutGuidanceHi?: string;
 }
 
 export interface HydrationPlan {
@@ -116,6 +121,7 @@ export interface HydrationPlan {
   trainingTopUpML: number;
   hotWeatherTopUpML: number;
   electrolyteNote: string;
+  electrolyteNoteHi?: string;
   recommendations: HydrationRec[];
 }
 
@@ -131,7 +137,9 @@ export interface NutritionAlert {
   severity: "red" | "orange" | "green";
   icon: string;
   title: string;
+  titleHi?: string;
   body: string;
+  bodyHi?: string;
 }
 
 // ─── Age-band helpers ─────────────────────────────────────────────────────
