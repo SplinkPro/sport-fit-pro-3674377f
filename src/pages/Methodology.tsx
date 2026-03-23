@@ -557,9 +557,15 @@ export default function MethodologyPage() {
                   },
                   {
                     citation: "Léger & Lambert (1982)",
-                    title: "A maximal multistage 20-m shuttle run test to predict VO₂max",
+                    title: "A maximal multistage 20-m shuttle run test to predict VO₂max [20m Beep Test — cited for shuttle run context only, NOT the 800m ACE formula]",
                     journal: "European Journal of Applied Physiology, 49, 1–12",
-                    tag: "ACE Formula",
+                    tag: "Shuttle / Beep Test",
+                  },
+                  {
+                    citation: "Ramsbottom et al. (1988) + Field Adaptation",
+                    title: "ACE (800m VO₂max estimate): Formula VO₂max = 483/t + 3.5 is a field-based 800m run adaptation. Ramsbottom: progressive shuttle run test; base constant (3.5 ml/kg/min = resting VO₂). Applied per SAI field testing protocols where direct VO₂max measurement is not available.",
+                    journal: "British Journal of Sports Medicine, 22(4), 141–144 · SAI Field Testing Guidelines · Uth et al. (2004) resting VO₂ constant validation",
+                    tag: "ACE / VO₂max Formula",
                   },
                   {
                     citation: "Vaeyens et al. (2008)",
