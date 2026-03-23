@@ -275,8 +275,9 @@ function OverviewTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
 function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete; dict: ReturnType<typeof useT>["dict"]; athletes: EnrichedAthlete[] }) {
   function fmtRunTime(sec: number | undefined): string {
     if (sec == null || isNaN(sec)) return "—";
-    const m = Math.floor(sec / 60);
-    const s = Math.round(sec % 60);
+    const totalSeconds = Math.floor(sec); // floor before splitting to avoid 3:60 edge case
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
     return `${m}:${s.toString().padStart(2, "0")}`;
   }
 
