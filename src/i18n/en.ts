@@ -157,8 +157,8 @@ export const en = {
     dataCompleteness: "Data Completeness",
     peerCohort: "Peer Cohort",
     benchmarkBand: "Benchmark",
-    compositeScore: "Composite Score",
-    compositeFormula: "Score = weighted average of normalized metric percentiles",
+    compositeScore: "CAPI Score (percentile)",
+    compositeFormula: "CAPI = weighted average of percentile ranks across assessed physical metrics",
     dimensions: {
       speed: "Speed",
       power: "Power",
