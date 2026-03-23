@@ -23,6 +23,10 @@ const BOTTOM_NAV = [
   { key: "license", path: "/license", icon: Shield, labelKey: "nav.license" },
 ];
 
+const SPORTS_MODULES = [
+  { key: "badminton", path: "/sports/badminton", icon: Zap, label: "🏸 Badminton — PGBA" },
+];
+
 export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";

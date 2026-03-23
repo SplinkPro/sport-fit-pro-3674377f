@@ -77,6 +77,8 @@ const App = () => (
                   <Route path="/settings"    element={<SettingsPage />} />
                   <Route path="/methodology" element={<MethodologyPage />} />
                   <Route path="/license"     element={<LicensePage />} />
+                  {/* ─── Badminton Intelligence Module ─ */}
+                  <Route path="/sports/badminton/*" element={<BadmintonRouter />} />
                 </Route>
               </Route>
 
