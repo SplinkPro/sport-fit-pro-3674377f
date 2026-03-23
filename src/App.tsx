@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/layout/AppShell";
 import { AthleteProvider } from "@/hooks/AthleteProvider";
 import { isAuthenticated } from "@/components/layout/TopHeader";
+import { BadmintonRouter } from "@/modules/badminton/BadmintonRouter";
 
 // ─── Lazy-loaded pages (each becomes its own chunk) ────────────────────────
 const LandingPage        = lazy(() => import("./pages/Landing"));
