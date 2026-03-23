@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/layout/AppShell";
 import { AthleteProvider } from "@/hooks/AthleteProvider";
 import { isAuthenticated } from "@/components/layout/TopHeader";
+import { BadmintonRouter } from "@/modules/badminton/BadmintonRouter";
 
 // ─── Lazy-loaded pages (each becomes its own chunk) ────────────────────────
 const LandingPage        = lazy(() => import("./pages/Landing"));
@@ -76,6 +77,8 @@ const App = () => (
                   <Route path="/settings"    element={<SettingsPage />} />
                   <Route path="/methodology" element={<MethodologyPage />} />
                   <Route path="/license"     element={<LicensePage />} />
+                  {/* ─── Badminton Intelligence Module ─ */}
+                  <Route path="/sports/badminton/*" element={<BadmintonRouter />} />
                 </Route>
               </Route>
 
