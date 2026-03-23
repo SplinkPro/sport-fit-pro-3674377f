@@ -547,7 +547,7 @@ function TrajectoryTab({ athlete }: { athlete: EnrichedAthlete }) {
 
   const METRIC_OPTIONS: Array<{ key: NationalBenchmarkMetric; label: string; lowerBetter: boolean; fmt: (v: number) => string }> = [
     { key: "sprint30m",    label: "30m Sprint",     lowerBetter: true,  fmt: (v) => `${v.toFixed(2)}s` },
-    { key: "run800m",      label: "800m Run",        lowerBetter: true,  fmt: (v) => { const m = Math.floor(v/60); const s = Math.round(v%60); return `${m}:${s.toString().padStart(2,"0")}`; } },
+    { key: "run800m",      label: "800m Run",        lowerBetter: true,  fmt: (v) => { const m = Math.floor(v/60); const s = Math.floor(v%60); return `${m}:${s.toString().padStart(2,"0")}`; } },
     { key: "verticalJump", label: "Vertical Jump",   lowerBetter: false, fmt: (v) => `${v.toFixed(1)}cm` },
     { key: "broadJump",    label: "Broad Jump",      lowerBetter: false, fmt: (v) => `${v.toFixed(0)}cm` },
     { key: "shuttleRun",   label: "Shuttle Run",     lowerBetter: true,  fmt: (v) => `${v.toFixed(2)}s` },
