@@ -304,12 +304,30 @@ describe("calcDerivedIndices", () => {
     expect(di.relativePowerIndex).toBeNull();
   });
 
-  it("aerobicCapacityEst is between 10 and 80 ml/kg/min", () => {
-    const a = makeAthlete({ run800m: 180 }); // 3 minutes
+  it("aerobicCapacityEst is clamped to [20, 85] ml/kg/min", () => {
+    // 3-minute 800m: VO2max = 483/3 + 3.5 = 164.5 → clamped to 85
+    const a = makeAthlete({ run800m: 180 });
     const di = calcDerivedIndices(a, stats);
     if (di.aerobicCapacityEst !== null) {
-      expect(di.aerobicCapacityEst).toBeGreaterThanOrEqual(10);
-      expect(di.aerobicCapacityEst).toBeLessThanOrEqual(80);
+      expect(di.aerobicCapacityEst).toBeGreaterThanOrEqual(20);
+      // Clamp ceiling is 85 ml/kg/min (very fast runners hit the ceiling)
+      expect(di.aerobicCapacityEst).toBeLessThanOrEqual(85);
+    }
+    // Typical U14 girl: 800m in 270s → 483/4.5 + 3.5 = 110.9 → clamped to 85
+    const typical = makeAthlete({ run800m: 270 });
+    const di2 = calcDerivedIndices(typical, stats);
+    if (di2.aerobicCapacityEst !== null) {
+      expect(di2.aerobicCapacityEst).toBeGreaterThanOrEqual(20);
+      expect(di2.aerobicCapacityEst).toBeLessThanOrEqual(85);
+    }
+    // Slow runner 600s (10 min): 483/10 + 3.5 = 51.8 → within range
+    const slow = makeAthlete({ run800m: 600 });
+    const di3 = calcDerivedIndices(slow, stats);
+    if (di3.aerobicCapacityEst !== null) {
+      expect(di3.aerobicCapacityEst).toBeGreaterThanOrEqual(20);
+      expect(di3.aerobicCapacityEst).toBeLessThanOrEqual(85);
+      // Should be ~51.8 for 600s
+      expect(di3.aerobicCapacityEst).toBeCloseTo(51.8, 0);
     }
   });
 

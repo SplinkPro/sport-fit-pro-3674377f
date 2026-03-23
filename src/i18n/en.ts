@@ -278,7 +278,7 @@ export const en = {
     run800m: "800m Run",
     shuttleRun: "Shuttle Run",
     footballThrow: "Football Throw",
-    compositeScore: "Composite Score",
+    compositeScore: "CAPI Score (percentile)",
     units: {
       cm: "cm",
       kg: "kg",
