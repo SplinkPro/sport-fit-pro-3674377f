@@ -1197,7 +1197,7 @@ function ReportsTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnT
   const [lang, setLang] = useState<"en" | "hi">("en");
   const [generating, setGenerating] = useState(false);
 
-  const topSports = (athlete.sportFit ?? []).slice(0, 3).map(sf => sf.sport).join(", ") || "Athletics";
+  const topSports = (athlete.sportFit ?? []).slice(0, 3).map(sf => sf.sport.nameEn).join(", ") || "Athletics";
   const bmi = athlete.bmi ?? 0;
   const bmiLabel = bmi < 14 ? "Severe Thinness (IAP)" : bmi < 16 ? "Thinness (IAP)" : bmi < 18.5 ? "Mild Thinness — Monitor" : bmi < 23 ? "Normal (IAP)" : "Review — Above Normal";
   const fmtRun = (v: number) => { const m = Math.floor(v/60); const s = Math.floor(v%60); return `${m}:${s.toString().padStart(2,"0")}`; };
