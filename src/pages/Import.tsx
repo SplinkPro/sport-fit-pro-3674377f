@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import {
   Upload, FileText, CheckCircle, Download,
   ChevronRight, RotateCcw, CheckCircle2, ArrowRight,
-  Info, AlertTriangle, AlertCircle, Wrench, Users,
+  Info, AlertTriangle, AlertCircle, Wrench, Users, GitMerge,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -103,7 +103,7 @@ const SEVERITY_CONFIG = {
 
 export default function ImportPage() {
   const { t } = useTranslation();
-  const { addDataset, athletes: currentAthletes } = useAthletes();
+  const { addDataset, addBatchUpdate, athletes: currentAthletes } = useAthletes();
   const navigate = useNavigate();
 
   const [step, setStep]               = useState<ImportStep>(1);
@@ -111,7 +111,7 @@ export default function ImportPage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [rawRows, setRawRows]         = useState<Record<string, string>[]>([]);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
-  const [importMode, setImportMode]   = useState<"append" | "replace">("replace");
+  const [importMode, setImportMode]   = useState<"replace" | "append" | "batch_update">("replace");
   const [importHistory, setImportHistory] = useState<HistoryEntry[]>(loadHistory);
   const [batchMeta, setBatchMeta]     = useState<Partial<BatchMeta>>({});
   const [showBmiDetail, setShowBmiDetail] = useState(false);
@@ -194,14 +194,21 @@ export default function ImportPage() {
   const handleConfirmImport = () => {
     if (!parseResult || !uploadedFile) return;
     const incoming = enrichAthletes(parseResult.athletes);
-    const final = importMode === "append" ? [...currentAthletes, ...incoming] : incoming;
     const version = `v${importHistory.length + 1}`;
     const todayStr = new Date().toISOString().slice(0, 10);
 
-    addDataset(
-      { name: uploadedFile.name, version, count: final.length, importedAt: todayStr, source: "import" },
-      final,
-    );
+    if (importMode === "batch_update") {
+      addBatchUpdate(
+        { name: uploadedFile.name, version, count: incoming.length, importedAt: todayStr, source: "import", isBatchUpdate: true },
+        incoming,
+      );
+    } else {
+      const final = importMode === "append" ? [...currentAthletes, ...incoming] : incoming;
+      addDataset(
+        { name: uploadedFile.name, version, count: final.length, importedAt: todayStr, source: "import" },
+        final,
+      );
+    }
 
     const entry: HistoryEntry = {
       id: `h${Date.now()}`, date: todayStr, file: uploadedFile.name,
@@ -765,27 +772,59 @@ export default function ImportPage() {
               {/* Import mode */}
               <div>
                 <p className="text-sm font-medium mb-2">Import Mode</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {(["replace", "append"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => setImportMode(mode)}
-                      className={cn(
-                        "border rounded-xl p-4 text-left transition-all",
-                        importMode === mode
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border hover:border-primary/40 hover:bg-muted/20"
-                      )}
-                    >
-                      <div className="font-semibold capitalize text-sm mb-0.5">{mode}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {mode === "replace"
-                          ? "Remove all existing athletes and load only this file's data."
-                          : "Keep existing athletes and add new ones from this file."}
-                      </div>
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => setImportMode("replace")}
+                    className={cn(
+                      "border rounded-xl p-4 text-left transition-all",
+                      importMode === "replace"
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/40 hover:bg-muted/20"
+                    )}
+                  >
+                    <div className="font-semibold text-sm mb-0.5">Replace</div>
+                    <div className="text-xs text-muted-foreground">
+                      Remove all existing athletes and load only this file's data.
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setImportMode("append")}
+                    className={cn(
+                      "border rounded-xl p-4 text-left transition-all",
+                      importMode === "append"
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/40 hover:bg-muted/20"
+                    )}
+                  >
+                    <div className="font-semibold text-sm mb-0.5">Append</div>
+                    <div className="text-xs text-muted-foreground">
+                      Keep existing athletes and add new ones from this file.
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setImportMode("batch_update")}
+                    className={cn(
+                      "border rounded-xl p-4 text-left transition-all",
+                      importMode === "batch_update"
+                        ? "border-emerald-600 bg-emerald-50 shadow-sm"
+                        : "border-border hover:border-emerald-400 hover:bg-muted/20"
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5 font-semibold text-sm mb-0.5">
+                      <GitMerge className="w-3.5 h-3.5" />
+                      Batch Update
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Match athletes by name, add new assessment to history. Powers TTI improvement tracking.
+                    </div>
+                  </button>
                 </div>
+                {importMode === "batch_update" && (
+                  <div className="mt-2 flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-xs text-emerald-700">
+                    <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    Athletes are matched by name. A new assessment record will be added to each matched athlete's history, enabling the Talent Trajectory Index (TTI) to track improvement over time.
+                  </div>
+                )}
               </div>
 
               <div className="bg-muted/30 rounded-lg p-3 text-sm flex items-center gap-2">

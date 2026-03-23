@@ -1,7 +1,7 @@
 // useAthletes.ts — athlete context, localStorage persistence, dataset management
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
-import type { ReactNode, Dispatch, SetStateAction } from "react";
-import { getSeedAthletes } from "../data/seedAthletes";
+import type { Dispatch, SetStateAction } from "react";
+import { getSeedAthletes, AssessmentRecord } from "../data/seedAthletes";
 import { enrichAthletes, EnrichedAthlete } from "../engine/analyticsEngine";
 import { toast } from "@/hooks/use-toast";
 
@@ -12,6 +12,8 @@ export interface DatasetMeta {
   count: number;
   importedAt: string;
   source: "seed" | "import";
+  /** If true, this dataset was merged into the previous active dataset as a new assessment batch */
+  isBatchUpdate?: boolean;
   athletes?: EnrichedAthlete[];
 }
 
@@ -23,6 +25,13 @@ export interface AthleteContextValue {
   setAthletes: Dispatch<SetStateAction<EnrichedAthlete[]>>;
   setDatasetMeta: Dispatch<SetStateAction<DatasetMeta>>;
   addDataset: (meta: Omit<DatasetMeta, "id">, athletes: EnrichedAthlete[]) => void;
+  /**
+   * Add a new assessment batch to existing athletes.
+   * Matches athletes by name (normalised) and appends a new AssessmentRecord
+   * to their assessmentHistory, enabling TTI longitudinal tracking.
+   * Athletes in the new batch that don't match existing records are added fresh.
+   */
+  addBatchUpdate: (meta: Omit<DatasetMeta, "id">, newBatch: EnrichedAthlete[]) => void;
   loadDataset: (id: string) => void;
 }
 
@@ -87,6 +96,7 @@ export const AthleteContext = createContext<AthleteContextValue>({
   setAthletes: () => {},
   setDatasetMeta: () => {},
   addDataset: () => {},
+  addBatchUpdate: () => {},
   loadDataset: () => {},
 });
 
@@ -169,6 +179,104 @@ export function useAthleteProviderValue() {
     [savedDatasets, seedAthletes]
   );
 
+  const addBatchUpdate = useCallback(
+    (meta: Omit<DatasetMeta, "id">, newBatch: EnrichedAthlete[]) => {
+      /**
+       * Longitudinal batch merge algorithm:
+       * 1. For each incoming athlete, try to match an existing athlete by normalised name.
+       * 2. If matched: append a new AssessmentRecord to their history, update current metrics.
+       * 3. If unmatched: add as a new athlete (first assessment).
+       * 4. Re-enrich the full merged set so TTI and derived indices recalculate.
+       */
+      setRawAthletes((prev) => {
+        const normName = (n: string) => n.toLowerCase().replace(/\s+/g, " ").trim();
+        const existingMap = new Map<string, EnrichedAthlete>();
+        prev.forEach((a) => existingMap.set(normName(a.name), a));
+
+        const merged: EnrichedAthlete[] = [...prev];
+
+        for (const incoming of newBatch) {
+          const key = normName(incoming.name);
+          const existing = existingMap.get(key);
+
+          if (existing) {
+            // Build a new AssessmentRecord from the incoming athlete's current metrics
+            const newRecord: AssessmentRecord = {
+              date: incoming.assessmentDate,
+              verticalJump: incoming.verticalJump,
+              broadJump: incoming.broadJump,
+              sprint30m: incoming.sprint30m,
+              run800m: incoming.run800m,
+              shuttleRun: incoming.shuttleRun,
+              footballThrow: incoming.footballThrow,
+              compositeScore: incoming.compositeScore,
+            };
+
+            // Merge: keep existing history + add new record
+            const prevHistory = existing.assessmentHistory ?? [];
+            // Avoid duplicate dates
+            const deduped = prevHistory.filter((r) => r.date !== newRecord.date);
+            const updatedHistory = [...deduped, newRecord].sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            );
+
+            const idx = merged.findIndex((a) => normName(a.name) === key);
+            if (idx !== -1) {
+              merged[idx] = {
+                ...existing,
+                // Update current metrics to latest batch
+                verticalJump: incoming.verticalJump ?? existing.verticalJump,
+                broadJump: incoming.broadJump ?? existing.broadJump,
+                sprint30m: incoming.sprint30m ?? existing.sprint30m,
+                run800m: incoming.run800m ?? existing.run800m,
+                shuttleRun: incoming.shuttleRun ?? existing.shuttleRun,
+                footballThrow: incoming.footballThrow ?? existing.footballThrow,
+                height: incoming.height ?? existing.height,
+                weight: incoming.weight ?? existing.weight,
+                bmi: incoming.bmi ?? existing.bmi,
+                assessmentDate: incoming.assessmentDate,
+                assessmentHistory: updatedHistory,
+              };
+            }
+          } else {
+            // New athlete — just add them
+            merged.push(incoming);
+          }
+        }
+
+        // Re-enrich so TTI and CAPI recalculate with updated histories
+        const reEnriched = enrichAthletes(merged);
+
+        // Persist as a new dataset version
+        const newId = `import_${Date.now()}`;
+        const fullMeta: DatasetMeta = {
+          ...meta,
+          id: newId,
+          isBatchUpdate: true,
+          count: reEnriched.length,
+          athletes: reEnriched,
+        };
+        setSavedDatasets((prev2) => {
+          const withoutSeed = prev2.filter((d) => d.id !== "seed");
+          const trimmed = [fullMeta, ...withoutSeed].slice(0, MAX_DATASETS);
+          const next = [prev2.find((d) => d.id === "seed")!, ...trimmed];
+          setTimeout(() => persistDatasets(next), 0);
+          return next;
+        });
+        setDatasetMeta({ ...fullMeta, athletes: undefined });
+        setPersistedActiveId(newId);
+
+        toast({
+          title: "Batch update merged",
+          description: `${newBatch.length} athletes merged into ${reEnriched.length} total. Improvement trajectories recalculated.`,
+        });
+
+        return reEnriched;
+      });
+    },
+    [] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   return useMemo(
     () => ({
       athletes: rawAthletes,
@@ -178,9 +286,10 @@ export function useAthleteProviderValue() {
       setAthletes: setRawAthletes,
       setDatasetMeta,
       addDataset,
+      addBatchUpdate,
       loadDataset,
     }),
-    [rawAthletes, loading, datasetMeta, savedDatasets, addDataset, loadDataset]
+    [rawAthletes, loading, datasetMeta, savedDatasets, addDataset, addBatchUpdate, loadDataset]
   );
 }
 

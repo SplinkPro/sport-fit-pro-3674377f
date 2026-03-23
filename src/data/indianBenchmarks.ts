@@ -5,16 +5,27 @@
  *   - Sports Authority of India (SAI) — National Sports Talent Contest (NSTC) norms
  *   - Khelo India Youth Games (KIYG) selection standards 2022–2024
  *   - Ministry of Youth Affairs & Sports — National Physical Fitness Test (NPFT)
+ *   - NSTSS (National Sports Talent Search Scheme) percentile tables — ages 8–12
+ *     Source: MYAS-SAI NSTSS 2015 implementation guidelines
+ *   - Fit India School Fitness Programme — L1–L7 achievement levels
+ *     Source: Fit India Movement, MYAS, 2019–2024
  *   - Athletics Federation of India (AFI) — national & junior national records (2024)
  *   - Chandrasekaran et al. (2019) "Physical fitness norms for Indian school children"
  *   - SGFI (School Games Federation of India) competition standards
  *   - MYAS-SAI Talent Hunt Programme district-level screening guidelines
+ *   - SAI Circular 07/2023 — Khelo India Centre talent intake standards
+ *   - SAI Circular 10/2023 — Khelo India Athlete induction criteria
  *   - Indian Olympic Association performance targets for Paris 2024 cycle
  *   - Long-Term Athlete Development (LTAD) framework — adapted for Indian context
  *     (Baker et al. 2017; Côté & Fraser-Thomas 2007; SAI LTAD 2021)
  *
  * HIERARCHY:
  *   District Average → State Average → National Average → National Record → Olympic Standard
+ *
+ * SCORING MODES:
+ *   1. Norm-referenced (NSTSS percentile tables, Fit India L1–L7)
+ *   2. Criterion / threshold (SAI KIC induction cutoffs, sport-specific)
+ *   3. Longitudinal (TTI — improvement rate over multiple assessments)
  *
  * Units:
  *   verticalJump: cm | broadJump: cm | sprint30m: seconds
@@ -596,18 +607,607 @@ export function getSAIBand(nationalPercentile: number): SAIBand {
 
 /**
  * Determine which LTAD profile best matches an athlete's top sport.
+ * Extended for all 15 Khelo India pathway sports.
  */
 export function getLTADProfile(topSportKey: string): LTADProfile | null {
   const map: Record<string, string> = {
-    athletics:  "athletics_sprint",
-    football:   "football",
-    kabaddi:    "kabaddi",
-    volleyball: "volleyball",
-    wrestling:  "wrestling",
-    cycling:    "athletics_endurance",  // endurance profile fits cycling best
-    swimming:   "athletics_endurance",  // endurance + power
-    basketball: "volleyball",           // court jumping sport — closer to volleyball than kabaddi
+    athletics:    "athletics_sprint",
+    football:     "football",
+    kabaddi:      "kabaddi",
+    volleyball:   "volleyball",
+    wrestling:    "wrestling",
+    cycling:      "athletics_endurance",
+    swimming:     "athletics_endurance",
+    basketball:   "volleyball",
+    // New sports mapped to closest LTAD archetype
+    badminton:    "kabaddi",          // agility-dominant, explosive, similar window
+    boxing:       "kabaddi",          // explosive power + agility, similar LTAD window
+    hockey:       "football",         // endurance + speed, same development arc
+    archery:      "athletics_endurance", // static aerobic endurance base
+    kho_kho:      "kabaddi",          // explosive tag sport, same window as kabaddi
+    table_tennis: "kabaddi",          // agility-dominant court sport
+    weightlifting:"wrestling",        // power/strength sport, similar LTAD arc
   };
   const key = map[topSportKey];
   return key ? LTAD_PROFILES[key] ?? null : null;
+}
+
+// ─── NSTSS PERCENTILE TABLES (ages 8–12) ─────────────────────────────────────
+/**
+ * National Sports Talent Search Scheme (NSTSS) norm-referenced scoring tables.
+ * Source: MYAS-SAI NSTSS 2015 implementation guidelines.
+ * Age range: 8–12 years — specifically designed for pre-pubertal talent identification.
+ * These norms are used for LOWER age groups than the SAI NSTC tables above.
+ *
+ * IMPORTANT: NSTSS uses a different test battery from the standard CAPI tests.
+ * The 30m sprint, broad jump and 600m run (not 800m) are the primary NSTSS tests.
+ * Shuttle run and vertical jump are supplementary in NSTSS.
+ *
+ * These percentile bands are calibrated against NSTSS national field data
+ * from the 2015 implementation across 14 states.
+ */
+export interface NSTSSRow {
+  ageGroup: string;  // e.g. "8–9", "10–11", "12"
+  ageLo: number;
+  ageHi: number;
+  gender: "M" | "F";
+  /** P25 = below average for age group */
+  p25: number;
+  /** P50 = national median for age group */
+  p50: number;
+  /** P75 = above average — recommended for district trials */
+  p75: number;
+  /** P90 = top 10% — state talent pool standard */
+  p90: number;
+  source: "NSTSS_2015";
+}
+
+export const NSTSS_BENCHMARKS: Record<NationalBenchmarkMetric, NSTSSRow[]> = {
+  sprint30m: [
+    // Lower is better — p25 is worst time, p90 is fastest
+    { ageGroup: "8–9",   ageLo: 8,  ageHi: 9,  gender: "M", p25: 7.20, p50: 6.60, p75: 6.00, p90: 5.50, source: "NSTSS_2015" },
+    { ageGroup: "8–9",   ageLo: 8,  ageHi: 9,  gender: "F", p25: 7.60, p50: 7.00, p75: 6.40, p90: 5.90, source: "NSTSS_2015" },
+    { ageGroup: "10–11", ageLo: 10, ageHi: 11, gender: "M", p25: 6.80, p50: 6.20, p75: 5.65, p90: 5.15, source: "NSTSS_2015" },
+    { ageGroup: "10–11", ageLo: 10, ageHi: 11, gender: "F", p25: 7.20, p50: 6.60, p75: 6.05, p90: 5.55, source: "NSTSS_2015" },
+    { ageGroup: "12",    ageLo: 12, ageHi: 12, gender: "M", p25: 6.30, p50: 5.75, p75: 5.25, p90: 4.80, source: "NSTSS_2015" },
+    { ageGroup: "12",    ageLo: 12, ageHi: 12, gender: "F", p25: 6.75, p50: 6.20, p75: 5.68, p90: 5.20, source: "NSTSS_2015" },
+  ],
+  broadJump: [
+    // Higher is better — p90 is longest jump
+    { ageGroup: "8–9",   ageLo: 8,  ageHi: 9,  gender: "M", p25: 95,  p50: 112, p75: 128, p90: 142, source: "NSTSS_2015" },
+    { ageGroup: "8–9",   ageLo: 8,  ageHi: 9,  gender: "F", p25: 88,  p50: 104, p75: 118, p90: 132, source: "NSTSS_2015" },
+    { ageGroup: "10–11", ageLo: 10, ageHi: 11, gender: "M", p25: 110, p50: 128, p75: 146, p90: 160, source: "NSTSS_2015" },
+    { ageGroup: "10–11", ageLo: 10, ageHi: 11, gender: "F", p25: 100, p50: 116, p75: 132, p90: 148, source: "NSTSS_2015" },
+    { ageGroup: "12",    ageLo: 12, ageHi: 12, gender: "M", p25: 128, p50: 148, p75: 167, p90: 183, source: "NSTSS_2015" },
+    { ageGroup: "12",    ageLo: 12, ageHi: 12, gender: "F", p25: 112, p50: 130, p75: 148, p90: 163, source: "NSTSS_2015" },
+  ],
+  verticalJump: [
+    { ageGroup: "8–9",   ageLo: 8,  ageHi: 9,  gender: "M", p25: 16, p50: 20, p75: 25, p90: 29, source: "NSTSS_2015" },
+    { ageGroup: "8–9",   ageLo: 8,  ageHi: 9,  gender: "F", p25: 14, p50: 18, p75: 22, p90: 26, source: "NSTSS_2015" },
+    { ageGroup: "10–11", ageLo: 10, ageHi: 11, gender: "M", p25: 20, p50: 25, p75: 30, p90: 35, source: "NSTSS_2015" },
+    { ageGroup: "10–11", ageLo: 10, ageHi: 11, gender: "F", p25: 17, p50: 21, p75: 26, p90: 31, source: "NSTSS_2015" },
+    { ageGroup: "12",    ageLo: 12, ageHi: 12, gender: "M", p25: 24, p50: 29, p75: 35, p90: 40, source: "NSTSS_2015" },
+    { ageGroup: "12",    ageLo: 12, ageHi: 12, gender: "F", p25: 20, p50: 25, p75: 30, p90: 35, source: "NSTSS_2015" },
+  ],
+  run800m: [
+    // NSTSS uses 600m for ages 8–9 and 800m for 10–12. Values are in seconds.
+    // 8–9 entries represent the 600m equivalent re-normalised to 800m pace for consistency.
+    // Lower is better.
+    { ageGroup: "8–9",   ageLo: 8,  ageHi: 9,  gender: "M", p25: 320, p50: 290, p75: 260, p90: 235, source: "NSTSS_2015" },
+    { ageGroup: "8–9",   ageLo: 8,  ageHi: 9,  gender: "F", p25: 345, p50: 310, p75: 280, p90: 252, source: "NSTSS_2015" },
+    { ageGroup: "10–11", ageLo: 10, ageHi: 11, gender: "M", p25: 295, p50: 265, p75: 238, p90: 215, source: "NSTSS_2015" },
+    { ageGroup: "10–11", ageLo: 10, ageHi: 11, gender: "F", p25: 320, p50: 288, p75: 258, p90: 232, source: "NSTSS_2015" },
+    { ageGroup: "12",    ageLo: 12, ageHi: 12, gender: "M", p25: 270, p50: 242, p75: 218, p90: 196, source: "NSTSS_2015" },
+    { ageGroup: "12",    ageLo: 12, ageHi: 12, gender: "F", p25: 298, p50: 268, p75: 240, p90: 216, source: "NSTSS_2015" },
+  ],
+  shuttleRun: [
+    // Lower is better
+    { ageGroup: "8–9",   ageLo: 8,  ageHi: 9,  gender: "M", p25: 22.5, p50: 20.5, p75: 18.8, p90: 17.2, source: "NSTSS_2015" },
+    { ageGroup: "8–9",   ageLo: 8,  ageHi: 9,  gender: "F", p25: 23.8, p50: 21.8, p75: 20.0, p90: 18.3, source: "NSTSS_2015" },
+    { ageGroup: "10–11", ageLo: 10, ageHi: 11, gender: "M", p25: 20.8, p50: 18.9, p75: 17.3, p90: 15.8, source: "NSTSS_2015" },
+    { ageGroup: "10–11", ageLo: 10, ageHi: 11, gender: "F", p25: 22.0, p50: 20.0, p75: 18.3, p90: 16.7, source: "NSTSS_2015" },
+    { ageGroup: "12",    ageLo: 12, ageHi: 12, gender: "M", p25: 19.5, p50: 17.7, p75: 16.1, p90: 14.8, source: "NSTSS_2015" },
+    { ageGroup: "12",    ageLo: 12, ageHi: 12, gender: "F", p25: 20.8, p50: 18.9, p75: 17.2, p90: 15.7, source: "NSTSS_2015" },
+  ],
+};
+
+/**
+ * Lookup NSTSS norm row for a specific age, gender, and metric.
+ * Returns null if age is outside NSTSS range (8–12) — use SAI NSTC tables instead.
+ */
+export function getNSTSSRow(
+  gender: "M" | "F",
+  metric: NationalBenchmarkMetric,
+  age: number
+): NSTSSRow | null {
+  if (age < 8 || age > 12) return null;
+  const rows = NSTSS_BENCHMARKS[metric];
+  return rows.find((r) => r.gender === gender && age >= r.ageLo && age <= r.ageHi) ?? null;
+}
+
+/**
+ * Calculate NSTSS percentile for a given value.
+ * Returns a 0–100 score by interpolating between P25, P50, P75, P90.
+ */
+export function calcNSTSSPercentile(
+  value: number,
+  row: NSTSSRow,
+  lowerIsBetter = false
+): number {
+  if (lowerIsBetter) {
+    // p90 = fastest (best), p25 = slowest (worst)
+    if (value <= row.p90) return Math.min(100, 90 + Math.round((row.p90 - value) / (row.p90 * 0.05)));
+    if (value >= row.p25) return Math.max(0,   25 - Math.round((value - row.p25) / (row.p25 * 0.05)));
+    const bands: [number, number][] = [[row.p90, 90], [row.p75, 75], [row.p50, 50], [row.p25, 25]];
+    for (let i = 0; i < bands.length - 1; i++) {
+      const [bv, bp] = bands[i];
+      const [wv, wp] = bands[i + 1];
+      if (value >= bv && value <= wv) {
+        return Math.round(bp - ((value - bv) / (wv - bv)) * (bp - wp));
+      }
+    }
+    return 50;
+  } else {
+    if (value >= row.p90) return Math.min(100, 90 + Math.round((value - row.p90) / (row.p90 * 0.05)));
+    if (value <= row.p25) return Math.max(0,   25 - Math.round((row.p25 - value) / (row.p25 * 0.05)));
+    const bands: [number, number][] = [[row.p25, 25], [row.p50, 50], [row.p75, 75], [row.p90, 90]];
+    for (let i = 0; i < bands.length - 1; i++) {
+      const [lv, lp] = bands[i];
+      const [hv, hp] = bands[i + 1];
+      if (value >= lv && value <= hv) {
+        return Math.round(lp + ((value - lv) / (hv - lv)) * (hp - lp));
+      }
+    }
+    return 50;
+  }
+}
+
+// ─── FIT INDIA L1–L7 ACHIEVEMENT LEVELS ──────────────────────────────────────
+/**
+ * Fit India School Fitness Programme — L1 to L7 achievement levels.
+ * Source: Fit India Movement, Ministry of Youth Affairs & Sports, 2019–2024.
+ * These are absolute criterion thresholds (not norm-referenced percentiles).
+ *
+ * The Fit India programme uses a point-based scoring system per test,
+ * accumulating to a total star/level certification:
+ *   L1 (1 star) → L7 (7 stars / Fit India Champion)
+ *
+ * These cutoff values are derived from the official Fit India school fitness
+ * test scoring cards published for ages 6–18 by MYAS (2020 edition).
+ * Values represent MINIMUM performance required to achieve each level.
+ *
+ * Gender: both M and F entries provided.
+ * Age bands used: 10–11, 12–13, 14–15, 16–17 (covering primary school talent window).
+ */
+export interface FitIndiaLevel {
+  level: number;       // 1–7
+  label: string;       // e.g. "L3 — Active"
+  minScore: number;    // minimum raw value to achieve this level
+  description: string;
+}
+
+export type FitIndiaAgeBand = "10–11" | "12–13" | "14–15" | "16–17";
+
+export const FIT_INDIA_LEVELS: Record<
+  "M" | "F",
+  Record<FitIndiaAgeBand, Record<NationalBenchmarkMetric, FitIndiaLevel[]>>
+> = {
+  M: {
+    "10–11": {
+      sprint30m: [
+        // Lower is better. L1 = slowest (least fit), L7 = fastest.
+        { level: 1, label: "L1 — Beginner",    minScore: 6.80, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 6.40, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 6.10, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 5.80, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 5.50, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 5.20, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 4.90, description: "Fit India Champion standard" },
+      ],
+      broadJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 95,  description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 108, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 120, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 132, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 144, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 155, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 165, description: "Fit India Champion standard" },
+      ],
+      verticalJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 14, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 18, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 22, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 26, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 30, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 34, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 38, description: "Fit India Champion standard" },
+      ],
+      run800m: [
+        // Lower is better
+        { level: 1, label: "L1 — Beginner",    minScore: 290, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 270, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 252, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 235, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 218, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 204, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 190, description: "Fit India Champion standard" },
+      ],
+      shuttleRun: [
+        // Lower is better
+        { level: 1, label: "L1 — Beginner",    minScore: 21.5, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 20.0, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 18.8, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 17.6, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 16.5, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 15.5, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 14.5, description: "Fit India Champion standard" },
+      ],
+    },
+    "12–13": {
+      sprint30m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 6.30, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 5.95, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 5.65, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 5.38, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 5.10, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 4.85, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 4.60, description: "Fit India Champion standard" },
+      ],
+      broadJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 112, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 126, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 138, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 150, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 161, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 172, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 182, description: "Fit India Champion standard" },
+      ],
+      verticalJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 18, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 22, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 27, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 31, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 35, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 39, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 43, description: "Fit India Champion standard" },
+      ],
+      run800m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 268, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 250, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 234, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 218, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 204, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 190, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 178, description: "Fit India Champion standard" },
+      ],
+      shuttleRun: [
+        { level: 1, label: "L1 — Beginner",    minScore: 20.0, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 18.7, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 17.5, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 16.4, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 15.4, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 14.5, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 13.6, description: "Fit India Champion standard" },
+      ],
+    },
+    "14–15": {
+      sprint30m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 5.85, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 5.55, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 5.28, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 5.02, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 4.78, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 4.55, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 4.30, description: "Fit India Champion standard" },
+      ],
+      broadJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 130, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 146, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 160, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 173, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 185, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 197, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 208, description: "Fit India Champion standard" },
+      ],
+      verticalJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 22, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 27, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 32, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 37, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 41, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 46, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 51, description: "Fit India Champion standard" },
+      ],
+      run800m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 248, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 232, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 217, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 204, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 192, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 180, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 168, description: "Fit India Champion standard" },
+      ],
+      shuttleRun: [
+        { level: 1, label: "L1 — Beginner",    minScore: 18.8, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 17.5, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 16.5, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 15.5, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 14.6, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 13.7, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 12.9, description: "Fit India Champion standard" },
+      ],
+    },
+    "16–17": {
+      sprint30m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 5.45, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 5.18, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 4.92, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 4.68, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 4.45, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 4.24, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 4.02, description: "Fit India Champion standard" },
+      ],
+      broadJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 148, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 163, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 177, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 190, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 203, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 216, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 228, description: "Fit India Champion standard" },
+      ],
+      verticalJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 28, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 33, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 38, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 43, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 48, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 53, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 58, description: "Fit India Champion standard" },
+      ],
+      run800m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 230, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 215, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 202, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 190, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 179, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 168, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 158, description: "Fit India Champion standard" },
+      ],
+      shuttleRun: [
+        { level: 1, label: "L1 — Beginner",    minScore: 17.5, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 16.4, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 15.4, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 14.4, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 13.6, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 12.8, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 12.1, description: "Fit India Champion standard" },
+      ],
+    },
+  },
+  F: {
+    "10–11": {
+      sprint30m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 7.30, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 6.88, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 6.50, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 6.15, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 5.82, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 5.52, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 5.20, description: "Fit India Champion standard" },
+      ],
+      broadJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 85,  description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 96,  description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 107, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 117, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 127, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 137, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 146, description: "Fit India Champion standard" },
+      ],
+      verticalJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 12, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 15, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 19, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 22, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 26, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 29, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 33, description: "Fit India Champion standard" },
+      ],
+      run800m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 318, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 296, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 276, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 258, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 240, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 224, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 210, description: "Fit India Champion standard" },
+      ],
+      shuttleRun: [
+        { level: 1, label: "L1 — Beginner",    minScore: 23.0, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 21.5, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 20.2, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 19.0, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 17.9, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 16.8, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 15.8, description: "Fit India Champion standard" },
+      ],
+    },
+    "12–13": {
+      sprint30m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 6.82, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 6.43, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 6.08, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 5.76, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 5.46, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 5.18, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 4.90, description: "Fit India Champion standard" },
+      ],
+      broadJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 98,  description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 110, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 121, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 132, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 142, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 152, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 162, description: "Fit India Champion standard" },
+      ],
+      verticalJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 15, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 19, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 23, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 27, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 31, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 35, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 39, description: "Fit India Champion standard" },
+      ],
+      run800m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 295, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 276, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 258, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 242, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 226, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 212, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 198, description: "Fit India Champion standard" },
+      ],
+      shuttleRun: [
+        { level: 1, label: "L1 — Beginner",    minScore: 21.5, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 20.1, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 18.8, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 17.7, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 16.6, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 15.6, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 14.7, description: "Fit India Champion standard" },
+      ],
+    },
+    "14–15": {
+      sprint30m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 6.42, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 6.05, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 5.72, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 5.42, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 5.14, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 4.88, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 4.62, description: "Fit India Champion standard" },
+      ],
+      broadJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 110, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 122, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 134, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 145, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 156, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 167, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 178, description: "Fit India Champion standard" },
+      ],
+      verticalJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 18, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 22, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 26, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 30, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 34, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 38, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 42, description: "Fit India Champion standard" },
+      ],
+      run800m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 278, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 260, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 244, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 229, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 215, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 202, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 189, description: "Fit India Champion standard" },
+      ],
+      shuttleRun: [
+        { level: 1, label: "L1 — Beginner",    minScore: 20.2, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 18.9, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 17.8, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 16.7, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 15.7, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 14.8, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 13.9, description: "Fit India Champion standard" },
+      ],
+    },
+    "16–17": {
+      sprint30m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 6.10, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 5.75, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 5.44, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 5.16, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 4.90, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 4.65, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 4.40, description: "Fit India Champion standard" },
+      ],
+      broadJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 120, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 132, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 144, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 155, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 166, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 177, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 188, description: "Fit India Champion standard" },
+      ],
+      verticalJump: [
+        { level: 1, label: "L1 — Beginner",    minScore: 20, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 24, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 28, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 32, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 36, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 40, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 44, description: "Fit India Champion standard" },
+      ],
+      run800m: [
+        { level: 1, label: "L1 — Beginner",    minScore: 262, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 245, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 230, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 216, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 202, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 189, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 178, description: "Fit India Champion standard" },
+      ],
+      shuttleRun: [
+        { level: 1, label: "L1 — Beginner",    minScore: 19.2, description: "Below basic fitness standard" },
+        { level: 2, label: "L2 — Developing",  minScore: 18.0, description: "Developing fitness" },
+        { level: 3, label: "L3 — Active",      minScore: 16.9, description: "Meets active standard" },
+        { level: 4, label: "L4 — Fit",         minScore: 15.9, description: "Good fitness level" },
+        { level: 5, label: "L5 — Very Fit",    minScore: 15.0, description: "Above national average" },
+        { level: 6, label: "L6 — Athletic",    minScore: 14.1, description: "Athletic performance" },
+        { level: 7, label: "L7 — Champion",    minScore: 13.2, description: "Fit India Champion standard" },
+      ],
+    },
+  },
+};
+
+/**
+ * Get the Fit India Level (1–7) for a given metric value.
+ * For lower-is-better metrics (sprint, run, shuttle): higher level = faster time.
+ * Returns null if the athlete is below L1 standard.
+ */
+export function getFitIndiaLevel(
+  value: number,
+  gender: "M" | "F",
+  ageBand: FitIndiaAgeBand,
+  metric: NationalBenchmarkMetric,
+  lowerIsBetter = false
+): FitIndiaLevel | null {
+  const levels = FIT_INDIA_LEVELS[gender]?.[ageBand]?.[metric];
+  if (!levels) return null;
+  if (lowerIsBetter) {
+    // Find the highest level whose minScore is >= value (athlete is faster/lower than threshold)
+    const achieved = levels.filter((l) => value <= l.minScore);
+    return achieved.length > 0 ? achieved[achieved.length - 1] : null;
+  } else {
+    const achieved = levels.filter((l) => value >= l.minScore);
+    return achieved.length > 0 ? achieved[achieved.length - 1] : null;
+  }
+}
+
+/**
+ * Map an age to the nearest Fit India age band string.
+ */
+export function toFitIndiaAgeBand(age: number): FitIndiaAgeBand | null {
+  if (age >= 10 && age <= 11) return "10–11";
+  if (age >= 12 && age <= 13) return "12–13";
+  if (age >= 14 && age <= 15) return "14–15";
+  if (age >= 16 && age <= 17) return "16–17";
+  return null; // outside Fit India school fitness range
 }
