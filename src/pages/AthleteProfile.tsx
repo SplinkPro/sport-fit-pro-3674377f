@@ -30,6 +30,7 @@ import {
   Target, Star, Globe, Zap, TrendingUp, Trophy, MapPin, Clock, Award, Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import NutritionTab from "@/components/nutrition/NutritionTab";
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 export default function AthleteProfilePage() {
