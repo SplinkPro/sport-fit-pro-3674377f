@@ -103,7 +103,7 @@ const SEVERITY_CONFIG = {
 
 export default function ImportPage() {
   const { t } = useTranslation();
-  const { addDataset, athletes: currentAthletes } = useAthletes();
+  const { addDataset, addBatchUpdate, athletes: currentAthletes } = useAthletes();
   const navigate = useNavigate();
 
   const [step, setStep]               = useState<ImportStep>(1);
@@ -111,7 +111,7 @@ export default function ImportPage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [rawRows, setRawRows]         = useState<Record<string, string>[]>([]);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
-  const [importMode, setImportMode]   = useState<"append" | "replace">("replace");
+  const [importMode, setImportMode]   = useState<"replace" | "append" | "batch_update">("replace");
   const [importHistory, setImportHistory] = useState<HistoryEntry[]>(loadHistory);
   const [batchMeta, setBatchMeta]     = useState<Partial<BatchMeta>>({});
   const [showBmiDetail, setShowBmiDetail] = useState(false);
