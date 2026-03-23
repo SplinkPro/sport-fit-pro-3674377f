@@ -8,6 +8,7 @@ const BadmintonExplorer  = lazy(() => import("./pages/Explorer"));
 const BadmintonProfile   = lazy(() => import("./pages/AthleteProfile"));
 const BadmintonImport    = lazy(() => import("./pages/Import"));
 const BadmintonAnalytics = lazy(() => import("./pages/Analytics"));
+const BadmintonGlossary  = lazy(() => import("./pages/Glossary"));
 
 function ModuleLoader() {
   return (
@@ -29,6 +30,7 @@ export function BadmintonRouter() {
           <Route path="athlete/:id" element={<BadmintonProfile />} />
           <Route path="import" element={<BadmintonImport />} />
           <Route path="analytics" element={<BadmintonAnalytics />} />
+          <Route path="glossary" element={<BadmintonGlossary />} />
           <Route path="*" element={<Navigate to="" replace />} />
         </Routes>
       </Suspense>
