@@ -1115,11 +1115,13 @@ function SportFitTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
 function HealthTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnType<typeof useT>["dict"] }) {
   const p = dict.profile;
   const bmi = athlete.bmi ?? 0;
+  // IAP (Indian Academy of Pediatrics) youth BMI thresholds — NOT adult WHO cutoffs
   const bmiCat =
-    bmi < 18.5 ? { label: dict.bmi.underweight, color: "bg-blue-100 text-blue-800 border-blue-200" }
-    : bmi < 25 ? { label: dict.bmi.normal, color: "bg-green-100 text-green-800 border-green-200" }
-    : bmi < 30 ? { label: dict.bmi.overweight, color: "bg-yellow-100 text-yellow-800 border-yellow-200" }
-    : { label: dict.bmi.obese, color: "bg-red-100 text-red-800 border-red-200" };
+    bmi < 14.0 ? { label: "Severe Thinness (IAP)", color: "bg-red-100 text-red-800 border-red-200" }
+    : bmi < 16.0 ? { label: "Thinness (IAP)", color: "bg-orange-100 text-orange-800 border-orange-200" }
+    : bmi < 18.5 ? { label: "Mild Thinness — Monitor", color: "bg-yellow-100 text-yellow-800 border-yellow-200" }
+    : bmi < 23.0 ? { label: "Normal (IAP)", color: "bg-green-100 text-green-800 border-green-200" }
+    : { label: "Review — Above Normal", color: "bg-amber-100 text-amber-800 border-amber-200" };
 
   const wellness = [
     { icon: "😴", label: p.sleep, en: "8–10 hours recommended for athletes aged 10–18. Quality sleep directly improves recovery and performance.", hi: "10-18 आयु के एथलीटों के लिए 8-10 घंटे की नींद की सिफारिश है।" },
