@@ -379,8 +379,9 @@ export default function MethodologyPage() {
                     <p className="text-xs text-muted-foreground">Compared against published SAI/NSTC percentile tables for gender × age band. An athlete may be 90th local but only 55th national — this gap is critical for realistic talent assessment.</p>
                   </div>
                 </div>
-                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-200">
-                  <strong>Minimum cohort size:</strong> If fewer than 5 athletes share the same gender, local percentiles fall back to the full gender group. A confidence warning is shown.
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-200 space-y-1.5">
+                  <p><strong>⚠ Small-cohort limitation (Z-score outlier detection):</strong> With n ≤ 41 athletes, a within-cohort Z-score ≥ 3 SD is statistically unlikely to trigger (affects only ~0.3% of a normal distribution). For small cohorts, hard plausibility gates (sprint &gt;11s, broad jump &gt;260cm) are more reliable outlier detection than Z-score. Both methods run in parallel.</p>
+                  <p><strong>Two-percentile system:</strong> Local percentile ranks within the uploaded cohort. National percentile compares against SAI/NSTC all-India reference population (n = thousands). Local rank 90th may equal National rank 55th — both are shown on every profile.</p>
                 </div>
               </CardContent>
             </Card>
