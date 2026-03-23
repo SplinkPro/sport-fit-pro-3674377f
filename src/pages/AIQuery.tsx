@@ -168,7 +168,15 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
 
   // ── BMI / body flags ── (check before general sort to allow compound queries)
   let bmiFilter = false;
-  if (/underweight|bmi\s*<\s*18/i.test(q)) {
+  // "nutrition support" / "nutrition alert" → maps to IAP thinness (BMI < 16.0)
+  // This is the demo query "Who needs nutrition support?" — must return the correct athletes
+  if (/nutrition\s*support|nutrition\s*alert|needs?\s*nutrition|खाना|पोषण/i.test(q)) {
+    pool = pool.filter((a) => a.bmi != null && a.bmi < 16.0);
+    filters.push("Flag: Thinness BMI < 16 (IAP)");
+    bmiFilter = true;
+    metricLabel = "BMI";
+    metricFn = (a) => a.bmi != null ? `${a.bmi.toFixed(1)} BMI` : "—";
+  } else if (/underweight|bmi\s*<\s*18/i.test(q)) {
     pool = pool.filter((a) => a.flags?.some((f) => f.type === "underweight"));
     filters.push("Flag: Underweight");
     bmiFilter = true;
