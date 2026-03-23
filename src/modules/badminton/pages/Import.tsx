@@ -200,7 +200,7 @@ export default function BadmintonImport() {
             <span className="text-xs text-muted-foreground">{fileName}</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Cohort: <strong>{ageBand} {gender}</strong> · Review mappings before proceeding.
+            Cohort: <strong>{ageBand} {gender === "Mixed" ? "Mixed (M+F — per-athlete gender norms)" : gender}</strong> · Review mappings before proceeding.
             Unmapped columns will be ignored.
           </p>
           <div className="overflow-hidden rounded-lg border border-border">
