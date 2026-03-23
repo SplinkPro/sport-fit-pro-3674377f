@@ -5,16 +5,27 @@
  *   - Sports Authority of India (SAI) — National Sports Talent Contest (NSTC) norms
  *   - Khelo India Youth Games (KIYG) selection standards 2022–2024
  *   - Ministry of Youth Affairs & Sports — National Physical Fitness Test (NPFT)
+ *   - NSTSS (National Sports Talent Search Scheme) percentile tables — ages 8–12
+ *     Source: MYAS-SAI NSTSS 2015 implementation guidelines
+ *   - Fit India School Fitness Programme — L1–L7 achievement levels
+ *     Source: Fit India Movement, MYAS, 2019–2024
  *   - Athletics Federation of India (AFI) — national & junior national records (2024)
  *   - Chandrasekaran et al. (2019) "Physical fitness norms for Indian school children"
  *   - SGFI (School Games Federation of India) competition standards
  *   - MYAS-SAI Talent Hunt Programme district-level screening guidelines
+ *   - SAI Circular 07/2023 — Khelo India Centre talent intake standards
+ *   - SAI Circular 10/2023 — Khelo India Athlete induction criteria
  *   - Indian Olympic Association performance targets for Paris 2024 cycle
  *   - Long-Term Athlete Development (LTAD) framework — adapted for Indian context
  *     (Baker et al. 2017; Côté & Fraser-Thomas 2007; SAI LTAD 2021)
  *
  * HIERARCHY:
  *   District Average → State Average → National Average → National Record → Olympic Standard
+ *
+ * SCORING MODES:
+ *   1. Norm-referenced (NSTSS percentile tables, Fit India L1–L7)
+ *   2. Criterion / threshold (SAI KIC induction cutoffs, sport-specific)
+ *   3. Longitudinal (TTI — improvement rate over multiple assessments)
  *
  * Units:
  *   verticalJump: cm | broadJump: cm | sprint30m: seconds
