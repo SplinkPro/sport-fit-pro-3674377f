@@ -12,6 +12,8 @@ export interface DatasetMeta {
   count: number;
   importedAt: string;
   source: "seed" | "import";
+  /** If true, this dataset was merged into the previous active dataset as a new assessment batch */
+  isBatchUpdate?: boolean;
   athletes?: EnrichedAthlete[];
 }
 
@@ -23,6 +25,13 @@ export interface AthleteContextValue {
   setAthletes: Dispatch<SetStateAction<EnrichedAthlete[]>>;
   setDatasetMeta: Dispatch<SetStateAction<DatasetMeta>>;
   addDataset: (meta: Omit<DatasetMeta, "id">, athletes: EnrichedAthlete[]) => void;
+  /**
+   * Add a new assessment batch to existing athletes.
+   * Matches athletes by name (normalised) and appends a new AssessmentRecord
+   * to their assessmentHistory, enabling TTI longitudinal tracking.
+   * Athletes in the new batch that don't match existing records are added fresh.
+   */
+  addBatchUpdate: (meta: Omit<DatasetMeta, "id">, newBatch: EnrichedAthlete[]) => void;
   loadDataset: (id: string) => void;
 }
 
