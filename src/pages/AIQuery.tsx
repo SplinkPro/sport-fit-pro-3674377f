@@ -195,13 +195,42 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
     }
   }
 
+
   // ── High potential ──
   if (/high\s*potential|top\s*talent/i.test(q)) {
     pool = pool.filter((a) => a.isHighPotential);
     filters.push("Filter: High Potential");
   }
 
-  // ── SAI elite band filter ──
+  // ── Data quality issues — "which athletes have data quality issues?" ──
+  // Returns ALL flagged/blocked athletes (both import-time flags AND health flags)
+  if (/data\s*quality|quality\s*issues?|flagged\s*athlete|blocked\s*athlete|data\s*issue|डेटा\s*गुणवत्ता/i.test(q)) {
+    const qualityPool = pool.filter((a) => {
+      const hasImportFlag =
+        (a as typeof a & { sprint30mFlag?: string }).sprint30mFlag === "OUTLIER_VERIFY" ||
+        (a as typeof a & { broadJumpFlag?: string }).broadJumpFlag === "OUTLIER_VERIFY" ||
+        (a as typeof a & { run800mFlag?: string }).run800mFlag === "FORMAT_UNREADABLE" ||
+        (a as typeof a & { run800mFlag?: string }).run800mFlag === "IMPLAUSIBLE_VERIFY" ||
+        (a as typeof a & { vjFlag?: string }).vjFlag === "UNCLEAR_VERIFY" ||
+        (a as typeof a & { vjFlag?: string }).vjFlag === "AUTO_CORRECTED" ||
+        (a as typeof a & { run800mFlag?: string }).run800mFlag === "AUTO_CORRECTED";
+      const hasScoreFlag = (a.flags?.length ?? 0) > 0;
+      return hasImportFlag || hasScoreFlag;
+    });
+    const dqMeta = "Filter: All Data Quality Issues (blocked + flagged + auto-corrected)";
+    const dqMetricLabel = "Data Flags";
+    const dqMetricFn = (a: EnrichedAthlete) => {
+      const flags = a.flags ?? [];
+      if (flags.length === 0) return "Auto-corrected";
+      return flags.map((f) => f.type).join(", ");
+    };
+    const sorted = [...qualityPool].sort((a, b) => (b.flags?.length ?? 0) - (a.flags?.length ?? 0));
+    const results = sorted.slice(0, 50);
+    const reasoning = `Found ${qualityPool.length} athletes with data quality issues (blocked values, implausible metrics, auto-corrections, or health flags). These must be reviewed before finalising rankings.`;
+    return { results, filters: [dqMeta], reasoning, metricLabel: dqMetricLabel, metricFn: dqMetricFn, poolSize: qualityPool.length };
+  }
+
+
   if (/sai\s*elite|khelo\s*india\s*(candidate|selection)|elite\s*candidate/i.test(q)) {
     pool = pool.filter((a) => {
       const di = a.derivedIndices;
