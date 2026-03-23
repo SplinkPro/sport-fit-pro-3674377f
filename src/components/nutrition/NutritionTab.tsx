@@ -11,9 +11,10 @@
 
 import React, { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Droplets, Leaf, FlaskConical, ChartBar, Flame, Apple, Shield } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EnrichedAthlete } from "@/engine/analyticsEngine";
+import { useLanguage } from "@/i18n/useTranslation";
 import {
   NutritionContext, NutritionGoal, DietPref,
   buildNutritionPlan, NutritionPlan, MealSlot, HomeRemedy, RegionalFood,
@@ -24,38 +25,6 @@ import {
 interface NutritionTabProps {
   athlete: EnrichedAthlete;
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────
-
-const GOAL_LABELS: Record<NutritionGoal, { label: string; labelHi: string; color: string }> = {
-  performance:  { label: "Performance",  labelHi: "प्रदर्शन",        color: "bg-blue-100 text-blue-800 border-blue-300" },
-  weightGain:   { label: "Weight Gain",  labelHi: "वजन बढ़ाना",       color: "bg-green-100 text-green-800 border-green-300" },
-  maintenance:  { label: "Maintenance",  labelHi: "रखरखाव",           color: "bg-gray-100 text-gray-800 border-gray-300" },
-  recovery:     { label: "Recovery",     labelHi: "रिकवरी",           color: "bg-purple-100 text-purple-800 border-purple-300" },
-};
-
-const DIET_LABELS: Record<DietPref, { label: string; icon: string }> = {
-  veg:      { label: "Vegetarian 🥦",     icon: "🥦" },
-  "egg-veg":{ label: "Egg + Veg 🥚",      icon: "🥚" },
-  nonveg:   { label: "Non-Vegetarian 🍗", icon: "🍗" },
-};
-
-const SAFETY_GRADE: Record<string, { label: string; color: string; bg: string }> = {
-  A: { label: "Grade A — Safe",          color: "text-green-700",  bg: "bg-green-50 border-green-200" },
-  B: { label: "Grade B — Monitor",       color: "text-amber-700",  bg: "bg-amber-50 border-amber-200" },
-  C: { label: "Grade C — Consult First", color: "text-red-700",    bg: "bg-red-50 border-red-200" },
-};
-
-const PURPOSE_LABELS: Record<string, { label: string; icon: string }> = {
-  energy:    { label: "Energy",           icon: "⚡" },
-  recovery:  { label: "Recovery",         icon: "🔄" },
-  immunity:  { label: "Immunity",         icon: "🛡️" },
-  digestion: { label: "Digestion",        icon: "🌿" },
-  sleep:     { label: "Sleep",            icon: "😴" },
-  "joint-care": { label: "Joint Care",   icon: "🦴" },
-  iron:      { label: "Iron / Anaemia",   icon: "🩸" },
-  hydration: { label: "Hydration",        icon: "💧" },
-};
 
 const CATEGORY_STYLE: Record<string, string> = {
   protein:      "bg-red-50 border-red-200 text-red-800",
