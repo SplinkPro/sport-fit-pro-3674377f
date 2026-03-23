@@ -133,23 +133,25 @@ export const SEED_ATHLETES: RawBadmintonAthlete[] = [
   //  U12  —  ages 11–12
   // ═══════════════════════════════════════════════════════════
   {
+    // RAW PHYSICAL TALENT — joined from athletics, exceptional physical, early in badminton technique
     id: "pgba-007",
     name: "Karthik Varma",
     date_of_birth: "2013-02-28",
     gender: "Male",
     dominant_hand: "Right",
-    years_playing_badminton: 4,
+    years_playing_badminton: 0.5,
     academy_batch: "Morning Elite",
     coach_name: "Coach Prasad",
-    height_cm: 148, weight_kg: 38, wingspan_cm: 152,
-    reaction_time_ms: 168, four_corner_shuttle_run_sec: 16.2,
-    ten_by_five_shuttle_run_sec: 19.2, vertical_jump_cm: 36,
-    standing_broad_jump_cm: 152, beep_test_level: 6.8,
-    grip_strength_kg: 20, shuttlecock_throw_m: 10.5,
-    situps_30sec: 16, pushups_30sec: 15, sit_and_reach_cm: 22,
-    footwork_efficiency: 8, stroke_mechanics: 8, smash_quality: 7,
-    net_play: 7, serve_accuracy: 7, court_awareness: 8,
-    coachability: 8, mental_resilience: 7,
+    height_cm: 148, weight_kg: 38, wingspan_cm: 153,
+    reaction_time_ms: 158, four_corner_shuttle_run_sec: 15.8,
+    ten_by_five_shuttle_run_sec: 18.6, vertical_jump_cm: 40,
+    standing_broad_jump_cm: 162, beep_test_level: 7.2,
+    grip_strength_kg: 22, shuttlecock_throw_m: 11.2,
+    situps_30sec: 17, pushups_30sec: 16, sit_and_reach_cm: 22,
+    // Technically raw — brand new to badminton from athletics background
+    footwork_efficiency: 4, stroke_mechanics: 4, smash_quality: 4,
+    net_play: 4, serve_accuracy: 4, court_awareness: 4,
+    coachability: 6, mental_resilience: 5,
   },
   {
     id: "pgba-008",
