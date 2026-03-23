@@ -118,33 +118,36 @@ export default function MethodologyPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
-                <p className="text-muted-foreground">The CAPI provides a single 0–100 summary of overall athletic potential within the local cohort. It is a weighted sum of percentile-normalized performance scores.</p>
+                <p className="text-muted-foreground">The CAPI provides a single 0–100 summary of overall athletic potential within the local cohort. It is a weighted sum of percentile-normalized performance scores across 5 physical metrics. The result is a <strong>percentile rank</strong> (e.g. "72" = 72nd percentile — better than 72% of peers), not a raw mark out of 100.</p>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-muted/40 rounded-lg p-4 font-mono text-sm">
                     <p className="font-semibold text-foreground mb-2">Local CAPI Formula:</p>
-                    <p>CAPI = Σ (w<sub>i</sub> × Pct<sub>i</sub>)</p>
+                    <p>CAPI = Σ (w<sub>i</sub> × Pct<sub>i</sub>) / Σ w<sub>i</sub></p>
                     <p className="text-xs text-muted-foreground mt-2">Pct<sub>i</sub> = percentile within same-gender, same-cohort peers</p>
-                    <p className="text-xs text-muted-foreground">Weights configurable in Settings (default below)</p>
+                    <p className="text-xs text-muted-foreground">Denominator = sum of weights of present metrics only (handles missing data correctly)</p>
                   </div>
                   <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 font-mono text-sm">
                     <p className="font-semibold text-foreground mb-2">National CAPI Formula:</p>
-                    <p>NCAPI = Σ (w<sub>i</sub> × NatPct<sub>i</sub>)</p>
-                    <p className="text-xs text-muted-foreground mt-2">NatPct<sub>i</sub> = percentile vs SAI/NSTC national reference table</p>
-                    <p className="text-xs text-primary font-semibold">NEW: Absolute national positioning</p>
+                    <p>NCAPI = Σ (w<sub>i</sub> × NatPct<sub>i</sub>) / Σ w<sub>i</sub></p>
+                    <p className="text-xs text-muted-foreground mt-2">NatPct<sub>i</sub> = percentile vs SAI/NSTC national reference table (gender × age band)</p>
+                    <p className="text-xs text-primary font-semibold">Absolute national positioning — not cohort-relative</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <p className="font-medium">Default Weights</p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">Default Metric Weights</p>
+                    <span className="text-xs text-muted-foreground font-mono">Total active = 100% (football throw excluded)</span>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      ["30m Sprint",       "25%", "Speed — primary discriminator per SAI NSTC"],
-                      ["Vertical Jump",    "25%", "Explosive power — SAI Khelo India priority"],
-                      ["800m Run",         "25%", "Aerobic base — critical for multi-sport fit"],
-                      ["Broad Jump",       "20%", "Horizontal power & coordination"],
-                      ["Shuttle Run",      "5%",  "Agility — included when data available"],
-                      ["Football Throw",   "0%",  "Sport-specific; not in composite by default"],
+                      ["30m Sprint",       "25%", "Speed (lower time = higher score). SAI NSTC primary discriminator."],
+                      ["Vertical Jump",    "25%", "Vertical explosive power. Khelo India priority metric."],
+                      ["800m Run",         "25%", "Aerobic base (lower time = higher score). Critical for multi-sport."],
+                      ["Broad Jump",       "20%", "Horizontal explosive power & coordination."],
+                      ["Shuttle Run",       "5%", "Agility (lower time = higher score). Included when data present."],
+                      ["Football Throw",    "0%", "Skill-based test. Tracked individually; excluded from CAPI composite."],
                     ].map(([m, w, note]) => (
                       <div key={m} className="flex justify-between items-start text-xs bg-muted/30 rounded px-3 py-2 gap-2">
                         <div>
@@ -155,9 +158,16 @@ export default function MethodologyPage() {
                       </div>
                     ))}
                   </div>
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                    <p><strong>Physical dimension groupings</strong> (for reporting only — not separate scoring components):</p>
+                    <p>Power & Explosiveness = VJ 25% + BJ 20% = <strong>45% combined</strong></p>
+                    <p>Speed & Agility = Sprint 25% + Shuttle 5% = <strong>30% combined</strong></p>
+                    <p>Endurance / VO₂max = 800m Run = <strong>25%</strong></p>
+                    <p className="text-muted-foreground mt-1">Note: "Coordination (10%)" referenced in some CAPI descriptions is not scored from the current 5-test battery (no sit-and-reach or specific coordination test). When coordination data is absent, CAPI denominator is adjusted to 90 and labeled accordingly.</p>
+                  </div>
                 </div>
                 <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-200">
-                  <strong>Important:</strong> Sprint and shuttle run are inverted (lower time = higher percentile) before weighting. High-Potential threshold: CAPI ≥ 70.
+                  <strong>Important:</strong> Sprint, 800m run, and shuttle run are inverted (lower time = higher percentile rank) before weighting. High-Potential threshold: CAPI ≥ 70 (70th percentile or above within cohort). This threshold is configurable per programme.
                 </div>
               </CardContent>
             </Card>
