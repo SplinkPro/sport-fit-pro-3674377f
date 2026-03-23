@@ -127,7 +127,8 @@ export default function BadmintonImport() {
         <div className="rounded-xl border bg-card p-5 space-y-5">
           <h2 className="font-semibold text-sm">Step 1 — Select Age Band & Gender</h2>
           <p className="text-xs text-muted-foreground">
-            Required before upload. Determines which norm tables are applied to compute BII scores.
+            Required before upload. Norm lookup uses each athlete's individual <code className="bg-muted px-1 rounded">gender</code> field —
+            select <strong>Mixed</strong> when your file contains both male and female athletes.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -143,11 +144,29 @@ export default function BadmintonImport() {
               <select value={gender} onChange={(e) => setGender(e.target.value)}
                 className="w-full text-sm border border-border rounded-md px-3 py-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring">
                 <option value="">— Select —</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
+                <option value="Male">Male only</option>
+                <option value="Female">Female only</option>
+                <option value="Mixed">Mixed (M + F in same file)</option>
               </select>
             </div>
           </div>
+
+          {/* Mixed gender info banner */}
+          {gender === "Mixed" && (
+            <div className="flex items-start gap-2.5 p-3 rounded-lg text-xs"
+              style={{ background: "#1A5C3812", border: "1px solid #1A5C3830" }}>
+              <span className="text-lg leading-none">ℹ</span>
+              <div className="space-y-1">
+                <p className="font-semibold" style={{ color: COURT_GREEN }}>Per-athlete gender norms applied</p>
+                <p className="text-muted-foreground">
+                  Each athlete's BII is computed using their own <code className="bg-muted px-1 rounded">gender</code> column
+                  against the corresponding male or female norm table. Boys are benchmarked against boy norms,
+                  girls against girl norms — scientifically accurate even in a mixed file.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3">
             <button
               onClick={() => fileRef.current?.click()}
