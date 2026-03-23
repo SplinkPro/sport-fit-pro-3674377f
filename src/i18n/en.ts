@@ -107,7 +107,7 @@ export const en = {
       broadJump: "B.Jump",
       sprint30m: "30m Sprint",
       run800m: "800m Run",
-      compositeScore: "Score",
+      compositeScore: "CAPI Pct.",
       topSport: "Top Sport",
       completeness: "Complete",
       flags: "Flags",
@@ -278,7 +278,7 @@ export const en = {
     run800m: "800m Run",
     shuttleRun: "Shuttle Run",
     footballThrow: "Football Throw",
-    compositeScore: "Composite Score",
+    compositeScore: "CAPI Score (percentile)",
     units: {
       cm: "cm",
       kg: "kg",
