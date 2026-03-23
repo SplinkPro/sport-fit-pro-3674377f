@@ -155,7 +155,7 @@ export default function AthleteProfilePage() {
           <TabsContent value="insights" className="mt-0"><InsightsTab athlete={athlete} dict={dict} /></TabsContent>
           <TabsContent value="sportFit" className="mt-0"><SportFitTab athlete={athlete} dict={dict} /></TabsContent>
           <TabsContent value="health" className="mt-0"><HealthTab athlete={athlete} dict={dict} /></TabsContent>
-          <TabsContent value="nutrition" className="mt-0"><NutritionTab athlete={athlete} dict={dict} /></TabsContent>
+          <TabsContent value="nutrition" className="mt-0"><NutritionTab athlete={athlete} /></TabsContent>
           <TabsContent value="reports" className="mt-0"><ReportsTab athlete={athlete} dict={dict} /></TabsContent>
         </div>
       </Tabs>
