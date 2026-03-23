@@ -112,6 +112,49 @@ export function AppSidebar() {
         ))}
       </nav>
 
+      {/* SPORTS MODULES section */}
+      <div className="border-t border-sidebar-border py-2 px-2">
+        {!collapsed && (
+          <div className="px-2 pt-1 pb-1 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40">
+            Sports Modules
+          </div>
+        )}
+        {SPORTS_MODULES.map((item) => {
+          const isActive = location.pathname.startsWith(item.path);
+          const content = (
+            <NavLink
+              to={item.path}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150",
+                "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+                isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-semibold",
+                collapsed && "justify-center px-2"
+              )}
+            >
+              <span className="shrink-0 text-base">{item.label.split(" ")[0]}</span>
+              {!collapsed && (
+                <span className="truncate flex-1">{item.label.slice(2)}</span>
+              )}
+              {!collapsed && (
+                <span className="text-[9px] font-bold px-1 py-0.5 rounded border"
+                  style={{ color: "#D4A017", borderColor: "#D4A017" }}>
+                  BETA
+                </span>
+              )}
+            </NavLink>
+          );
+          if (collapsed) {
+            return (
+              <Tooltip key={item.key}>
+                <TooltipTrigger asChild>{content}</TooltipTrigger>
+                <TooltipContent side="right">{item.label}</TooltipContent>
+              </Tooltip>
+            );
+          }
+          return <div key={item.key}>{content}</div>;
+        })}
+      </div>
+
       {/* Bottom Nav */}
       <div className="border-t border-sidebar-border py-3 px-2 space-y-0.5">
         {BOTTOM_NAV.map((item) => (
