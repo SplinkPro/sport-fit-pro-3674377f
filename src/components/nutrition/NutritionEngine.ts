@@ -74,7 +74,9 @@ export interface RegionalFood {
   kcalPer100g: number;
   proteinPer100g: number;
   keyNutrient: string;
+  keyNutrientHi?: string;
   sportBenefit: string;
+  sportBenefitHi?: string;
   vegSafe: boolean;
   preparation: string;
   preparationHi: string;
