@@ -22,6 +22,7 @@ const MethodologyPage    = lazy(() => import("./pages/Methodology"));
 const LicensePage        = lazy(() => import("./pages/License"));
 const ReportsPage        = lazy(() => import("./pages/Reports"));
 const NotFound           = lazy(() => import("./pages/NotFound"));
+const ProposalPage       = lazy(() => import("./pages/Proposal"));
 
 // ─── Lightweight page skeleton shown during chunk load ─────────────────────
 function PageLoader() {
@@ -64,6 +65,7 @@ const App = () => (
             <Routes>
               {/* Public landing page */}
               <Route path="/" element={<LandingPage />} />
+              <Route path="/proposal" element={<ProposalPage />} />
 
               {/* Protected routes — RequireAuth gate, then AppShell layout */}
               <Route element={<RequireAuth />}>
