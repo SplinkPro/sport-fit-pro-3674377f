@@ -65,6 +65,7 @@ const App = () => (
             <Routes>
               {/* Public landing page */}
               <Route path="/" element={<LandingPage />} />
+              <Route path="/proposal" element={<ProposalPage />} />
 
               {/* Protected routes — RequireAuth gate, then AppShell layout */}
               <Route element={<RequireAuth />}>
