@@ -22,6 +22,7 @@ const MethodologyPage    = lazy(() => import("./pages/Methodology"));
 const LicensePage        = lazy(() => import("./pages/License"));
 const ReportsPage        = lazy(() => import("./pages/Reports"));
 const NotFound           = lazy(() => import("./pages/NotFound"));
+const ProposalPage       = lazy(() => import("./pages/Proposal"));
 
 // ─── Lightweight page skeleton shown during chunk load ─────────────────────
 function PageLoader() {
