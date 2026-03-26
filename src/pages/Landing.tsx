@@ -117,9 +117,9 @@ export default function Landing() {
 
   const trustItems = [
     { icon: <Database className="w-5 h-5" />, text: "Athlete data stays in your database — always" },
-    { icon: <Server className="w-5 h-5" />, text: "Runs on your own server or airgapped intranet" },
-    { icon: <ShieldCheck className="w-5 h-5" />, text: "Only license heartbeat (athlete count, expiry) leaves your network" },
-    { icon: <Lock className="w-5 h-5" />, text: "No PII, no raw metrics, no IDs ever transmitted" },
+    { icon: <Server className="w-5 h-5" />, text: "On-premise & cloud deployment options available" },
+    { icon: <ShieldCheck className="w-5 h-5" />, text: "DPDP Act 2023 compliant — only licence heartbeat leaves your network" },
+    { icon: <Lock className="w-5 h-5" />, text: "No PII, no raw metrics, no IDs ever transmitted to SPLINK" },
   ];
 
   const stats = [

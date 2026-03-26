@@ -20,12 +20,8 @@ const TABS = [
   { id: "data", label: "Data Retention", icon: Database },
 ];
 
-const USERS = [
-  { id: 1, name: "Admin User", email: "admin@splink.in", role: "Super Admin", status: "active" },
-  { id: 2, name: "Coach Sharma", email: "sharma@school.in", role: "Coach", status: "active" },
-  { id: 3, name: "Analyst Priya", email: "priya@school.in", role: "Analyst", status: "active" },
-  { id: 4, name: "Viewer Rahul", email: "rahul@school.in", role: "Viewer", status: "inactive" },
-];
+// Note: Real user management is in the Admin Panel (/admin).
+// This settings page shows configuration options only.
 
 const ROLE_COLORS: Record<string, string> = {
   "Super Admin": "bg-primary/10 text-primary",
@@ -229,7 +225,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { task: "Insight Summaries", model: "gpt-4o-mini" },
+                      { task: "Insight Summaries", model: "gemini-2.5-flash" },
                       { task: "Sport Recommendations", model: "rules-engine" },
                       { task: "Query Assistant", model: "rules-engine" },
                       { task: "Report Writing", model: "template-engine" },
