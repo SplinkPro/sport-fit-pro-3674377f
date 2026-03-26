@@ -94,7 +94,6 @@ export default function ImportPage() {
   const [rawRows, setRawRows]         = useState<Record<string, string>[]>([]);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [importMode, setImportMode]   = useState<"replace" | "append" | "batch_update">("replace");
-  const [importHistory, setImportHistory] = useState<HistoryEntry[]>(loadHistory);
   const [batchMeta, setBatchMeta]     = useState<Partial<BatchMeta>>({});
   const [showBmiDetail, setShowBmiDetail] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
