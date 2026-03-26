@@ -123,7 +123,7 @@ export default function Landing() {
   ];
 
   const stats = [
-    { value: 100000, suffix: "+", label: "Athletes Per Import — No Limit" },
+    { value: 0, suffix: "", label: "Record Limit — Unlimited Import", display: "∞" },
     { value: 15, suffix: "", label: "SAI Pathway Sports Covered" },
     { value: 9, suffix: "", label: "SAI Mandated Tests Tracked" },
     { value: 0, suffix: "%", label: "Data Shared With Vendor" },
