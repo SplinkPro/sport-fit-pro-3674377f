@@ -37,9 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Safety timeout — if Supabase doesn't respond within 3s, unblock the UI
+    const safetyTimer = setTimeout(() => setLoading(false), 3000);
+
     // Set up listener BEFORE getSession
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
+        clearTimeout(safetyTimer);
         setSession(newSession);
         setUser(newSession?.user ?? null);
         if (newSession?.user) {
@@ -52,13 +56,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     supabase.auth.getSession().then(({ data: { session: s } }) => {
+      clearTimeout(safetyTimer);
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) fetchRoles(s.user.id);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
