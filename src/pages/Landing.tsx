@@ -97,7 +97,7 @@ export default function Landing() {
     {
       icon: <BarChart3 className="w-6 h-6" />,
       title: "Sport-Specific Ranking",
-      desc: "Each athlete is ranked across 5 sports simultaneously. Coaches see exactly which talent fits which discipline.",
+      desc: "Each athlete is ranked across all 15 SAI pathway sports simultaneously. Coaches see exactly which talent fits which discipline.",
     },
     {
       icon: <Lock className="w-6 h-6" />,
