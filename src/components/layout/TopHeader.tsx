@@ -1,5 +1,5 @@
 import React from "react";
-import { Bell, User, ChevronDown, LogOut } from "lucide-react";
+import { Bell, User, ChevronDown, LogOut, ShieldCheck } from "lucide-react";
 import { useT, useLanguage } from "@/i18n/useTranslation";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
+// Legacy helpers kept for backward-compat with any remaining references
 const SESSION_KEY = "pratibha_session";
-
 export function isAuthenticated(): boolean {
   try { return !!sessionStorage.getItem(SESSION_KEY); } catch { return false; }
 }
@@ -28,9 +30,20 @@ export function TopHeader({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
   const { dict } = useT();
   const { language, setLanguage } = useLanguage();
   const navigate = useNavigate();
+  const { user, isAdmin, signOut, roles } = useAuth();
 
-  const handleLogout = () => {
+  const displayName =
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split("@")[0] ||
+    "User";
+  const avatarUrl = user?.user_metadata?.avatar_url;
+  const initials = displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+  const primaryRole = roles[0] ?? "viewer";
+
+  const handleLogout = async () => {
     clearSession();
+    await signOut();
     navigate("/", { replace: true });
   };
 
@@ -53,24 +66,16 @@ export function TopHeader({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
             onClick={() => setLanguage("en")}
             className={cn(
               "px-2.5 py-1.5 transition-colors",
-              language === "en"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted"
+              language === "en" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
             )}
-          >
-            EN
-          </button>
+          >EN</button>
           <button
             onClick={() => setLanguage("hi")}
             className={cn(
               "px-2.5 py-1.5 transition-colors",
-              language === "hi"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted"
+              language === "hi" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
             )}
-          >
-            हिं
-          </button>
+          >हिं</button>
         </div>
 
         {/* Notifications */}
@@ -83,18 +88,38 @@ export function TopHeader({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 h-8 px-2">
-              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                <span className="text-[10px] font-bold text-primary-foreground">SA</span>
-              </div>
-              <span className="text-sm hidden sm:inline">Super Admin</span>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName} className="w-6 h-6 rounded-full object-cover ring-1 ring-primary/20" />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-primary-foreground">{initials}</span>
+                </div>
+              )}
+              <span className="text-sm hidden sm:inline max-w-[120px] truncate">{displayName}</span>
               <ChevronDown size={12} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-0.5">
+                <p className="text-sm font-semibold truncate">{displayName}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary w-fit capitalize">
+                  {primaryRole}
+                </span>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate("/settings")}>
               <User size={14} className="mr-2" />
-              Profile
+              Profile & Settings
             </DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem onClick={() => navigate("/admin")}>
+                <ShieldCheck size={14} className="mr-2" />
+                Admin Panel
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleLogout}>
               <LogOut size={14} className="mr-2" />
