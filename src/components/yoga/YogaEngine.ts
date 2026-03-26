@@ -513,7 +513,6 @@ const SPORT_MATRIX: Record<string, {
     ],
   },
   khokho: {
-    name: "Kho Kho",
     pre: ["malasana", "trikonasana", "bhastrika", "visualisation"],
     active: ["virabhadrasana1", "parshvakonasana", "utkatasana", "ujjayi"],
     recovery: ["supta_matsyendrasana", "anulom_vilom", "balasana", "yoga_nidra"],
