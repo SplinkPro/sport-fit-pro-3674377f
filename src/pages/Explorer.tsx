@@ -21,7 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   Users, Star, AlertTriangle, CheckCircle2, Search, SlidersHorizontal,
   ChevronDown, ChevronUp, X, ArrowUpDown, ChevronRight, Upload,
-  BarChart3, GitCompare, ChevronLeft, Eye, EyeOff, Database, FolderOpen, Plus,
+  BarChart3, GitCompare, ChevronLeft, Eye, EyeOff, Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,69 +33,6 @@ function getSportName(topSport: string | undefined, language: Language): string 
   return language === "hi" ? cfg.nameHi : cfg.nameEn;
 }
 
-// ─── Dataset Switcher ───────────────────────────────────────────────────────
-function DatasetSwitcher({
-  current,
-  datasets,
-  onSwitch,
-}: {
-  current: DatasetMeta;
-  datasets: DatasetMeta[];
-  onSwitch: (id: string) => void;
-}) {
-  return (
-    <div className="flex items-center gap-3 mb-4 px-3 py-2.5 rounded-xl border border-border bg-muted/40">
-      {/* Icon */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-        <Database size={15} className="text-primary" />
-      </div>
-
-      {/* Label + meta */}
-      <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide leading-none mb-0.5">
-          Active Dataset
-        </p>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-semibold text-sm text-foreground truncate">{current.name}</span>
-          <span className="text-xs text-muted-foreground">{current.count} athletes · {current.version}</span>
-          {current.source === "seed" ? (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 font-semibold tracking-wide">DEMO</span>
-          ) : (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700 font-semibold tracking-wide">IMPORTED {current.importedAt}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Dropdown to switch */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {datasets.length > 1 && (
-          <Select value={current.id} onValueChange={onSwitch}>
-            <SelectTrigger className="h-8 text-xs w-48 border-border bg-background">
-              <FolderOpen size={13} className="mr-1.5 text-muted-foreground" />
-              <SelectValue placeholder="Switch dataset" />
-            </SelectTrigger>
-            <SelectContent>
-              {datasets.map((ds) => (
-                <SelectItem key={ds.id} value={ds.id}>
-                  <div className="flex items-center gap-2">
-                    <span className="truncate max-w-[140px]">{ds.name}</span>
-                    <span className="text-muted-foreground text-[11px] ml-auto pl-2">{ds.count}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        <Link to="/import">
-          <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
-            <Plus size={12} />
-            Load new
-          </Button>
-        </Link>
-      </div>
-    </div>
-  );
-}
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface Filters {
@@ -116,7 +53,7 @@ const PAGE_SIZE = 20;
 
 // ─── Component ─────────────────────────────────────────────────────────────
 export default function ExplorerPage() {
-  const { athletes, loading, datasetMeta, savedDatasets, loadDataset } = useAthletes();
+  const { athletes, loading, datasetMeta } = useAthletes();
   const { dict, language } = useT();
   const navigate = useNavigate();
 
@@ -276,8 +213,20 @@ export default function ExplorerPage() {
           }
         />
 
-        {/* Dataset Switcher */}
-        <DatasetSwitcher current={datasetMeta} datasets={savedDatasets} onSwitch={loadDataset} />
+        {/* Active Dataset Banner */}
+        <div className="flex items-center gap-3 mb-4 px-3 py-2.5 rounded-xl border border-border bg-muted/40">
+          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Database size={15} className="text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide leading-none mb-0.5">Active Dataset</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-sm text-foreground truncate">{datasetMeta.name}</span>
+              <span className="text-xs text-muted-foreground">{datasetMeta.count} athletes · {datasetMeta.version}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 font-semibold tracking-wide">DEMO</span>
+            </div>
+          </div>
+        </div>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-4 gap-3 mb-4">

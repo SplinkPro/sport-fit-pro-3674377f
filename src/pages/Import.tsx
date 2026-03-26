@@ -54,25 +54,7 @@ const GENDERS: { value: BatchMeta["gender"]; label: string; desc: string }[] = [
   { value: "Mixed",  label: "Mixed",      desc: "Use gender column in file (M/F per row)" },
 ];
 
-const IMPORT_HISTORY_KEY = "pratibha_import_history";
 
-interface HistoryEntry {
-  id: string; date: string; file: string; rows: number;
-  valid: number; warnings: number; errors: number;
-  status: "success" | "partial"; version: string;
-}
-
-function loadHistory(): HistoryEntry[] {
-  try {
-    const saved = localStorage.getItem(IMPORT_HISTORY_KEY);
-    if (saved) return JSON.parse(saved);
-  } catch { /* ignore */ }
-  // Return empty array — no fake/hardcoded history
-  return [];
-}
-function saveHistory(entries: HistoryEntry[]) {
-  try { localStorage.setItem(IMPORT_HISTORY_KEY, JSON.stringify(entries)); } catch { /* ignore */ }
-}
 
 // ─── Severity config ─────────────────────────────────────────────────────────
 const SEVERITY_CONFIG = {
@@ -112,7 +94,6 @@ export default function ImportPage() {
   const [rawRows, setRawRows]         = useState<Record<string, string>[]>([]);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [importMode, setImportMode]   = useState<"replace" | "append" | "batch_update">("replace");
-  const [importHistory, setImportHistory] = useState<HistoryEntry[]>(loadHistory);
   const [batchMeta, setBatchMeta]     = useState<Partial<BatchMeta>>({});
   const [showBmiDetail, setShowBmiDetail] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -200,7 +181,7 @@ export default function ImportPage() {
   const handleConfirmImport = () => {
     if (!parseResult || !uploadedFile) return;
     const incoming = enrichAthletes(parseResult.athletes);
-    const version = `v${importHistory.length + 1}`;
+    const version = `v1`;
     const todayStr = new Date().toISOString().slice(0, 10);
 
     if (importMode === "batch_update") {
@@ -216,13 +197,6 @@ export default function ImportPage() {
       );
     }
 
-    const entry: HistoryEntry = {
-      id: `h${Date.now()}`, date: todayStr, file: uploadedFile.name,
-      rows: totalRows, valid: validCount, warnings: warningCount, errors: errorCount,
-      status: errorCount > 0 ? "partial" : "success", version,
-    };
-    const next = [entry, ...importHistory];
-    setImportHistory(next); saveHistory(next);
     setStep(5);
   };
 
@@ -848,7 +822,7 @@ export default function ImportPage() {
               <div className="bg-muted/30 rounded-lg p-3 text-sm flex items-center gap-2">
                 <FileText className="w-4 h-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Dataset label: </span>
-                <span className="font-mono font-semibold">{uploadedFile?.name} · v{importHistory.length + 1}</span>
+                <span className="font-mono font-semibold">{uploadedFile?.name} · v1</span>
               </div>
             </CardContent>
           </Card>
@@ -921,47 +895,6 @@ export default function ImportPage() {
         </Card>
       )}
 
-      {/* ══════════════ Import History ══════════════ */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Import History</CardTitle>
-          <CardDescription>Previous imports for this instance.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {importHistory.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No imports yet. Upload a file above to get started.
-              </p>
-            )}
-            {importHistory.map((entry, i) => (
-              <div
-                key={entry.id}
-                className={cn(
-                  "flex items-center justify-between py-2.5 px-3 rounded-lg border text-sm",
-                  i === 0 ? "border-primary/30 bg-primary/5" : "border-border bg-muted/20"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <div>
-                    <span className="font-medium">{entry.file}</span>
-                    <span className="text-muted-foreground ml-2 text-xs">{entry.date} · {entry.version}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-muted-foreground text-xs">{entry.rows} rows</span>
-                  {entry.errors > 0
-                    ? <Badge className="bg-amber-100 text-amber-700 text-xs">Partial</Badge>
-                    : <Badge className="bg-emerald-100 text-emerald-700 text-xs">Success</Badge>
-                  }
-                  {i === 0 && <Badge className="bg-primary/10 text-primary text-xs border-primary/30">Active</Badge>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
