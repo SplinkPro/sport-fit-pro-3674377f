@@ -131,6 +131,20 @@ export default function NutritionTab({ athlete }: NutritionTabProps) {
               ✓ {t("profile.autoSelected")} {(athlete.bmi ?? 0).toFixed(1)} · {genderLabel} · {isHi ? "आयु" : "Age"} {athlete.age} · {athlete.district}
             </p>
           )}
+          {/* Clinical rationale for no weight-loss goal */}
+          {(athlete.bmi ?? 0) > 25 && autoGoal === "maintenance" && goal === "maintenance" && (
+            <div className="mt-2 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-[11px] text-amber-800 leading-relaxed">
+              <span className="font-semibold">⚕️ Why no "Weight Loss" plan?</span>{" "}
+              IAP &amp; WHO guidelines prohibit caloric-deficit diets for athletes under 18.
+              For BMI &gt; 25, the clinically correct protocol is{" "}
+              <strong>Maintenance calories (−5% TDEE)</strong> with higher lean-protein ratio,
+              combined with increased training load to improve body composition naturally.
+              Weight-loss diets in child athletes risk stunting growth and impairing performance.{" "}
+              <span className="italic text-amber-600">
+                Source: IAP Clinical Practice Guidelines 2022 · WHO Growth Reference 2007
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Diet preference */}
