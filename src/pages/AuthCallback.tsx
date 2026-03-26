@@ -6,20 +6,32 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Handle both Lovable Cloud OAuth (redirects to origin) and direct callback
-    const handleSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+    // Listen for auth state change — this fires as soon as the session is ready
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        subscription.unsubscribe();
         navigate("/explorer", { replace: true });
-      } else {
-        // Wait briefly for session to be established from URL hash
-        setTimeout(async () => {
-          const { data: { session: s2 } } = await supabase.auth.getSession();
-          navigate(s2 ? "/explorer" : "/login", { replace: true });
-        }, 1000);
       }
+    });
+
+    // Also check immediately in case session is already set
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        subscription.unsubscribe();
+        navigate("/explorer", { replace: true });
+      }
+    });
+
+    // Hard fallback — if nothing happens in 5s, go back to login
+    const fallback = setTimeout(() => {
+      subscription.unsubscribe();
+      navigate("/login", { replace: true });
+    }, 5000);
+
+    return () => {
+      clearTimeout(fallback);
+      subscription.unsubscribe();
     };
-    handleSession();
   }, [navigate]);
 
   return (

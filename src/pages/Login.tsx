@@ -23,12 +23,19 @@ export default function Login() {
 
   const handleGoogle = async () => {
     setAuthLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-      extraParams: { prompt: "select_account" },
-    });
-    if (result?.error) {
-      toast({ title: "Sign-in failed", description: String(result.error), variant: "destructive" });
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
+      });
+      // If not redirected (e.g. popup flow or error), reset loading
+      if (result?.error) {
+        toast({ title: "Sign-in failed", description: String(result.error), variant: "destructive" });
+        setAuthLoading(false);
+      }
+      // If redirected, the page will unload — no need to reset loading
+    } catch (err) {
+      toast({ title: "Sign-in failed", description: String(err), variant: "destructive" });
       setAuthLoading(false);
     }
   };
