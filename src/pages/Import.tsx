@@ -921,47 +921,6 @@ export default function ImportPage() {
         </Card>
       )}
 
-      {/* ══════════════ Import History ══════════════ */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Import History</CardTitle>
-          <CardDescription>Previous imports for this instance.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {importHistory.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No imports yet. Upload a file above to get started.
-              </p>
-            )}
-            {importHistory.map((entry, i) => (
-              <div
-                key={entry.id}
-                className={cn(
-                  "flex items-center justify-between py-2.5 px-3 rounded-lg border text-sm",
-                  i === 0 ? "border-primary/30 bg-primary/5" : "border-border bg-muted/20"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <div>
-                    <span className="font-medium">{entry.file}</span>
-                    <span className="text-muted-foreground ml-2 text-xs">{entry.date} · {entry.version}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-muted-foreground text-xs">{entry.rows} rows</span>
-                  {entry.errors > 0
-                    ? <Badge className="bg-amber-100 text-amber-700 text-xs">Partial</Badge>
-                    : <Badge className="bg-emerald-100 text-emerald-700 text-xs">Success</Badge>
-                  }
-                  {i === 0 && <Badge className="bg-primary/10 text-primary text-xs border-primary/30">Active</Badge>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-// useAthletes.ts — athlete context, localStorage persistence, dataset management
+// useAthletes.ts — athlete context, always uses demo seed dataset
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { getSeedAthletes, AssessmentRecord } from "../data/seedAthletes";
