@@ -524,14 +524,17 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
 
 const EXAMPLE_QUERIES_EN = [
   "Show top 10 athletes by vertical jump",
-  "Find underweight athletes",
-  "Which athletes are best suited for cycling?",
+  "Find underweight athletes who need nutrition support",
+  "Which athletes are best suited for badminton?",
   "Show SAI elite candidates",
   "Compare male vs female average performance",
   "Find athletes aged 14–16 with composite score above 60",
   "Show national talent pool",
   "Find young talent development pipeline (age ≤ 15)",
   "Show athletes with highest aerobic capacity",
+  "Who is best suited for hockey?",
+  "Show top athletes for kho kho",
+  "Which athletes best suit weightlifting?",
 ];
 
 const EXAMPLE_QUERIES_HI = [
