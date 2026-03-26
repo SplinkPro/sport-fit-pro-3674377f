@@ -514,7 +514,139 @@ export default function MethodologyPage() {
             </Card>
           )}
 
-          {/* ── Assumptions ── */}
+          {/* ── Data Validation Pipeline ── */}
+          {active === "validation" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  5-Layer Data Validation Pipeline
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <p className="text-muted-foreground">
+                  Every uploaded athlete record passes through a 5-layer validation pipeline before scoring. Layers are applied sequentially — 
+                  failures in earlier layers prevent downstream scoring to ensure integrity.
+                </p>
+                <div className="space-y-3">
+                  {[
+                    {
+                      layer: "Layer 1 — Column Mapping",
+                      status: "Parse",
+                      color: "border-blue-200 bg-blue-50/40 dark:bg-blue-950/20",
+                      badge: "bg-blue-100 text-blue-800",
+                      body: "Fuzzy-match CSV/Excel column headers to canonical metric names (30+ column name variants supported). Normalises spelling, spacing, and encoding. Unknown columns are flagged as UNMAPPED and excluded from scoring without blocking the row.",
+                      examples: ["'VJ (cm)', 'Vertical Jump', 'VJump' → verticalJump", "'30m sprint', '30 m', 'sprint' → sprint30m", "'Time (mm:ss)', '4:05', '04:05.00' → run800m (seconds)"],
+                    },
+                    {
+                      layer: "Layer 2 — Time Format Parsing",
+                      status: "Parse",
+                      color: "border-blue-200 bg-blue-50/40 dark:bg-blue-950/20",
+                      badge: "bg-blue-100 text-blue-800",
+                      body: "800m run time is parsed from multiple formats: MM:SS (4:05 → 245s), raw seconds (245), and HH:MM:SS where SS is actually centiseconds per Bihar state convention (0:04:05 → 245s). Ambiguous formats are flagged FORMAT_UNREADABLE.",
+                      examples: ["'4:05' → 245 seconds", "'0:4:5' → 245 seconds (Bihar HH:MM:SS convention)", "'14:00' → blocked as IMPLAUSIBLE (>12 min)"],
+                    },
+                    {
+                      layer: "Layer 3 — Vertical Jump Convention Correction",
+                      status: "Auto-Correct",
+                      color: "border-green-200 bg-green-50/40 dark:bg-green-950/20",
+                      badge: "bg-green-100 text-green-800",
+                      body: "If VJ value > 90cm (implausible as jump height), the engine checks if it's a wall-reach recording convention (standing reach + jump height). Applies: corrected = VJ − (1.33 × athlete height / 100 × 100). Auto-corrected values are flagged AUTO_CORRECTED and used with a reduced confidence score.",
+                      examples: ["VJ=305cm, Height=162cm → corrected = 305 − 215.5 = 89.5cm → plausible, AUTO_CORRECTED", "VJ=45cm → plausible, no correction"],
+                    },
+                    {
+                      layer: "Layer 4 — Plausibility Gates (Hard Blocks)",
+                      status: "Block",
+                      color: "border-red-200 bg-red-50/40 dark:bg-red-950/20",
+                      badge: "bg-red-100 text-red-800",
+                      body: "Values outside physically impossible ranges for healthy U10–U18 athletes block the entire metric. Blocked athletes cannot be scored on that metric and appear with a red BLOCKED badge in Explorer.",
+                      examples: ["30m Sprint > 11.0s → OUTLIER_VERIFY (even the slowest child clears this)", "Broad Jump > 260cm → OUTLIER_VERIFY (world-class performance, likely data error)", "800m Run > 12 min → IMPLAUSIBLE_VERIFY"],
+                    },
+                    {
+                      layer: "Layer 5 — Statistical Z-Score Outlier Detection",
+                      status: "Flag",
+                      color: "border-amber-200 bg-amber-50/40 dark:bg-amber-950/20",
+                      badge: "bg-amber-100 text-amber-800",
+                      body: "Within cohort, values with |Z| > 3 are flagged for coach verification. Z-score outlier detection is secondary to plausibility gates — for small cohorts (n < 30), hard gates are more reliable. Flagged-not-blocked athletes are scored but their data is marked for review.",
+                      examples: ["Cohort mean VJ = 35cm, SD = 8cm → VJ = 61cm (Z=3.25) → flagged VERIFY", "Z-score alone does not block scoring — only plausibility gates block"],
+                    },
+                  ].map((item) => (
+                    <div key={item.layer} className={cn("border rounded-lg p-4 space-y-2", item.color)}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">{item.layer}</span>
+                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded", item.badge)}>{item.status}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{item.body}</p>
+                      <div className="space-y-1 mt-2">
+                        {item.examples.map((ex, i) => (
+                          <div key={i} className="text-[10px] font-mono bg-background/60 rounded px-2 py-1 text-muted-foreground">{ex}</div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-200">
+                  <strong>Demo note:</strong> During the Bihar assessment demo, athlete "Guddi Kumari" demonstrates Layer 4: her 30m sprint of 14.2s (physically impossible for an 11-year-old) is automatically blocked with OUTLIER_VERIFY and excluded from cohort scoring. This protects aggregate statistics from data entry errors.
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Nutrition Engine ── */}
+          {active === "nutrition" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  Nutrition Engine — ICMR 2020 Aligned
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <p className="text-muted-foreground">
+                  The nutrition module is a multi-agent knowledge system producing fully personalised plans based on 7 input variables. 
+                  All macro calculations trace to ICMR 2020 Dietary Reference Values (Table 4 — school-age active children).
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Input Variables", items: ["Gender (M/F)", "Age band (U10–Open)", "Body weight (kg)", "BMI & IAP classification", "District (regional food atlas)", "Diet preference (Veg/Egg-Veg/Non-Veg)", "Nutrition goal (Performance/Weight Gain/Maintenance/Recovery)"] },
+                    { label: "Output Components", items: ["Daily macro targets (kcal, protein, carb, fat, water)", "5-meal plan with portion sizes", "Regional food recommendations (Bihar atlas)", "11 evidence-graded home remedies (AYUSH)", "Pre/post workout guidance (diet-specific)", "Hydration plan (NIN 38ml/kg/day baseline)", "Nutrition alerts (BMI flags, iron, goal conflicts)"] },
+                  ].map((s) => (
+                    <div key={s.label} className="border rounded-lg p-3 space-y-1">
+                      <div className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-2">{s.label}</div>
+                      {s.items.map((item) => (
+                        <div key={item} className="text-xs flex items-start gap-1.5">
+                          <span className="text-primary mt-0.5">•</span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-muted/40 rounded-lg p-4 font-mono text-xs space-y-1">
+                  <p className="font-semibold text-foreground">Macro Calculation (ICMR 2020 + 15% sport adjustment):</p>
+                  <p>Energy (kcal) = ICMR_base × goal_multiplier</p>
+                  <p>Protein (g) = weight_kg × proteinPerKg (1.2–1.8 g/kg by age/gender)</p>
+                  <p>Carbohydrate (g) = (kcal × 0.55) / 4</p>
+                  <p>Fat (g) = (kcal × 0.27) / 9</p>
+                  <p>Water (ml) = weight_kg × 38</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Diet Differentiation (Three-way, v2.0 fix)</p>
+                  {[
+                    { label: "Non-Veg", desc: "Grilled chicken/fish at lunch + chicken curry/egg bhurji at dinner (performance/growth). Post-workout: 2 eggs OR 100g chicken + banana + milk.", badge: "bg-orange-100 text-orange-800" },
+                    { label: "Egg-Veg", desc: "Eggs at breakfast + egg curry at dinner (performance). Post-workout: 2 boiled eggs + banana + milk. No chicken/fish.", badge: "bg-yellow-100 text-yellow-800" },
+                    { label: "Pure Veg", desc: "Paneer at breakfast + dinner (performance). Post-workout: banana-milk shake + paneer or lassi. Amino acid profile completed via dal+rice+curd combination.", badge: "bg-green-100 text-green-800" },
+                  ].map((d) => (
+                    <div key={d.label} className="flex gap-3 items-start border rounded p-3">
+                      <span className={cn("text-[10px] font-bold px-2 py-1 rounded shrink-0", d.badge)}>{d.label}</span>
+                      <p className="text-xs text-muted-foreground">{d.desc}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Sources: ICMR-NIN 2020 DRV Table 4 · NIN Sport Nutrition Addendum · AYUSH Safety Grades · Bihar ICAR-RCER regional food study · IAP BMI classification 2015.</p>
+              </CardContent>
+            </Card>
+          )}
           {active === "assumptions" && (
             <Card>
               <CardHeader>
