@@ -454,7 +454,15 @@ export default function ImportPage() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-3">
+            {!metaComplete && fileUploaded && (
+              <p className="text-xs text-amber-600 flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5" /> Select age group &amp; gender above to continue
+              </p>
+            )}
+            {!fileUploaded && metaComplete && (
+              <p className="text-xs text-muted-foreground">Upload a file above to continue</p>
+            )}
             <Button
               disabled={!fileUploaded || !parseResult || parseResult.athletes.length === 0 || !metaComplete}
               onClick={handleContinueFromStep1}
