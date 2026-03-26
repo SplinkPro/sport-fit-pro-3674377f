@@ -25,6 +25,18 @@
 
   <body>
     <div id="root"></div>
+    <!-- Catch stale chunk errors and hard-reload once to get the fresh build -->
+    <script>
+      window.addEventListener('error', function(e) {
+        if (e.message && e.message.includes('Failed to fetch dynamically imported module')) {
+          var key = 'chunk_reload_' + location.pathname;
+          if (!sessionStorage.getItem(key)) {
+            sessionStorage.setItem(key, '1');
+            location.reload(true);
+          }
+        }
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
