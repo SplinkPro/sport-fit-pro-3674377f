@@ -22,12 +22,12 @@ import { cn } from "@/lib/utils";
 type ImportStep = 1 | 2 | 3 | 3.5 | 4 | 5;
 
 const STEPS = [
-  { id: 1,   label: "Upload" },
-  { id: 2,   label: "Map Fields" },
-  { id: 3,   label: "Validate" },
-  { id: 3.5, label: "Data Quality" },
-  { id: 4,   label: "Review" },
-  { id: 5,   label: "Done" },
+  { id: 1,   label: "Upload",       num: 1 },
+  { id: 2,   label: "Map Fields",   num: 2 },
+  { id: 3,   label: "Validate",     num: 3 },
+  { id: 3.5, label: "Data Quality", num: 4 },
+  { id: 4,   label: "Review",       num: 5 },
+  { id: 5,   label: "Done",         num: 6 },
 ];
 
 const FIELD_MAP = [
