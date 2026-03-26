@@ -456,10 +456,10 @@ export default function Landing() {
             <div className="rounded-2xl p-8 text-white" style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #0F2340 100%)" }}>
               <div className="grid sm:grid-cols-4 gap-6 text-center">
                 {[
-                  { val: "15", label: "SAI Pathway Sports" },
-                  { val: "6", label: "Personalisation Dimensions" },
-                  { val: "200+", label: "Unique Prescription Combinations" },
-                  { val: "SAI CI 07/2023", label: "Scientific Basis" },
+                   { val: "15", label: "SAI Pathway Sports" },
+                   { val: "7", label: "Personalisation Dimensions" },
+                   { val: "1,000+", label: "Unique Prescription Combinations" },
+                   { val: "SAI CI 07/2023", label: "Scientific Basis" },
                 ].map(s => (
                   <div key={s.label}>
                     <div className="text-2xl font-black mb-1" style={{ color: "#F97316" }}>{s.val}</div>
