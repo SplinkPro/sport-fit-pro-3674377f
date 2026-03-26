@@ -116,12 +116,9 @@ describe("800m time parsing", () => {
   it("4:00 (MM:SS) = 240 seconds", () => expect(parse800m("4:00")).toBe(240));
   it("2:30 (MM:SS) = 150 seconds", () => expect(parse800m("2:30")).toBe(150));
   it("plain 200 (seconds) = 200", () => expect(parse800m("200")).toBe(200));
-  it("0:00:03:45 not valid (bad Excel) returns null or undefined", () => {
-    // Should not produce an impossible value like 13500s
-    const val = parse800m("0.00260416");  // Excel serial ≈ 225s
-    if (val !== undefined && val !== null) {
-      expect(val).toBeLessThan(600); // must be < 10 minutes
-    }
+  it("Excel serial 0.00260416 ≈ 225s auto-corrected", () => {
+    const val = parse800m("0.00260416");
+    expect(val).toBe(225); // 0.00260416 × 86400 ≈ 225
   });
 });
 
