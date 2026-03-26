@@ -627,28 +627,35 @@ export const HOME_REMEDIES_DB: HomeRemedy[] = [
 function filterForDietPref(items: MealItem[], pref: DietPref): MealItem[] {
   if (pref === "veg") return items.filter(i => !i.name.toLowerCase().includes("egg") && !i.name.toLowerCase().includes("chicken") && !i.name.toLowerCase().includes("fish") && !i.name.toLowerCase().includes("mutton") && !i.name.toLowerCase().includes("meat"));
   if (pref === "egg-veg") return items.filter(i => !i.name.toLowerCase().includes("chicken") && !i.name.toLowerCase().includes("fish") && !i.name.toLowerCase().includes("mutton") && !i.name.toLowerCase().includes("meat"));
-  return items; // non-veg: all
+  return items; // non-veg: all items including chicken/fish/meat
 }
 
 // Full meal plan database
+// ─── CRITICAL FIX: Three-way diet differentiation ─────────────────────────
+// isVeg: pure vegetarian (no egg, no meat)
+// isEggVeg: eggs allowed, no meat/fish/chicken
+// isNonVeg: all animal proteins including chicken/fish/mutton
 function buildMealPlan(ctx: NutritionContext): MealSlot[] {
-  const isVeg = ctx.dietPref === "veg";
-  const hasEgg = ctx.dietPref !== "veg";
-  const isGrowth = ctx.goal === "weightGain";
-  const isPerf = ctx.goal === "performance";
-  const bmi = ctx.bmi;
-  const isFemale = ctx.gender === "F";
+  const isVeg     = ctx.dietPref === "veg";
+  const isEggVeg  = ctx.dietPref === "egg-veg";
+  const isNonVeg  = ctx.dietPref === "nonveg";
+  const hasEgg    = isEggVeg || isNonVeg;  // egg allowed for egg-veg AND non-veg
+  const isGrowth  = ctx.goal === "weightGain";
+  const isPerf    = ctx.goal === "performance";
+  const isFemale  = ctx.gender === "F";
 
   const breakfast: MealItem[] = [
     { name: "Poha with peanuts + mustard seeds", nameHi: "पोहा मूंगफली के साथ", portionG: 80, kcal: 310, proteinG: 8, carbG: 52, fatG: 8, notes: "Pre-training carb load" },
-    ...(hasEgg ? [{ name: "2 Boiled eggs", nameHi: "2 उबले अंडे", portionG: 100, kcal: 155, proteinG: 13, carbG: 1, fatG: 11, notes: "Complete protein for muscle synthesis" }] : []),
-    ...(!hasEgg ? [{ name: "Paneer (50g)", nameHi: "पनीर (50g)", portionG: 50, kcal: 145, proteinG: 8, carbG: 2, fatG: 12, notes: "Vegetarian protein" }] : []),
+    // Egg option for both egg-veg and non-veg
+    ...(hasEgg ? [{ name: "2 Boiled eggs", nameHi: "2 उबले अंडे", portionG: 100, kcal: 155, proteinG: 13, carbG: 1, fatG: 11, notes: "Complete protein — complete amino acid profile (egg-veg & non-veg)" }] : []),
+    // Veg-only protein substitute
+    ...(isVeg ? [{ name: "Paneer (50g)", nameHi: "पनीर (50g)", portionG: 50, kcal: 145, proteinG: 8, carbG: 2, fatG: 12, notes: "Vegetarian complete protein (casein + whey)" }] : []),
     { name: "Banana (1 medium)", nameHi: "केला (1 मध्यम)", portionG: 120, kcal: 105, proteinG: 1.3, carbG: 27, fatG: 0.4, notes: "Potassium + fast carbs" },
     { name: isGrowth ? "Full-fat milk (250ml)" : "Low-fat milk (250ml)", nameHi: isGrowth ? "फुल फैट दूध (250ml)" : "कम वसा वाला दूध (250ml)", portionG: 250, kcal: isGrowth ? 150 : 100, proteinG: 8, carbG: 12, fatG: isGrowth ? 8 : 3, notes: "Calcium + B12" },
   ];
 
   const morningSnack: MealItem[] = [
-    { name: "Sattu drink (250ml)", nameHi: "सत्तू ड्रिंक (250ml)", portionG: 250, kcal: 120, proteinG: 5, carbG: 20, fatG: 1, notes: "Bihar pre-workout special" },
+    { name: "Sattu drink (250ml)", nameHi: "सत्तू ड्रिंक (250ml)", portionG: 250, kcal: 120, proteinG: 5, carbG: 20, fatG: 1, notes: "Bihar pre-workout special — complete plant protein" },
     { name: "Roasted peanuts (20g)", nameHi: "भुनी मूंगफली (20g)", portionG: 20, kcal: 113, proteinG: 5, carbG: 4, fatG: 10, notes: "Sustained energy" },
     ...(isGrowth ? [{ name: "Mixed dry fruits (15g)", nameHi: "मिश्रित मेवे (15g)", portionG: 15, kcal: 88, proteinG: 2, carbG: 9, fatG: 5, notes: "Calorie-dense addition" }] : []),
   ];
@@ -657,7 +664,9 @@ function buildMealPlan(ctx: NutritionContext): MealSlot[] {
     { name: "Brown rice (1.5 cups cooked)", nameHi: "ब्राउन राइस (1.5 कप पका हुआ)", portionG: 210, kcal: 310, proteinG: 7, carbG: 64, fatG: 2, notes: "Complex carb base" },
     { name: "Chana/Masoor Dal (1 cup)", nameHi: "चना/मसूर दाल (1 कप)", portionG: 200, kcal: 230, proteinG: 18, carbG: 40, fatG: 1, notes: "Plant protein + iron" },
     { name: "Seasonal sabzi (mixed veg)", nameHi: "मौसमी सब्जी", portionG: 150, kcal: 80, proteinG: 3, carbG: 15, fatG: 2, notes: isGrowth ? "Add extra ghee" : "Minimal oil" },
-    ...(isFemale ? [{ name: "Palak/Moringa sabzi", nameHi: "पालक/सहजन की सब्जी", portionG: 100, kcal: 50, proteinG: 3, carbG: 7, fatG: 1, notes: "Iron for female athletes" }] : []),
+    ...(isFemale ? [{ name: "Palak/Moringa sabzi", nameHi: "पालक/सहजन की सब्जी", portionG: 100, kcal: 50, proteinG: 3, carbG: 7, fatG: 1, notes: "Iron for female athletes — prevents sports anaemia" }] : []),
+    // Non-veg gets chicken/fish option at lunch
+    ...(isNonVeg ? [{ name: "Grilled chicken / fish curry (80g)", nameHi: "ग्रिल्ड चिकन / मछली करी (80g)", portionG: 80, kcal: 165, proteinG: 22, carbG: 2, fatG: 8, notes: "High-quality animal protein — 22g complete protein per serving" }] : []),
     { name: "Curd (100g)", nameHi: "दही (100g)", portionG: 100, kcal: 60, proteinG: 3.5, carbG: 5, fatG: 3, notes: "Probiotics + calcium" },
   ];
 
@@ -670,8 +679,12 @@ function buildMealPlan(ctx: NutritionContext): MealSlot[] {
   const dinner: MealItem[] = [
     { name: isGrowth ? "4 Chapati" : "3 Chapati", nameHi: isGrowth ? "4 रोटियां" : "3 रोटियां", portionG: isGrowth ? 200 : 150, kcal: isGrowth ? 400 : 300, proteinG: 10, carbG: 76, fatG: 4, notes: "Add ghee for growth goal" },
     { name: "Dal (1 cup, protein-rich)", nameHi: "दाल (1 कप, प्रोटीन युक्त)", portionG: 200, kcal: 200, proteinG: 16, carbG: 35, fatG: 1, notes: "Urad/Chana for max protein" },
-    ...(hasEgg && isPerf ? [{ name: "Egg curry / bhurji (2 eggs)", nameHi: "अंडे की करी / भुर्जी (2 अंडे)", portionG: 120, kcal: 200, proteinG: 14, carbG: 5, fatG: 14, notes: "Night protein for recovery" }] : []),
-    ...(!hasEgg && isPerf ? [{ name: "Paneer sabzi (75g)", nameHi: "पनीर सब्जी (75g)", portionG: 75, kcal: 217, proteinG: 11, carbG: 4, fatG: 18, notes: "Veg protein for recovery" }] : []),
+    // Non-veg performance/growth: chicken or mutton curry
+    ...(isNonVeg && (isPerf || isGrowth) ? [{ name: "Chicken curry / Egg bhurji (100g)", nameHi: "चिकन करी / अंडे भुर्जी (100g)", portionG: 100, kcal: 210, proteinG: 22, carbG: 4, fatG: 12, notes: "Non-veg night protein — superior recovery protein for muscle repair" }] : []),
+    // Egg-veg performance: egg curry only
+    ...(isEggVeg && isPerf ? [{ name: "Egg curry / bhurji (2 eggs)", nameHi: "अंडे की करी / भुर्जी (2 अंडे)", portionG: 120, kcal: 200, proteinG: 14, carbG: 5, fatG: 14, notes: "Night protein for recovery — egg-veg option" }] : []),
+    // Veg performance: paneer
+    ...(isVeg && isPerf ? [{ name: "Paneer sabzi (75g)", nameHi: "पनीर सब्जी (75g)", portionG: 75, kcal: 217, proteinG: 11, carbG: 4, fatG: 18, notes: "Veg protein for recovery" }] : []),
     { name: "Steamed vegetables", nameHi: "उबली सब्जियां", portionG: 150, kcal: 70, proteinG: 3, carbG: 13, fatG: 1, notes: "Eat before 8pm" },
   ];
 
@@ -794,7 +807,11 @@ function getRelevantRegionalFoods(ctx: NutritionContext): RegionalFood[] {
   return REGIONAL_FOODS_DB.filter(food => {
     const districtMatch = food.districts.includes("All") || food.districts.includes(ctx.district);
     const seasonMatch = food.season.includes(season);
-    const dietMatch = ctx.dietPref === "veg" ? food.vegSafe : true;
+    // Diet filter:
+    //   veg → only vegSafe foods
+    //   egg-veg → vegSafe foods (eggs are separate items, not in regional food atlas)
+    //   nonveg → all foods
+    const dietMatch = (ctx.dietPref === "veg" || ctx.dietPref === "egg-veg") ? food.vegSafe : true;
     return districtMatch && (seasonMatch || food.season.length === 3) && dietMatch;
   });
 }
@@ -812,23 +829,33 @@ function getRelevantRemedies(ctx: NutritionContext): HomeRemedy[] {
   return HOME_REMEDIES_DB.filter(remedy => {
     const ageOk = ctx.age >= remedy.ageMin;
     const districtOk = remedy.districts.includes("All") || remedy.districts.includes(ctx.district);
-    // Prioritise: iron remedies for female athletes, energy/recovery for all
     return ageOk && districtOk;
   });
 }
 
-// ─── Weekly tips ────────────────────────────────────────────────────────
+// ─── Weekly tips ─────────────────────────────────────────────────────────
+// CRITICAL FIX: tip 2 was always "boiled eggs-equivalent" regardless of diet pref.
+// Veg athletes should NOT see egg equivalents. Provide diet-appropriate protein reference.
 
 function buildWeeklyTips(ctx: NutritionContext): string[] {
+  const proteinTarget = Math.round(ctx.weight * 1.5);
+  
+  // Diet-appropriate protein reference — no egg equivalents for vegetarians
+  const proteinTip = ctx.dietPref === "veg"
+    ? `Your daily protein target: ${proteinTarget}g. That's ~${Math.ceil(proteinTarget / 8)} servings of dal/paneer — spread across all meals.`
+    : ctx.dietPref === "egg-veg"
+    ? `Your daily protein target: ${proteinTarget}g. That's ${Math.ceil(proteinTarget / 13)} boiled eggs-equivalent. Combine eggs + dal + milk across meals.`
+    : `Your daily protein target: ${proteinTarget}g. That's roughly ${Math.ceil(proteinTarget / 22)} palm-sized chicken servings. Spread protein across all 5 meals.`;
+
   const tips = [
     "Eat within 30 minutes of training completing — this is your anabolic window.",
-    `Your daily protein target: ${Math.round(ctx.weight * 1.5)}g. That's ${Math.ceil(Math.round(ctx.weight * 1.5) / 13)} boiled eggs-equivalent.`,
+    proteinTip,
     "Bihar tip: Replace packaged biscuits with sattu chikki or til-gud ladoo for far better nutrition.",
     "Never skip breakfast on training days — 30% of your daily energy should come from breakfast.",
   ];
 
   if (ctx.gender === "F") {
-    tips.push("Female athletes: Add 1 piece of jaggery + 1 tsp sesame seeds daily to prevent iron deficiency.");
+    tips.push("Female athletes: Add 1 piece of jaggery + 1 tsp sesame seeds daily to prevent iron deficiency anaemia.");
   }
 
   if (ctx.bmi < 18.5) {
@@ -842,17 +869,29 @@ function buildWeeklyTips(ctx: NutritionContext): string[] {
   return tips.slice(0, 5);
 }
 
-// ─── Pre/post workout guidance ──────────────────────────────────────────
+// ─── Pre/post workout guidance ────────────────────────────────────────────
+// CRITICAL FIX: was using `hasEgg = dietPref !== "veg"` — treating nonveg same as egg-veg.
+// Now provides 3-way differentiated post-workout guidance.
 
 function buildWorkoutGuidance(ctx: NutritionContext) {
-  const hasEgg = ctx.dietPref !== "veg";
+  const isVeg    = ctx.dietPref === "veg";
+  const isEggVeg = ctx.dietPref === "egg-veg";
+  const isNonVeg = ctx.dietPref === "nonveg";
+
   const preworkout = ctx.goal === "performance"
     ? `30–45 min before: Sattu drink (2 tbsp sattu + water + lemon + jaggery). This gives 22g slow-release carbs + 5g protein — Bihar's original sports nutrition.`
     : `1–1.5 hrs before: Litti-Chokha (half portion) or poha with peanuts. Avoid heavy meals within 1 hour.`;
 
-  const postworkout = hasEgg
-    ? `Within 30 min: 2 boiled eggs + 1 banana + 250ml milk. Target: 15–20g protein + 30g carbs within the recovery window.`
-    : `Within 30 min: Banana-milk shake (2 bananas + 250ml milk + honey). Or: Paneer 50g + 1 cup lassi. Target: 15g protein + 30g carbs.`;
+  // Three distinct post-workout recommendations based on diet preference
+  let postworkout: string;
+  if (isNonVeg) {
+    postworkout = `Within 30 min: 2 boiled eggs OR 100g grilled chicken + 1 banana + 250ml milk. Target: 20–25g complete animal protein + 30g carbs. Chicken/eggs provide the best leucine trigger for muscle synthesis.`;
+  } else if (isEggVeg) {
+    postworkout = `Within 30 min: 2 boiled eggs + 1 banana + 250ml milk. Target: 15–20g protein + 30g carbs within the recovery window. Eggs provide complete amino acid profile not available in plant protein alone.`;
+  } else {
+    // Pure veg
+    postworkout = `Within 30 min: Banana-milk shake (2 bananas + 250ml milk + honey). Or: Paneer 50g + 1 cup lassi. Target: 15g protein + 30g carbs. Veg athletes should combine dal+rice+curd at dinner to complete amino acid profile.`;
+  }
 
   return { preworkout, postworkout };
 }
