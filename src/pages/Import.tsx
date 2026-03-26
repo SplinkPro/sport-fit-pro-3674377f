@@ -173,7 +173,13 @@ export default function ImportPage() {
     const file = e.target.files?.[0];
     if (file) processFile(file);
   };
-  const handleZoneClick = () => { if (!fileUploaded) fileInputRef.current?.click(); };
+  const handleZoneClick = () => {
+    // Always allow clicking the zone to trigger file picker (reset value first so same file can be re-selected)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  };
   const handleDownloadTemplate = () => {
     const csv = generateCSVTemplate();
     const blob = new Blob([csv], { type: "text/csv" });
