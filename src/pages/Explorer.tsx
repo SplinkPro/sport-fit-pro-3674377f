@@ -21,7 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   Users, Star, AlertTriangle, CheckCircle2, Search, SlidersHorizontal,
   ChevronDown, ChevronUp, X, ArrowUpDown, ChevronRight, Upload,
-  BarChart3, GitCompare, ChevronLeft, Eye, EyeOff, Database, FolderOpen, Plus,
+  BarChart3, GitCompare, ChevronLeft, Eye, EyeOff, Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
