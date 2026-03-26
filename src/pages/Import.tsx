@@ -181,7 +181,7 @@ export default function ImportPage() {
   const handleConfirmImport = () => {
     if (!parseResult || !uploadedFile) return;
     const incoming = enrichAthletes(parseResult.athletes);
-    const version = `v${importHistory.length + 1}`;
+    const version = `v1`;
     const todayStr = new Date().toISOString().slice(0, 10);
 
     if (importMode === "batch_update") {
@@ -197,13 +197,6 @@ export default function ImportPage() {
       );
     }
 
-    const entry: HistoryEntry = {
-      id: `h${Date.now()}`, date: todayStr, file: uploadedFile.name,
-      rows: totalRows, valid: validCount, warnings: warningCount, errors: errorCount,
-      status: errorCount > 0 ? "partial" : "success", version,
-    };
-    const next = [entry, ...importHistory];
-    setImportHistory(next); saveHistory(next);
     setStep(5);
   };
 
