@@ -10,10 +10,11 @@ import { EnrichedAthlete } from "@/engine/analyticsEngine";
 import { generateYogaPrescription, YogaPose, YogaPhase, YogaDomain, normaliseSport } from "./YogaEngine";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import {
-  Wind, Brain, Flame, Leaf, Clock, ExternalLink,
+  Wind, Brain, Flame, Leaf, Clock, Copy, Check,
   ChevronDown, ChevronUp, Shield, Calendar, Zap,
-  BookOpen, FlaskConical,
+  BookOpen, FlaskConical, Search,
 } from "lucide-react";
 
 // ─── DOMAIN CONFIG ──────────────────────────────────────────────────────────
