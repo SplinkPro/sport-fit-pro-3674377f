@@ -45,7 +45,7 @@ const SPORT_WEIGHTS: Record<string, Record<string, number>> = {
   "Badminton":      { speed: 30, power: 25, endurance: 15, agility: 25, bodyComposition:  5 },
   "Boxing":         { speed: 30, power: 30, endurance: 20, agility: 15, bodyComposition:  5 },
   "Hockey":         { speed: 30, power: 20, endurance: 30, agility: 15, bodyComposition:  5 },
-  "Archery":        { speed:  5, power: 25, endurance: 25, agility: 10, bodyComposition: 35 },
+  "Archery":        { speed:  5, power: 30, endurance: 35, agility: 15, bodyComposition: 15 },
   "Kho Kho":        { speed: 35, power: 20, endurance: 20, agility: 20, bodyComposition:  5 },
   "Table Tennis":   { speed: 30, power: 20, endurance: 10, agility: 35, bodyComposition:  5 },
   "Weightlifting":  { speed:  5, power: 55, endurance: 10, agility:  5, bodyComposition: 25 },
