@@ -401,7 +401,7 @@ export default function MethodologyPage() {
                   </div>
                 </div>
                 <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-200 space-y-1.5">
-                  <p><strong>⚠ Small-cohort limitation (Z-score outlier detection):</strong> With n ≤ 41 athletes, a within-cohort Z-score ≥ 3 SD is statistically unlikely to trigger (affects only ~0.3% of a normal distribution). For small cohorts, hard plausibility gates (sprint &gt;11s, broad jump &gt;260cm) are more reliable outlier detection than Z-score. Both methods run in parallel.</p>
+                  <p><strong>⚠ Small-cohort limitation (Z-score outlier detection):</strong> With small cohorts (n &lt; 100), a within-cohort Z-score ≥ 3 SD is statistically unlikely to trigger (affects only ~0.3% of a normal distribution). For small cohorts, hard plausibility gates (sprint &gt;14s, broad jump &gt;300cm) are more reliable outlier detection than Z-score. Both methods run in parallel.</p>
                   <p><strong>Two-percentile system:</strong> Local percentile ranks within the uploaded cohort. National percentile compares against SAI/NSTC all-India reference population (n = thousands). Local rank 90th may equal National rank 55th — both are shown on every profile.</p>
                 </div>
               </CardContent>

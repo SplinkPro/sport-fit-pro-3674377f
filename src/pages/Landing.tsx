@@ -86,7 +86,7 @@ export default function Landing() {
     {
       icon: <ShieldCheck className="w-6 h-6" />,
       title: "Zero Data Access — Guaranteed",
-      desc: "Your athlete records never leave your server. We process locally. No PII, no raw metrics, no IDs ever transmitted to SPLINK.",
+      desc: "Your athlete records stay in your database. DPDP Act 2023 compliant. No PII, no raw metrics, no IDs ever transmitted to SPLINK.",
     },
     {
       icon: <Zap className="w-6 h-6" />,
@@ -100,8 +100,8 @@ export default function Landing() {
     },
     {
       icon: <Lock className="w-6 h-6" />,
-      title: "Air-Gapped Deployment",
-      desc: "Runs fully offline or inside your intranet. Docker-native, zero cloud dependency. Your data stays in your jurisdiction.",
+      title: "On-Premise Deployment Ready",
+      desc: "Designed for government infrastructure. Deploy on your intranet with full data sovereignty. DPDP Act 2023 compliant.",
     },
     {
       icon: <Eye className="w-6 h-6" />,
@@ -123,7 +123,7 @@ export default function Landing() {
   ];
 
   const stats = [
-    { value: 500, suffix: "+", label: "Athletes Per Import Batch" },
+    { value: 0, suffix: "", label: "Record Limit — Unlimited Import", display: "∞" },
     { value: 15, suffix: "", label: "SAI Pathway Sports Covered" },
     { value: 9, suffix: "", label: "SAI Mandated Tests Tracked" },
     { value: 0, suffix: "%", label: "Data Shared With Vendor" },
@@ -267,7 +267,7 @@ export default function Landing() {
             <Reveal key={s.label} delay={i * 80}>
               <div className="space-y-1">
                 <div className="text-4xl font-black" style={{ color: "#1E3A5F" }}>
-                  <Counter to={s.value} suffix={s.suffix} />
+                  {"display" in s && s.display ? s.display : <Counter to={s.value} suffix={s.suffix} />}
                 </div>
                 <div className="text-sm text-slate-500 font-medium">{s.label}</div>
               </div>
@@ -392,7 +392,7 @@ export default function Landing() {
             {/* Connector line */}
             <div className="hidden md:block absolute left-[calc(50%-1px)] top-8 bottom-8 w-0.5 bg-slate-100" />
             {[
-              { step: "01", title: "Import your data", desc: "Upload a CSV or Excel file. Map columns once. Pratibha validates and parses all records instantly.", side: "left" },
+              { step: "01", title: "Import your data", desc: "Upload a CSV or Excel file — no record limit. Columns auto-mapped, 800m times auto-corrected, plausibility checked per metric.", side: "left" },
               { step: "02", title: "Engine computes scores", desc: "Biometric, neuro-motor, and sport models compute composite scores for every athlete across all sports.", side: "right" },
               { step: "03", title: "Query in plain English", desc: "Ask 'Top sprinters aged 14–16 with high potential' and get a ranked, exportable result table.", side: "left" },
               { step: "04", title: "Export reports", desc: "Generate PDF talent reports per athlete or bulk CSV exports. Everything stays on your machine.", side: "right" },

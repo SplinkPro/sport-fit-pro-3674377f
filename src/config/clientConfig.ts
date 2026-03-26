@@ -39,7 +39,7 @@ export const CLIENT_CONFIG: ClientConfig = {
   clientShortName: "SPLINK",
   clientTagline: "Athlete Intelligence Platform",
   demoMode: true, // Set to false in production deployments
-  demoAthleteCount: 82,
+  demoAthleteCount: 82, // Matches seed generator count
   showLicensePage: true,
   showMethodologyPage: true,
   footerNote: "Powered by SPLINK Analytics Engine v1.0",
