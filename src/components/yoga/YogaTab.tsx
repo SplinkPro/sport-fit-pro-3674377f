@@ -163,7 +163,7 @@ export default function YogaTab({ athlete }: { athlete: EnrichedAthlete }) {
     gender: athlete.gender as "M" | "F",
     bmi: athlete.bmi ?? 20,
     compositeScore: athlete.compositeScore,
-    topSport: athlete.topSports?.[0]?.sport ?? athlete.sport ?? "athletics",
+    topSport: athlete.topSport ?? "athletics",
     dimensionScores: athlete.dimensionScores,
   }), [athlete]);
 
