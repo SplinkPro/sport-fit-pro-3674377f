@@ -22,12 +22,12 @@ import { cn } from "@/lib/utils";
 type ImportStep = 1 | 2 | 3 | 3.5 | 4 | 5;
 
 const STEPS = [
-  { id: 1,   label: "Upload" },
-  { id: 2,   label: "Map Fields" },
-  { id: 3,   label: "Validate" },
-  { id: 3.5, label: "Data Quality" },
-  { id: 4,   label: "Review" },
-  { id: 5,   label: "Done" },
+  { id: 1,   label: "Upload",       num: 1 },
+  { id: 2,   label: "Map Fields",   num: 2 },
+  { id: 3,   label: "Validate",     num: 3 },
+  { id: 3.5, label: "Data Quality", num: 4 },
+  { id: 4,   label: "Review",       num: 5 },
+  { id: 5,   label: "Done",         num: 6 },
 ];
 
 const FIELD_MAP = [
@@ -173,7 +173,13 @@ export default function ImportPage() {
     const file = e.target.files?.[0];
     if (file) processFile(file);
   };
-  const handleZoneClick = () => { if (!fileUploaded) fileInputRef.current?.click(); };
+  const handleZoneClick = () => {
+    // Always allow clicking the zone to trigger file picker (reset value first so same file can be re-selected)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  };
   const handleDownloadTemplate = () => {
     const csv = generateCSVTemplate();
     const blob = new Blob([csv], { type: "text/csv" });
@@ -260,7 +266,7 @@ export default function ImportPage() {
                 s.id < step  ? "bg-primary text-primary-foreground border-primary" :
                 "border-muted-foreground text-muted-foreground"
               )}>
-                {s.id < step ? <CheckCircle className="w-3.5 h-3.5" /> : Math.ceil(s.id)}
+                {s.id < step ? <CheckCircle className="w-3.5 h-3.5" /> : s.num}
               </span>
               {s.label}
             </button>
@@ -407,10 +413,14 @@ export default function ImportPage() {
                         )}
                       </div>
                     )}
+                    <p className="text-xs text-muted-foreground">Click anywhere in this zone to upload a different file</p>
                     <Button variant="outline" size="sm" onClick={(e) => {
                       e.stopPropagation();
                       setUploadedFile(null); setParseResult(null); setRawRows([]);
-                      if (fileInputRef.current) fileInputRef.current.value = "";
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = "";
+                        fileInputRef.current.click();
+                      }
                     }}>
                       <RotateCcw className="w-3 h-3 mr-1.5" /> Change file
                     </Button>
@@ -444,7 +454,15 @@ export default function ImportPage() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-3">
+            {!metaComplete && fileUploaded && (
+              <p className="text-xs text-amber-600 flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5" /> Select age group &amp; gender above to continue
+              </p>
+            )}
+            {!fileUploaded && metaComplete && (
+              <p className="text-xs text-muted-foreground">Upload a file above to continue</p>
+            )}
             <Button
               disabled={!fileUploaded || !parseResult || parseResult.athletes.length === 0 || !metaComplete}
               onClick={handleContinueFromStep1}
@@ -911,6 +929,11 @@ export default function ImportPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
+            {importHistory.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No imports yet. Upload a file above to get started.
+              </p>
+            )}
             {importHistory.map((entry, i) => (
               <div
                 key={entry.id}
