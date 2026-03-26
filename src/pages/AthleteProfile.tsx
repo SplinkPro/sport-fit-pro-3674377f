@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NutritionTab from "@/components/nutrition/NutritionTab";
+import YogaTab from "@/components/yoga/YogaTab";
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 export default function AthleteProfilePage() {
