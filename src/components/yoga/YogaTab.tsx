@@ -81,13 +81,13 @@ function PoseCard({ pose }: { pose: YogaPose }) {
           {/* Wikipedia image placeholder + link */}
           <div className="flex gap-3">
             <a
-              href={`https://www.google.com/search?q=${encodeURIComponent(pose.name + ' ' + pose.sanskrit + ' yoga asana how to perform')}`}
+              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(pose.name + ' ' + pose.sanskrit + ' yoga how to perform')}`}
               target="_blank"
               rel="noopener noreferrer"
               className={cn("shrink-0 w-24 h-24 rounded-lg flex flex-col items-center justify-center gap-1 text-center border text-xs font-semibold transition-colors cursor-pointer", domain.bg, domain.border, domain.color, "hover:opacity-80")}
             >
               <ExternalLink className="w-5 h-5" />
-              <span>Search<br/>on Google</span>
+              <span>Watch on<br/>YouTube</span>
             </a>
             <div className="flex-1 space-y-2">
               <div>
