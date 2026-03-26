@@ -27,14 +27,12 @@ const NotFound           = lazy(() => import("./pages/NotFound"));
 const ProposalPage       = lazy(() => import("./pages/Proposal"));
 const AdminPage          = lazy(() => import("./pages/Admin"));
 
-function PageLoader() {
-  return (
-    <div className="p-6 space-y-4 w-full">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="h-24 bg-muted rounded-lg animate-pulse" />
-      ))}
-    </div>
-  );
+// ─── Root redirect — send logged-in users straight to Explorer ──────────
+function RootRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return <PageLoader />;
+  if (user) return <Navigate to="/explorer" replace />;
+  return <LandingPage />;
 }
 
 // ─── Auth guard — redirects to /login if not signed in ──────────────────
