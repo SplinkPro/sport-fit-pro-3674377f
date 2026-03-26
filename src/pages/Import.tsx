@@ -822,7 +822,7 @@ export default function ImportPage() {
               <div className="bg-muted/30 rounded-lg p-3 text-sm flex items-center gap-2">
                 <FileText className="w-4 h-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Dataset label: </span>
-                <span className="font-mono font-semibold">{uploadedFile?.name} · v{importHistory.length + 1}</span>
+                <span className="font-mono font-semibold">{uploadedFile?.name} · v1</span>
               </div>
             </CardContent>
           </Card>
