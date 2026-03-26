@@ -107,22 +107,40 @@ function PoseCard({ pose }: { pose: YogaPose }) {
       {open && (
         <div className="px-4 pb-4 space-y-3 border-t border-slate-100 pt-3">
           <div className="flex gap-3">
-            {/* Copy search query box */}
-            <div className={cn("shrink-0 w-28 rounded-lg flex flex-col items-center justify-center gap-2 text-center border p-3", domain.bg, domain.border)}>
+            {/* Copy + search links box */}
+            <div className={cn("shrink-0 w-32 rounded-lg flex flex-col items-center justify-center gap-2 text-center border p-3", domain.bg, domain.border)}>
               <Search className={cn("w-5 h-5", domain.color)} />
-              <p className={cn("text-[10px] font-semibold leading-tight", domain.color)}>Search to learn</p>
+              <p className={cn("text-[10px] font-semibold leading-tight", domain.color)}>Find tutorials</p>
               <button
                 onClick={handleCopySearch}
                 className={cn(
-                  "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all duration-200",
+                  "w-full flex items-center justify-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border transition-all duration-200",
                   copied
                     ? "bg-green-100 text-green-700 border-green-300"
-                    : cn(domain.border, domain.color, "hover:opacity-80 border")
+                    : cn(domain.border, domain.color, "hover:opacity-80")
                 )}
               >
                 {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                 {copied ? "Copied!" : "Copy query"}
               </button>
+              <a
+                href={`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="w-full flex items-center justify-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+              >
+                🔍 Google
+              </a>
+              <a
+                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="w-full flex items-center justify-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+              >
+                ▶ YouTube
+              </a>
             </div>
 
             <div className="flex-1 space-y-2">
@@ -130,7 +148,6 @@ function PoseCard({ pose }: { pose: YogaPose }) {
                 <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">How to perform</span>
                 <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{pose.instruction}</p>
               </div>
-              {/* Search hint */}
               <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">
                 <Search className="w-3 h-3 text-slate-400 shrink-0" />
                 <p className="text-[10px] text-slate-500 font-mono truncate">{searchQuery}</p>
