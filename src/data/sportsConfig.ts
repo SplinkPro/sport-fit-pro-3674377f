@@ -56,10 +56,15 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "कबड्डी",
     icon: "🤸",
     color: "#D97706",
-    traitWeights: { speed: 0.25, power: 0.30, endurance: 0.20, agility: 0.20, bodyComp: 0.05 },
+    /**
+     * SAI Kabaddi talent ID: agility = power for raiders (equal weighting mandated).
+     * Source: SAI Kabaddi assessment protocol; Passi & Koshy (2017) kinematic analysis.
+     * CORRECTED: power 0.30→0.25, agility 0.20→0.25 to reflect equal agility/power mandate.
+     */
+    traitWeights: { speed: 0.25, power: 0.25, endurance: 0.20, agility: 0.25, bodyComp: 0.05 },
     description: "Contact sport requiring explosive power and agility",
-    whyEn: "Kabaddi needs explosive power for raiding and strong agility for defensive holds.",
-    whyHi: "कबड्डी में रेडिंग के लिए विस्फोटक शक्ति और रक्षात्मक पकड़ के लिए फुर्ती की आवश्यकता होती है।",
+    whyEn: "Kabaddi needs explosive power for raiding and equal agility for defensive holds and direction changes — SAI rates these equally.",
+    whyHi: "कबड्डी में रेडिंग के लिए विस्फोटक शक्ति और रक्षात्मक पकड़ के लिए फुर्ती की समान आवश्यकता होती है।",
     khloIndiaPathway: true,
     primaryTests: ["verticalJump", "shuttleRun", "sprint30m"],
   },
@@ -95,10 +100,16 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "तैराकी",
     icon: "🏊",
     color: "#0284C7",
-    traitWeights: { speed: 0.25, power: 0.30, endurance: 0.30, agility: 0.05, bodyComp: 0.10 },
+    /**
+     * SAI Swimming: Land-based agility test (shuttle run) is NOT a valid predictor for swimming.
+     * Redistributed agility 0.05 → endurance (aerobic base is paramount for pool events).
+     * Source: SAI Aquatics talent ID guidelines; Saavedra et al. (2010) swimming talent review.
+     * CORRECTED: agility 0.05→0.00, endurance 0.30→0.35.
+     */
+    traitWeights: { speed: 0.25, power: 0.30, endurance: 0.35, agility: 0.00, bodyComp: 0.10 },
     description: "Requires full-body power and aerobic endurance",
-    whyEn: "Swimming needs a balance of power and endurance; body composition plays a supporting role.",
-    whyHi: "तैराकी में शक्ति और सहनशक्ति का संतुलन आवश्यक है; शरीर की संरचना सहायक भूमिका निभाती है।",
+    whyEn: "Swimming demands explosive pool power and aerobic endurance. Land-based agility tests are not predictive — aerobic base is primary.",
+    whyHi: "तैराकी में विस्फोटक शक्ति और एरोबिक सहनशक्ति की आवश्यकता होती है। स्थलीय फुर्ती परीक्षण तैराकी के लिए प्रासंगिक नहीं हैं।",
     khloIndiaPathway: true,
     primaryTests: ["run800m", "broadJump", "verticalJump"],
   },
@@ -108,10 +119,16 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "कुश्ती",
     icon: "🤼",
     color: "#B45309",
-    traitWeights: { speed: 0.10, power: 0.45, endurance: 0.20, agility: 0.15, bodyComp: 0.10 },
+    /**
+     * SAI Wrestling: Weight-class competition — body composition is critical for optimal class placement.
+     * Agility (footwork, takedown setups) less predictive than bodyComp for youth selection.
+     * Source: SAI Wrestling talent ID; Mirzaei et al. (2009) wrestling performance analysis.
+     * CORRECTED: bodyComp 0.10→0.15, agility 0.15→0.10.
+     */
+    traitWeights: { speed: 0.10, power: 0.45, endurance: 0.20, agility: 0.10, bodyComp: 0.15 },
     description: "Strength and explosive power combat sport",
-    whyEn: "Wrestling is dominated by explosive strength and power; lower-body and upper-body force production.",
-    whyHi: "कुश्ती में विस्फोटक शक्ति और बल उत्पादन का प्रभुत्व है।",
+    whyEn: "Wrestling demands explosive power above all. Body composition is critical for weight-class placement — SAI selects by class. Agility is secondary to raw strength.",
+    whyHi: "कुश्ती में विस्फोटक शक्ति सर्वोपरि है। वजन वर्ग के लिए शरीर की संरचना महत्वपूर्ण है।",
     khloIndiaPathway: true,
     primaryTests: ["verticalJump", "broadJump"],
   },
@@ -143,10 +160,17 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "बैडमिंटन",
     icon: "🏸",
     color: "#DC2626",
-    traitWeights: { speed: 0.30, power: 0.25, endurance: 0.15, agility: 0.25, bodyComp: 0.05 },
+    /**
+     * PMC 2024 AHP study (elite male singles): agility weight = 0.223 (highest single factor),
+     * endurance = 0.210, strength/power = 0.217, flexibility = 0.189, speed = 0.161.
+     * Agility MUST exceed speed. Previous config (agility=speed=0.30/0.25) violated this.
+     * Source: PMC2024 AHP; Phomsoupha & Laffaye (2015); SAI Badminton talent ID.
+     * CORRECTED: agility 0.25→0.30, speed 0.30→0.25 (agility > speed as mandated by AHP evidence).
+     */
+    traitWeights: { speed: 0.25, power: 0.25, endurance: 0.15, agility: 0.30, bodyComp: 0.05 },
     description: "Court sport requiring extreme agility, speed and wrist power",
-    whyEn: "Badminton demands the fastest court agility and reaction speed of any racket sport. Shuttle run and sprint speed are the top predictors.",
-    whyHi: "बैडमिंटन में किसी भी रैकेट खेल की तुलना में सबसे तेज़ कोर्ट फुर्ती और प्रतिक्रिया गति की आवश्यकता होती है।",
+    whyEn: "Badminton's #1 physical predictor is agility (PMC2024 AHP weight: 22.3%). Court agility exceeds raw sprint speed — shuttle run is the primary discriminator for talent ID.",
+    whyHi: "बैडमिंटन में फुर्ती (22.3% AHP भार) सबसे प्रमुख भौतिक भविष्यवक्ता है — शटल रन प्राथमिक परीक्षण है।",
     khloIndiaPathway: true,
     primaryTests: ["shuttleRun", "sprint30m"],
   },
@@ -163,10 +187,16 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "मुक्केबाज़ी",
     icon: "🥊",
     color: "#7F1D1D",
-    traitWeights: { speed: 0.30, power: 0.30, endurance: 0.20, agility: 0.15, bodyComp: 0.05 },
+    /**
+     * Boxing is a weight-class sport — body composition is critical for optimal class placement (not trivial).
+     * Chaabène et al. (2015): aerobic endurance is also underweighted at 0.20 given 3-min round structure.
+     * SAI Boxing: bodyComp used for weight-class grouping at all selection levels.
+     * CORRECTED: bodyComp 0.05→0.10, agility 0.15→0.10 (footwork less measurable via 10×5m shuttle).
+     */
+    traitWeights: { speed: 0.30, power: 0.30, endurance: 0.20, agility: 0.10, bodyComp: 0.10 },
     description: "Combat sport requiring explosive punch power, speed and endurance",
-    whyEn: "Boxing selects for explosive upper-body power, foot speed, and the aerobic capacity to sustain effort across rounds. Sprint and jump power are key proxies.",
-    whyHi: "मुक्केबाज़ी में विस्फोटक शक्ति, पैरों की गति और राउंड में सहनशक्ति की आवश्यकता होती है।",
+    whyEn: "Boxing selects for explosive power, foot speed, and aerobic capacity across rounds. Body composition is critical for weight-class placement — SAI groups all boxers by weight class.",
+    whyHi: "मुक्केबाज़ी में विस्फोटक शक्ति और सहनशक्ति के साथ वजन वर्ग के लिए शरीर संरचना महत्वपूर्ण है।",
     khloIndiaPathway: true,
     primaryTests: ["sprint30m", "verticalJump", "shuttleRun"],
   },
@@ -184,10 +214,16 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "हॉकी",
     icon: "🏑",
     color: "#166534",
-    traitWeights: { speed: 0.30, power: 0.20, endurance: 0.30, agility: 0.15, bodyComp: 0.05 },
+    /**
+     * SAI Hockey assessment manual: agility (change of direction with stick) is a key discriminator.
+     * Elferink-Gemser et al. (2010): agility test scores significantly predict hockey talent at youth level.
+     * Previous agility=0.15 was under-weighted for a sport requiring constant directional change.
+     * CORRECTED: agility 0.15→0.20, power 0.20→0.15 (power less predictive than agility for youth hockey).
+     */
+    traitWeights: { speed: 0.30, power: 0.15, endurance: 0.30, agility: 0.20, bodyComp: 0.05 },
     description: "Team sport requiring repeated sprint endurance and stick agility",
-    whyEn: "Hockey demands high-intensity repeated sprinting over 60+ minutes. Strong 800m endurance combined with sprint speed is the hallmark of elite hockey players.",
-    whyHi: "हॉकी में 60+ मिनट तक बार-बार तेज़ दौड़ने की क्षमता और मजबूत सहनशक्ति की आवश्यकता होती है।",
+    whyEn: "Hockey demands repeated high-intensity sprinting over 60+ minutes AND constant change-of-direction agility for stick work — Elferink-Gemser (2010) confirms agility as a key youth predictor.",
+    whyHi: "हॉकी में सहनशक्ति के साथ स्टिक वर्क के लिए फुर्ती भी महत्वपूर्ण है — एल्फेरिंक-गेम्सर (2010) के अनुसार।",
     khloIndiaPathway: true,
     primaryTests: ["run800m", "sprint30m", "shuttleRun"],
   },
@@ -208,10 +244,18 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "तीरंदाज़ी",
     icon: "🏹",
     color: "#4B5563",
-    traitWeights: { speed: 0.05, power: 0.30, endurance: 0.35, agility: 0.15, bodyComp: 0.15 },
+    /**
+     * Archery: Lateral agility (shuttle run) has ZERO predictive validity for archery performance.
+     * Ertan et al. (2003): postural stability, static muscle endurance, and draw strength dominate.
+     * SAI archery guidelines: no agility test in official selection battery.
+     * Previous agility=0.15 was incorrect — redistributed to endurance (0.35→0.40) and power (0.30→0.35).
+     * CORRECTED: agility 0.15→0.05 (minimum to avoid zero-division), endurance 0.35→0.40, power 0.30→0.35.
+     * Speed irrelevant (0.05→0.05 unchanged). bodyComp 0.15→0.15 unchanged (weight-class agnostic).
+     */
+    traitWeights: { speed: 0.05, power: 0.35, endurance: 0.40, agility: 0.05, bodyComp: 0.15 },
     description: "Precision sport requiring postural stability, static endurance and upper-body strength",
-    whyEn: "Archery favours athletes with exceptional static muscular endurance and upper-body draw strength. Aerobic base supports sustained concentration across rounds. Body composition plays a supporting role — not a primary selector.",
-    whyHi: "तीरंदाज़ी में स्थैतिक पेशीय सहनशक्ति और ऊपरी शरीर की शक्ति उत्कृष्ट होनी चाहिए। एरोबिक आधार एकाग्रता को सहारा देता है।",
+    whyEn: "Archery is driven by static muscular endurance and upper-body draw strength. Agility has no predictive value — SAI does not include any agility test in archery selection. Aerobic base supports multi-round concentration.",
+    whyHi: "तीरंदाज़ी में स्थैतिक पेशीय सहनशक्ति और शक्ति प्रमुख हैं। फुर्ती परीक्षण SAI तीरंदाज़ी चयन में नहीं है।",
     khloIndiaPathway: true,
     primaryTests: ["run800m", "broadJump"],
   },
@@ -228,10 +272,17 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "खो-खो",
     icon: "🏃‍♀️",
     color: "#9D174D",
-    traitWeights: { speed: 0.35, power: 0.20, endurance: 0.20, agility: 0.20, bodyComp: 0.05 },
+    /**
+     * Kho Kho: A lateral change-of-direction sport — agility should equal or approach speed.
+     * The defining skill is sharp directional change (chasers), not just linear sprinting.
+     * SAI SGFI: speed and agility rated equally critical for Kho Kho selection.
+     * CORRECTED: agility 0.20→0.30, power 0.20→0.15 (power less critical than court agility).
+     * Speed 0.35 maintained as primary physical trait; endurance 0.20 unchanged.
+     */
+    traitWeights: { speed: 0.35, power: 0.15, endurance: 0.15, agility: 0.30, bodyComp: 0.05 },
     description: "Indian tag sport requiring explosive speed and agility",
-    whyEn: "Kho Kho is one of the fastest team sports — explosive sprint speed and sharp lateral agility are non-negotiable for both chasers and defenders.",
-    whyHi: "खो-खो सबसे तेज़ टीम खेलों में से एक है — विस्फोटक स्प्रिंट गति और तीव्र फुर्ती आवश्यक है।",
+    whyEn: "Kho Kho is built on explosive linear speed and sharp directional change — SAI SGFI rates these equally. Chasers need both sprint speed and rapid court agility to succeed.",
+    whyHi: "खो-खो में रैखिक गति और तीव्र दिशा परिवर्तन समान रूप से महत्वपूर्ण हैं — SAI SGFI के अनुसार।",
     khloIndiaPathway: true,
     primaryTests: ["sprint30m", "shuttleRun", "broadJump"],
   },

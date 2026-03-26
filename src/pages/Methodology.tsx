@@ -33,20 +33,21 @@ function TrophyIcon({ className }: { className?: string }) {
 }
 
 // All 15 sports — synced from SPORTS_CONFIG (SAI Circular 07/2023)
+// CORRECTED per SAI audit: Kabaddi, Swimming, Wrestling, Badminton, Boxing, Hockey, Archery, Kho Kho
 const SPORT_WEIGHTS: Record<string, Record<string, number>> = {
   "Athletics":      { speed: 35, power: 25, endurance: 25, agility: 10, bodyComposition:  5 },
   "Football":       { speed: 30, power: 20, endurance: 30, agility: 15, bodyComposition:  5 },
-  "Kabaddi":        { speed: 25, power: 30, endurance: 20, agility: 20, bodyComposition:  5 },
+  "Kabaddi":        { speed: 25, power: 25, endurance: 20, agility: 25, bodyComposition:  5 }, // power=agility per SAI mandate
   "Volleyball":     { speed: 20, power: 35, endurance: 15, agility: 20, bodyComposition: 10 },
   "Cycling":        { speed: 15, power: 30, endurance: 45, agility:  5, bodyComposition:  5 },
-  "Wrestling":      { speed: 10, power: 45, endurance: 20, agility: 15, bodyComposition: 10 },
-  "Swimming":       { speed: 25, power: 30, endurance: 30, agility:  5, bodyComposition: 10 },
+  "Wrestling":      { speed: 10, power: 45, endurance: 20, agility: 10, bodyComposition: 15 }, // bc↑ for weight class, agility↓
+  "Swimming":       { speed: 25, power: 30, endurance: 35, agility:  0, bodyComposition: 10 }, // land agility not predictive
   "Basketball":     { speed: 25, power: 30, endurance: 20, agility: 20, bodyComposition:  5 },
-  "Badminton":      { speed: 30, power: 25, endurance: 15, agility: 25, bodyComposition:  5 },
-  "Boxing":         { speed: 30, power: 30, endurance: 20, agility: 15, bodyComposition:  5 },
-  "Hockey":         { speed: 30, power: 20, endurance: 30, agility: 15, bodyComposition:  5 },
-  "Archery":        { speed:  5, power: 30, endurance: 35, agility: 15, bodyComposition: 15 },
-  "Kho Kho":        { speed: 35, power: 20, endurance: 20, agility: 20, bodyComposition:  5 },
+  "Badminton":      { speed: 25, power: 25, endurance: 15, agility: 30, bodyComposition:  5 }, // agility > speed (PMC2024 AHP)
+  "Boxing":         { speed: 30, power: 30, endurance: 20, agility: 10, bodyComposition: 10 }, // bc↑ for weight class
+  "Hockey":         { speed: 30, power: 15, endurance: 30, agility: 20, bodyComposition:  5 }, // agility↑ per Elferink-Gemser
+  "Archery":        { speed:  5, power: 35, endurance: 40, agility:  5, bodyComposition: 15 }, // agility irrelevant per SAI
+  "Kho Kho":        { speed: 35, power: 15, endurance: 15, agility: 30, bodyComposition:  5 }, // agility≈speed per SAI SGFI
   "Table Tennis":   { speed: 30, power: 20, endurance: 10, agility: 35, bodyComposition:  5 },
   "Weightlifting":  { speed:  5, power: 55, endurance: 10, agility:  5, bodyComposition: 25 },
 };
