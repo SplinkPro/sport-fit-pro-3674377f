@@ -1,4 +1,4 @@
-// App.tsx — root router
+// App.tsx — root router with Supabase auth
 import React, { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation, Outlet } from "react-router-dom";
@@ -7,11 +7,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/layout/AppShell";
 import { AthleteProvider } from "@/hooks/AthleteProvider";
-import { isAuthenticated } from "@/components/layout/TopHeader";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { BadmintonRouter } from "@/modules/badminton/BadmintonRouter";
 
-// ─── Lazy-loaded pages (each becomes its own chunk) ────────────────────────
+// ─── Lazy-loaded pages ────────────────────────────────────────────────────
 const LandingPage        = lazy(() => import("./pages/Landing"));
+const LoginPage          = lazy(() => import("./pages/Login"));
+const AuthCallbackPage   = lazy(() => import("./pages/AuthCallback"));
 const ExplorerPage       = lazy(() => import("./pages/Explorer"));
 const AthleteProfilePage = lazy(() => import("./pages/AthleteProfile"));
 const AnalyticsPage      = lazy(() => import("./pages/Analytics"));
@@ -23,8 +25,8 @@ const LicensePage        = lazy(() => import("./pages/License"));
 const ReportsPage        = lazy(() => import("./pages/Reports"));
 const NotFound           = lazy(() => import("./pages/NotFound"));
 const ProposalPage       = lazy(() => import("./pages/Proposal"));
+const AdminPage          = lazy(() => import("./pages/Admin"));
 
-// ─── Lightweight page skeleton shown during chunk load ─────────────────────
 function PageLoader() {
   return (
     <div className="p-6 space-y-4 w-full">
@@ -35,22 +37,27 @@ function PageLoader() {
   );
 }
 
-// ─── Auth guard — redirects to / if session not set ────────────────────────
+// ─── Auth guard — redirects to /login if not signed in ──────────────────
 function RequireAuth() {
   const location = useLocation();
-  if (!isAuthenticated()) {
-    return <Navigate to="/" state={{ from: location }} replace />;
-  }
+  const { user, loading } = useAuth();
+  if (loading) return <PageLoader />;
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+  return <Outlet />;
+}
+
+// ─── Admin guard ─────────────────────────────────────────────────────────
+function RequireAdmin() {
+  const { user, isAdmin, loading } = useAuth();
+  if (loading) return <PageLoader />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!isAdmin) return <Navigate to="/explorer" replace />;
   return <Outlet />;
 }
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 min
-      gcTime: 10 * 60 * 1000,   // 10 min
-      retry: 1,
-    },
+    queries: { staleTime: 5 * 60 * 1000, gcTime: 10 * 60 * 1000, retry: 1 },
   },
 });
 
@@ -60,34 +67,42 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AthleteProvider>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              {/* Public landing page */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/proposal" element={<ProposalPage />} />
+        <AuthProvider>
+          <AthleteProvider>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Public */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                <Route path="/proposal" element={<ProposalPage />} />
 
-              {/* Protected routes — RequireAuth gate, then AppShell layout */}
-              <Route element={<RequireAuth />}>
-                <Route element={<AppShell />}>
-                  <Route path="/explorer"    element={<ExplorerPage />} />
-                  <Route path="/athlete/:id" element={<AthleteProfilePage />} />
-                  <Route path="/analytics"   element={<AnalyticsPage />} />
-                  <Route path="/import"      element={<ImportPage />} />
-                  <Route path="/ai-query"    element={<AIQueryPage />} />
-                  <Route path="/reports"     element={<ReportsPage />} />
-                  <Route path="/settings"    element={<SettingsPage />} />
-                  <Route path="/methodology" element={<MethodologyPage />} />
-                  <Route path="/license"     element={<LicensePage />} />
-                  {/* ─── Badminton Intelligence Module ─ */}
-                  <Route path="/sports/badminton/*" element={<BadmintonRouter />} />
+                {/* Admin panel */}
+                <Route element={<RequireAdmin />}>
+                  <Route path="/admin" element={<AdminPage />} />
                 </Route>
-              </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </AthleteProvider>
+                {/* Protected app routes */}
+                <Route element={<RequireAuth />}>
+                  <Route element={<AppShell />}>
+                    <Route path="/explorer"    element={<ExplorerPage />} />
+                    <Route path="/athlete/:id" element={<AthleteProfilePage />} />
+                    <Route path="/analytics"   element={<AnalyticsPage />} />
+                    <Route path="/import"      element={<ImportPage />} />
+                    <Route path="/ai-query"    element={<AIQueryPage />} />
+                    <Route path="/reports"     element={<ReportsPage />} />
+                    <Route path="/settings"    element={<SettingsPage />} />
+                    <Route path="/methodology" element={<MethodologyPage />} />
+                    <Route path="/license"     element={<LicensePage />} />
+                    <Route path="/sports/badminton/*" element={<BadmintonRouter />} />
+                  </Route>
+                </Route>
+
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </AthleteProvider>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
