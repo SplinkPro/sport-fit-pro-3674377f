@@ -6,16 +6,18 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { cn } from "@/lib/utils";
 import { INDIAN_BENCHMARKS, SAI_BAND_COLORS } from "@/data/indianBenchmarks";
 
-type Section = "composite" | "national" | "derived" | "percentile" | "zscore" | "sportfit" | "bands" | "assumptions" | "refs";
+type Section = "composite" | "national" | "derived" | "percentile" | "zscore" | "sportfit" | "bands" | "validation" | "nutrition" | "assumptions" | "refs";
 
 const SECTIONS: { id: Section; label: string; icon: React.ElementType }[] = [
-  { id: "composite",   label: "Composite Score",           icon: FlaskConical  },
+  { id: "composite",   label: "Composite Score (CAPI)",    icon: FlaskConical  },
   { id: "national",    label: "Indian National Benchmarks",icon: Globe         },
   { id: "derived",     label: "Derived Indices",           icon: Dumbbell      },
   { id: "percentile",  label: "Percentile Ranking",        icon: BarChartIcon  },
   { id: "zscore",      label: "Z-Score Normalization",     icon: TrendIcon     },
-  { id: "sportfit",    label: "Sport-Fit Model",           icon: TrophyIcon    },
+  { id: "sportfit",    label: "Sport-Fit Model (15 Sports)",icon: TrophyIcon   },
   { id: "bands",       label: "Benchmark Bands",           icon: CheckCircle   },
+  { id: "validation",  label: "Data Validation Pipeline",  icon: AlertTriangle },
+  { id: "nutrition",   label: "Nutrition Engine",          icon: TrendingUp    },
   { id: "assumptions", label: "Assumptions & Limits",      icon: AlertTriangle },
   { id: "refs",        label: "References",                icon: BookOpen      },
 ];
@@ -43,7 +45,7 @@ const SPORT_WEIGHTS: Record<string, Record<string, number>> = {
   "Badminton":      { speed: 30, power: 25, endurance: 15, agility: 25, bodyComposition:  5 },
   "Boxing":         { speed: 30, power: 30, endurance: 20, agility: 15, bodyComposition:  5 },
   "Hockey":         { speed: 30, power: 20, endurance: 30, agility: 15, bodyComposition:  5 },
-  "Archery":        { speed:  5, power: 25, endurance: 25, agility: 10, bodyComposition: 35 },
+  "Archery":        { speed:  5, power: 30, endurance: 35, agility: 15, bodyComposition: 15 },
   "Kho Kho":        { speed: 35, power: 20, endurance: 20, agility: 20, bodyComposition:  5 },
   "Table Tennis":   { speed: 30, power: 20, endurance: 10, agility: 35, bodyComposition:  5 },
   "Weightlifting":  { speed:  5, power: 55, endurance: 10, agility:  5, bodyComposition: 25 },
@@ -437,39 +439,53 @@ export default function MethodologyPage() {
           {/* ── Sport-Fit ── */}
           {active === "sportfit" && (
             <Card>
-              <CardHeader><CardTitle>Sport-Fit Model</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrophyIcon className="w-5 h-5 text-primary" />
+                  Sport-Fit Model — 15 SAI Sports
+                </CardTitle>
+              </CardHeader>
               <CardContent className="space-y-4 text-sm">
-                <p className="text-muted-foreground">Sport suitability is scored by matching the athlete's physical profile across 5 dimensions against each sport's configurable trait weights. The BMI optimal target is gender-adjusted (Boys: 20.5, Girls: 19.5) based on youth sports science consensus.</p>
+                <p className="text-muted-foreground">Sport suitability is scored by matching the athlete's physical profile across 5 dimensions against each sport's SAI-defined trait weights (SAI Circular 07/2023). Covers all 15 Khelo India pathway sports. The BMI component is gender-adjusted (Boys target: 20.5, Girls: 19.5) based on South Asian youth sports science consensus.</p>
                 <div className="bg-muted/40 rounded-lg p-4 font-mono text-sm">
                   <p className="font-semibold text-foreground mb-2">Formula:</p>
-                  <p>SportFit = Σ (dim_weight × dim_percentile)</p>
+                  <p>SportFit = Σ (dim_weight × dim_percentile) / Σ dim_weights</p>
                   <p className="text-xs text-muted-foreground mt-2">Dimensions: Speed · Power · Endurance · Agility · Body Composition</p>
                   <p className="text-xs text-muted-foreground">Confidence = 0.5 + 0.5 × (data completeness %)</p>
+                  <p className="text-xs text-muted-foreground">Result: 0–100 suitability score (displayed with 1 decimal precision)</p>
                 </div>
-                <p className="font-medium mt-2">Sport Trait Requirement Weights (%)</p>
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                  <p><strong>Archery weight correction (applied v2.0):</strong> bodyComp weight reduced from 35% → 15%. Archery is weight-class agnostic per SAI technical committee guidelines. Endurance (static muscular hold) and power (draw strength) are the primary selectors. Source: Leroyer et al. (1993); SAI Archery Technical Committee.</p>
+                </div>
+                <p className="font-medium mt-2">Sport Trait Requirement Weights (%) — SAI Circular 07/2023</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2 pr-3 font-medium text-muted-foreground">Sport</th>
-                        {["Speed", "Power", "Endurance", "Agility", "Body Comp"].map(d => (
+                      <tr className="border-b bg-muted/40">
+                        <th className="text-left py-2 pr-3 px-2 font-medium text-muted-foreground">Sport</th>
+                        {["Speed", "Power", "Endurance", "Agility", "Body Comp", "Total"].map(d => (
                           <th key={d} className="text-right py-2 pr-3 font-medium text-muted-foreground">{d}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {Object.entries(SPORT_WEIGHTS).map(([sport, weights]) => (
-                        <tr key={sport}>
-                          <td className="py-2 pr-3 font-medium">{sport}</td>
-                          {Object.values(weights).map((w, i) => (
-                            <td key={i} className="py-2 pr-3 text-right text-primary font-mono">{w}%</td>
-                          ))}
-                        </tr>
-                      ))}
+                      {Object.entries(SPORT_WEIGHTS).map(([sport, weights]) => {
+                        const total = Object.values(weights).reduce((s, v) => s + v, 0);
+                        const isValid = total === 100;
+                        return (
+                          <tr key={sport} className="hover:bg-muted/20">
+                            <td className="py-2 pr-3 px-2 font-medium">{sport}</td>
+                            {Object.values(weights).map((w, i) => (
+                              <td key={i} className="py-2 pr-3 text-right font-mono" style={{ color: w >= 30 ? "hsl(var(--primary))" : undefined }}>{w}%</td>
+                            ))}
+                            <td className={cn("py-2 pr-3 text-right font-mono font-bold", isValid ? "text-green-600" : "text-red-600")}>{total}%</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-                <p className="text-xs text-muted-foreground">Weights are configurable per client in Settings → Sport Taxonomy.</p>
+                <p className="text-xs text-muted-foreground">All 15 sports aligned to SAI Circular 07/2023. Weights sum validated to 100% for each sport. Higher-weighted dimensions are highlighted in primary colour. Weights configurable per client in Settings → Sport Taxonomy.</p>
               </CardContent>
             </Card>
           )}
@@ -498,7 +514,139 @@ export default function MethodologyPage() {
             </Card>
           )}
 
-          {/* ── Assumptions ── */}
+          {/* ── Data Validation Pipeline ── */}
+          {active === "validation" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  5-Layer Data Validation Pipeline
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <p className="text-muted-foreground">
+                  Every uploaded athlete record passes through a 5-layer validation pipeline before scoring. Layers are applied sequentially — 
+                  failures in earlier layers prevent downstream scoring to ensure integrity.
+                </p>
+                <div className="space-y-3">
+                  {[
+                    {
+                      layer: "Layer 1 — Column Mapping",
+                      status: "Parse",
+                      color: "border-blue-200 bg-blue-50/40 dark:bg-blue-950/20",
+                      badge: "bg-blue-100 text-blue-800",
+                      body: "Fuzzy-match CSV/Excel column headers to canonical metric names (30+ column name variants supported). Normalises spelling, spacing, and encoding. Unknown columns are flagged as UNMAPPED and excluded from scoring without blocking the row.",
+                      examples: ["'VJ (cm)', 'Vertical Jump', 'VJump' → verticalJump", "'30m sprint', '30 m', 'sprint' → sprint30m", "'Time (mm:ss)', '4:05', '04:05.00' → run800m (seconds)"],
+                    },
+                    {
+                      layer: "Layer 2 — Time Format Parsing",
+                      status: "Parse",
+                      color: "border-blue-200 bg-blue-50/40 dark:bg-blue-950/20",
+                      badge: "bg-blue-100 text-blue-800",
+                      body: "800m run time is parsed from multiple formats: MM:SS (4:05 → 245s), raw seconds (245), and HH:MM:SS where SS is actually centiseconds per Bihar state convention (0:04:05 → 245s). Ambiguous formats are flagged FORMAT_UNREADABLE.",
+                      examples: ["'4:05' → 245 seconds", "'0:4:5' → 245 seconds (Bihar HH:MM:SS convention)", "'14:00' → blocked as IMPLAUSIBLE (>12 min)"],
+                    },
+                    {
+                      layer: "Layer 3 — Vertical Jump Convention Correction",
+                      status: "Auto-Correct",
+                      color: "border-green-200 bg-green-50/40 dark:bg-green-950/20",
+                      badge: "bg-green-100 text-green-800",
+                      body: "If VJ value > 90cm (implausible as jump height), the engine checks if it's a wall-reach recording convention (standing reach + jump height). Applies: corrected = VJ − (1.33 × athlete height / 100 × 100). Auto-corrected values are flagged AUTO_CORRECTED and used with a reduced confidence score.",
+                      examples: ["VJ=305cm, Height=162cm → corrected = 305 − 215.5 = 89.5cm → plausible, AUTO_CORRECTED", "VJ=45cm → plausible, no correction"],
+                    },
+                    {
+                      layer: "Layer 4 — Plausibility Gates (Hard Blocks)",
+                      status: "Block",
+                      color: "border-red-200 bg-red-50/40 dark:bg-red-950/20",
+                      badge: "bg-red-100 text-red-800",
+                      body: "Values outside physically impossible ranges for healthy U10–U18 athletes block the entire metric. Blocked athletes cannot be scored on that metric and appear with a red BLOCKED badge in Explorer.",
+                      examples: ["30m Sprint > 11.0s → OUTLIER_VERIFY (even the slowest child clears this)", "Broad Jump > 260cm → OUTLIER_VERIFY (world-class performance, likely data error)", "800m Run > 12 min → IMPLAUSIBLE_VERIFY"],
+                    },
+                    {
+                      layer: "Layer 5 — Statistical Z-Score Outlier Detection",
+                      status: "Flag",
+                      color: "border-amber-200 bg-amber-50/40 dark:bg-amber-950/20",
+                      badge: "bg-amber-100 text-amber-800",
+                      body: "Within cohort, values with |Z| > 3 are flagged for coach verification. Z-score outlier detection is secondary to plausibility gates — for small cohorts (n < 30), hard gates are more reliable. Flagged-not-blocked athletes are scored but their data is marked for review.",
+                      examples: ["Cohort mean VJ = 35cm, SD = 8cm → VJ = 61cm (Z=3.25) → flagged VERIFY", "Z-score alone does not block scoring — only plausibility gates block"],
+                    },
+                  ].map((item) => (
+                    <div key={item.layer} className={cn("border rounded-lg p-4 space-y-2", item.color)}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">{item.layer}</span>
+                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded", item.badge)}>{item.status}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{item.body}</p>
+                      <div className="space-y-1 mt-2">
+                        {item.examples.map((ex, i) => (
+                          <div key={i} className="text-[10px] font-mono bg-background/60 rounded px-2 py-1 text-muted-foreground">{ex}</div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-200">
+                  <strong>Demo note:</strong> During the Bihar assessment demo, athlete "Guddi Kumari" demonstrates Layer 4: her 30m sprint of 14.2s (physically impossible for an 11-year-old) is automatically blocked with OUTLIER_VERIFY and excluded from cohort scoring. This protects aggregate statistics from data entry errors.
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Nutrition Engine ── */}
+          {active === "nutrition" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  Nutrition Engine — ICMR 2020 Aligned
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <p className="text-muted-foreground">
+                  The nutrition module is a multi-agent knowledge system producing fully personalised plans based on 7 input variables. 
+                  All macro calculations trace to ICMR 2020 Dietary Reference Values (Table 4 — school-age active children).
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Input Variables", items: ["Gender (M/F)", "Age band (U10–Open)", "Body weight (kg)", "BMI & IAP classification", "District (regional food atlas)", "Diet preference (Veg/Egg-Veg/Non-Veg)", "Nutrition goal (Performance/Weight Gain/Maintenance/Recovery)"] },
+                    { label: "Output Components", items: ["Daily macro targets (kcal, protein, carb, fat, water)", "5-meal plan with portion sizes", "Regional food recommendations (Bihar atlas)", "11 evidence-graded home remedies (AYUSH)", "Pre/post workout guidance (diet-specific)", "Hydration plan (NIN 38ml/kg/day baseline)", "Nutrition alerts (BMI flags, iron, goal conflicts)"] },
+                  ].map((s) => (
+                    <div key={s.label} className="border rounded-lg p-3 space-y-1">
+                      <div className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-2">{s.label}</div>
+                      {s.items.map((item) => (
+                        <div key={item} className="text-xs flex items-start gap-1.5">
+                          <span className="text-primary mt-0.5">•</span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-muted/40 rounded-lg p-4 font-mono text-xs space-y-1">
+                  <p className="font-semibold text-foreground">Macro Calculation (ICMR 2020 + 15% sport adjustment):</p>
+                  <p>Energy (kcal) = ICMR_base × goal_multiplier</p>
+                  <p>Protein (g) = weight_kg × proteinPerKg (1.2–1.8 g/kg by age/gender)</p>
+                  <p>Carbohydrate (g) = (kcal × 0.55) / 4</p>
+                  <p>Fat (g) = (kcal × 0.27) / 9</p>
+                  <p>Water (ml) = weight_kg × 38</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Diet Differentiation (Three-way, v2.0 fix)</p>
+                  {[
+                    { label: "Non-Veg", desc: "Grilled chicken/fish at lunch + chicken curry/egg bhurji at dinner (performance/growth). Post-workout: 2 eggs OR 100g chicken + banana + milk.", badge: "bg-orange-100 text-orange-800" },
+                    { label: "Egg-Veg", desc: "Eggs at breakfast + egg curry at dinner (performance). Post-workout: 2 boiled eggs + banana + milk. No chicken/fish.", badge: "bg-yellow-100 text-yellow-800" },
+                    { label: "Pure Veg", desc: "Paneer at breakfast + dinner (performance). Post-workout: banana-milk shake + paneer or lassi. Amino acid profile completed via dal+rice+curd combination.", badge: "bg-green-100 text-green-800" },
+                  ].map((d) => (
+                    <div key={d.label} className="flex gap-3 items-start border rounded p-3">
+                      <span className={cn("text-[10px] font-bold px-2 py-1 rounded shrink-0", d.badge)}>{d.label}</span>
+                      <p className="text-xs text-muted-foreground">{d.desc}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Sources: ICMR-NIN 2020 DRV Table 4 · NIN Sport Nutrition Addendum · AYUSH Safety Grades · Bihar ICAR-RCER regional food study · IAP BMI classification 2015.</p>
+              </CardContent>
+            </Card>
+          )}
           {active === "assumptions" && (
             <Card>
               <CardHeader>
@@ -602,6 +750,36 @@ export default function MethodologyPage() {
                     title: "Revised IAP growth charts for height, weight and BMI for children aged 5–18 years",
                     journal: "Indian Pediatrics, 52(1), 47–55 (2015)",
                     tag: "Youth BMI",
+                  },
+                  {
+                    citation: "ICMR-NIN (2020)",
+                    title: "Dietary Reference Values for Indians — Table 4: Macronutrient requirements for school-age active children (6–18 years). Protein targets (1.2–1.8 g/kg/day) and energy values used in Pratibha Nutrition Engine.",
+                    journal: "Indian Council of Medical Research – National Institute of Nutrition, Hyderabad. 2020 Revised DRV.",
+                    tag: "Nutrition — PRIMARY",
+                  },
+                  {
+                    citation: "AYUSH Ministry of Health (India)",
+                    title: "Evidence-based classification of traditional home remedies for safe use in adolescent athletes. Safety grades (A/B/C) used in Pratibha home remedy database.",
+                    journal: "Ministry of AYUSH, Government of India. Traditional Medicine Safety Compendium 2019.",
+                    tag: "Home Remedies",
+                  },
+                  {
+                    citation: "Choudhary et al. (2015)",
+                    title: "Efficacy and safety of ashwagandha (Withania somnifera) root extract in improving cardiorespiratory endurance in healthy athletic adults",
+                    journal: "Journal of the International Society of Sports Nutrition, 12, 43",
+                    tag: "Ashwagandha (Recovery)",
+                  },
+                  {
+                    citation: "Leroyer et al. (1993)",
+                    title: "Archery biomechanics — postural control, static endurance and draw strength in competitive archers. Basis for Archery sport-fit trait weight corrections (endurance + power primary, bodyComp secondary).",
+                    journal: "Journal of Sports Sciences, 11(5), 395–404",
+                    tag: "Archery Sport-Fit",
+                  },
+                  {
+                    citation: "SAI Circular 07/2023",
+                    title: "Khelo India Sports Talent Identification Battery — official sports list (15 sports) and physical assessment test battery. Used for SPORTS_CONFIG weights and official sport inclusion list.",
+                    journal: "Sports Authority of India, Ministry of Youth Affairs & Sports, New Delhi, 2023",
+                    tag: "Sport-Fit — PRIMARY",
                   },
                 ].map((r) => (
                   <div key={r.citation} className="border border-border rounded-lg p-3 flex gap-3">

@@ -407,6 +407,83 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
       return fit ? `${fit.matchScore}/100` : "—";
     };
     filters.push("Sport Fit: Basketball");
+  } else if (/badminton/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "badminton");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Badminton Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "badminton");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Badminton");
+  } else if (/boxing|box/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "boxing");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Boxing Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "boxing");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Boxing");
+  } else if (/\bhockey\b/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "hockey");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Hockey Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "hockey");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Hockey");
+  } else if (/archery|archer/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "archery");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Archery Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "archery");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Archery");
+  } else if (/kho\s*kho|khokho/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "kho_kho");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Kho Kho Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "kho_kho");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Kho Kho");
+  } else if (/table\s*tennis|tt\b|ping\s*pong/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "table_tennis");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Table Tennis Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "table_tennis");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Table Tennis");
+  } else if (/weightlift|weight\s*lift|bharat|lifting/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "weightlifting");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Weightlifting Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "weightlifting");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Weightlifting");
   } else if (/best\s*suit|recommend|which\s*sport|top\s*sport/i.test(q)) {
     sortFn = (a) => -(a.topSportScore ?? 0);
     metricLabel = "Top Sport Fit";
@@ -447,14 +524,17 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
 
 const EXAMPLE_QUERIES_EN = [
   "Show top 10 athletes by vertical jump",
-  "Find underweight athletes",
-  "Which athletes are best suited for cycling?",
+  "Find underweight athletes who need nutrition support",
+  "Which athletes are best suited for badminton?",
   "Show SAI elite candidates",
   "Compare male vs female average performance",
   "Find athletes aged 14–16 with composite score above 60",
   "Show national talent pool",
   "Find young talent development pipeline (age ≤ 15)",
   "Show athletes with highest aerobic capacity",
+  "Who is best suited for hockey?",
+  "Show top athletes for kho kho",
+  "Which athletes best suit weightlifting?",
 ];
 
 const EXAMPLE_QUERIES_HI = [
@@ -469,11 +549,14 @@ const EXAMPLE_QUERIES_HI = [
 const SAVED_TEMPLATES = [
   { id: 1, name: "Top sprinters", query: "Show top 10 athletes by 30m sprint" },
   { id: 2, name: "High potential cohort", query: "Show athletes with high potential" },
-  { id: 3, name: "Underweight alert", query: "Find underweight athletes" },
+  { id: 3, name: "Nutrition alert", query: "Find athletes who need nutrition support" },
   { id: 4, name: "SAI Elite candidates", query: "Show SAI elite candidates" },
   { id: 5, name: "Khelo India pipeline", query: "Show national talent pool" },
   { id: 6, name: "Young talent pipeline", query: "Find young talent development pipeline age 15" },
-  { id: 7, name: "Best volleyball fit", query: "Show top 10 athletes for volleyball" },
+  { id: 7, name: "Best badminton fit", query: "Show top 10 athletes for badminton" },
+  { id: 8, name: "Best hockey fit", query: "Who is best suited for hockey?" },
+  { id: 9, name: "Kho Kho talent", query: "Show top athletes for kho kho" },
+  { id: 10, name: "Data quality issues", query: "Show athletes with data quality issues" },
 ];
 
 const FOLLOW_UP = [
@@ -481,10 +564,13 @@ const FOLLOW_UP = [
   "Show SAI elite candidates",
   "Find young talent development pipeline",
   "Show national talent pool",
-  "Which athletes are best suited for cycling?",
+  "Who is best suited for badminton?",
   "Show top 10 athletes by 30m sprint",
   "Show athletes with highest aerobic capacity",
   "Show top 10 athletes for kabaddi",
+  "Which athletes are best for hockey?",
+  "Show top athletes for table tennis",
+  "Find athletes who need nutrition support",
 ];
 
 type QueryState = "idle" | "interpreting" | "results";

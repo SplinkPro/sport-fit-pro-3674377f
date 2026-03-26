@@ -1253,24 +1253,32 @@ function ReportsTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnT
 </div>
 <div class="card" style="margin-bottom:16px">
   <h3>${hi ? "प्रदर्शन मेट्रिक्स" : "Performance Metrics"}</h3>
-  <div class="row"><span class="label">30m Sprint</span><span class="value">${athlete.sprint30m?.toFixed(2) ?? "—"} s</span></div>
-  <div class="row"><span class="label">800m Run</span><span class="value">${athlete.run800m != null ? fmtRun(athlete.run800m) : "—"}</span></div>
-  <div class="row"><span class="label">Vertical Jump</span><span class="value">${athlete.verticalJump?.toFixed(1) ?? "—"} cm</span></div>
-  <div class="row"><span class="label">Broad Jump</span><span class="value">${athlete.broadJump?.toFixed(0) ?? "—"} cm</span></div>
+  <div class="row"><span class="label">30m Sprint</span><span class="value">${athlete.sprint30m?.toFixed(2) ?? "—"} s &nbsp; Nat.Pct: ${athlete.derivedIndices?.nationalPercentiles?.sprint30m?.toFixed(0) ?? "—"}</span></div>
+  <div class="row"><span class="label">800m Run</span><span class="value">${athlete.run800m != null ? fmtRun(athlete.run800m) : "—"} &nbsp; Nat.Pct: ${athlete.derivedIndices?.nationalPercentiles?.run800m?.toFixed(0) ?? "—"}</span></div>
+  <div class="row"><span class="label">Vertical Jump</span><span class="value">${athlete.verticalJump?.toFixed(1) ?? "—"} cm &nbsp; Nat.Pct: ${athlete.derivedIndices?.nationalPercentiles?.verticalJump?.toFixed(0) ?? "—"}</span></div>
+  <div class="row"><span class="label">Broad Jump</span><span class="value">${athlete.broadJump?.toFixed(0) ?? "—"} cm &nbsp; Nat.Pct: ${athlete.derivedIndices?.nationalPercentiles?.broadJump?.toFixed(0) ?? "—"}</span></div>
   <div class="row"><span class="label">Shuttle Run</span><span class="value">${athlete.shuttleRun?.toFixed(2) ?? "—"} s</span></div>
 </div>
 <div class="card" style="margin-bottom:16px">
-  <h3>${hi ? "खेल अनुशंसाएँ" : "Sport-Fit Recommendations"}</h3>
-  <p style="color:#6b7280;font-size:12px;margin:0 0 10px">${hi ? "शीर्ष 3 अनुशंसित खेल:" : "Top 3 recommended sports based on physical profile:"}</p>
+  <h3>${hi ? "वैज्ञानिक सूचकांक" : "Scientific Derived Indices"}</h3>
+  <div class="row"><span class="label">RPI (Relative Power)</span><span class="value">${athlete.derivedIndices?.relativePowerIndex?.toFixed(2) ?? "—"} &nbsp; <small style="color:#6b7280">(VJ × mass / 1000; ≥${athlete.gender === "M" ? "1.8" : "1.3"} = High)</small></span></div>
+  <div class="row"><span class="label">ACE / VO₂max Est.</span><span class="value">${athlete.derivedIndices?.aerobicCapacityEst?.toFixed(1) ?? "—"} ml/kg/min &nbsp; <small style="color:#6b7280">(483/800m_min + 3.5; Ramsbottom 1988)</small></span></div>
+  <div class="row"><span class="label">SER (Speed:Endurance)</span><span class="value">${athlete.derivedIndices?.speedEnduranceRatio?.toFixed(2) ?? "—"} &nbsp; <small style="color:#6b7280">(>1.2=speed | <0.8=endurance)</small></span></div>
+  <div class="row"><span class="label">ESR (Explosive-Structural)</span><span class="value">${athlete.derivedIndices?.explosiveStructuralRatio?.toFixed(1) ?? "—"}% &nbsp; <small style="color:#6b7280">(VJ/Height×100; ≥${athlete.gender === "M" ? "30" : "26"}=High)</small></span></div>
+  <div class="row"><span class="label">LPS (Lean Power)</span><span class="value">${athlete.derivedIndices?.leanPowerScore?.toFixed(2) ?? "—"} cm/kg &nbsp; <small style="color:#6b7280">(BJ/mass; ≥${athlete.gender === "M" ? "2.8" : "2.4"}=Strong)</small></span></div>
+</div>
+<div class="card" style="margin-bottom:16px">
+  <h3>${hi ? "खेल अनुशंसाएँ" : "Sport-Fit Recommendations (SAI Circular 07/2023)"}</h3>
+  <p style="color:#6b7280;font-size:12px;margin:0 0 10px">${hi ? "शीर्ष 3 अनुशंसित खेल — 15 SAI खेलों में से:" : "Top 3 recommended sports from 15 SAI Khelo India pathway sports:"}</p>
   ${sportTags}
 </div>
 <div class="card">
   <h3>${hi ? "कोच नोट्स" : "Coach Notes"}</h3>
   <p style="font-size:12px;color:#374151;margin:0 0 8px">${hi ? "प्रमुख ताकत:" : "Key Strengths:"} ${topSports}</p>
-  <p style="font-size:12px;color:#374151;margin:0">BMI ${bmi.toFixed(1)} — ${bmiLabel}. ${hi ? "स्वास्थ्य के लिए IAP दिशानिर्देश देखें।" : "See IAP pediatric guidelines for nutritional guidance."}</p>
+  <p style="font-size:12px;color:#374151;margin:0">BMI ${bmi.toFixed(1)} — ${bmiLabel} (IAP youth thresholds). ${hi ? "स्वास्थ्य के लिए IAP दिशानिर्देश देखें।" : "IAP Indian Academy of Pediatrics classification for school-age athletes."}</p>
 </div>
 ${flagMessages ? `<div class="flag">⚠️ ${hi ? "डेटा गुणवत्ता नोट:" : "Data Quality Note:"} ${flagMessages}</div>` : ""}
-<div class="footer">Pratibha · Sports Authority of India Talent Identification Platform · Generated ${new Date().toLocaleDateString("en-IN")} · For official use only</div>
+<div class="footer">Pratibha · Sports Authority of India Talent Identification Platform · Generated ${new Date().toLocaleDateString("en-IN")} · Confidential — For official use only</div>
 </body></html>`;
     const win = window.open("", "_blank");
     if (win) {

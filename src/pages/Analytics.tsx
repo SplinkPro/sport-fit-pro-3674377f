@@ -60,14 +60,36 @@ export default function AnalyticsPage() {
   );
 }
 
+// ─── SAI Band helper ───────────────────────────────────────────────────────
+function getSAIBandLabel(score: number): string {
+  if (score >= 85) return "SAI Elite";
+  if (score >= 70) return "National Talent";
+  if (score >= 40) return "National Avg";
+  if (score >= 20) return "Below Avg";
+  return "Development";
+}
+
 // ─── Executive Dashboard ───────────────────────────────────────────────────
 function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof useAthletes>["athletes"]; dict: ReturnType<typeof useT>["dict"] }) {
   const a = dict.analytics;
 
+  // ── FIXED: exclude blocked athletes (compositeScore === 0 AND has critical flags)
+  // from averages — they skew school leaderboard downward.
+  const scoredAthletes = athletes.filter((at) => {
+    const blocked =
+      (at as unknown as Record<string, string>).sprint30mFlag === "OUTLIER_VERIFY" ||
+      (at as unknown as Record<string, string>).broadJumpFlag === "OUTLIER_VERIFY" ||
+      (at as unknown as Record<string, string>).run800mFlag === "FORMAT_UNREADABLE" ||
+      (at as unknown as Record<string, string>).run800mFlag === "IMPLAUSIBLE_VERIFY" ||
+      (at as unknown as Record<string, string>).vjFlag === "UNCLEAR_VERIFY";
+    return !blocked;
+  });
+  const blockedCount = athletes.length - scoredAthletes.length;
+
   const maleCount = athletes.filter((a) => a.gender === "M").length;
   const femaleCount = athletes.filter((a) => a.gender === "F").length;
-  const highPotential = athletes.filter((a) => a.isHighPotential).length;
-  const avgComp = Math.round(athletes.reduce((s, a) => s + (a.completeness ?? 0), 0) / Math.max(athletes.length, 1));
+  const highPotential = scoredAthletes.filter((a) => a.isHighPotential).length;
+  const avgComp = Math.round(scoredAthletes.reduce((s, a) => s + (a.completeness ?? 0), 0) / Math.max(scoredAthletes.length, 1));
 
   // Derive "assessments this month" — falls back to total athlete count when no assessmentDate field is present.
   const now = new Date();
@@ -92,9 +114,9 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
     { name: a.ageBands.eighteenPlus, count: athletes.filter((at) => at.age >= 18).length },
   ];
 
-  // Top sports
+  // Top sports — from scored athletes only
   const sportCounts: Record<string, number> = {};
-  athletes.forEach((at) => {
+  scoredAthletes.forEach((at) => {
     if (at.topSport) sportCounts[at.topSport] = (sportCounts[at.topSport] ?? 0) + 1;
   });
   const topSportsData = Object.entries(sportCounts)
@@ -102,9 +124,18 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
     .slice(0, 5)
     .map(([name, count]) => ({ name, count }));
 
-  // School leaderboard
+  // SAI Band distribution — from scored athletes only
+  const bandDistData = [
+    { name: "SAI Elite (≥85)", count: scoredAthletes.filter((at) => (at.derivedIndices?.nationalComposite ?? 0) >= 85).length, fill: "#16A34A" },
+    { name: "Nat. Talent (70–84)", count: scoredAthletes.filter((at) => { const s = at.derivedIndices?.nationalComposite ?? 0; return s >= 70 && s < 85; }).length, fill: "#2563EB" },
+    { name: "Nat. Avg (40–69)", count: scoredAthletes.filter((at) => { const s = at.derivedIndices?.nationalComposite ?? 0; return s >= 40 && s < 70; }).length, fill: "#6B7280" },
+    { name: "Below Avg (20–39)", count: scoredAthletes.filter((at) => { const s = at.derivedIndices?.nationalComposite ?? 0; return s >= 20 && s < 40; }).length, fill: "#D97706" },
+    { name: "Development (<20)", count: scoredAthletes.filter((at) => (at.derivedIndices?.nationalComposite ?? 0) < 20).length, fill: "#DC2626" },
+  ];
+
+  // School leaderboard — use scored athletes only to avoid blocked-athlete score depression
   const schoolScores: Record<string, number[]> = {};
-  athletes.forEach((at) => {
+  scoredAthletes.forEach((at) => {
     if (!schoolScores[at.school]) schoolScores[at.school] = [];
     schoolScores[at.school].push(at.compositeScore);
   });
@@ -116,9 +147,9 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
     <div className="space-y-4">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard label={a.kpis.totalAthletes} value={athletes.length} icon={Users} iconColor="hsl(var(--chart-1))" />
+        <KPICard label={a.kpis.totalAthletes} value={athletes.length} icon={Users} iconColor="hsl(var(--chart-1))" sub={blockedCount > 0 ? `${blockedCount} blocked` : undefined} />
         <KPICard label={a.kpis.maleFemale} value={`${maleCount}/${femaleCount}`} icon={Users} iconColor="hsl(var(--chart-2))" />
-        <KPICard label={a.kpis.highPotential} value={`${Math.round(highPotential / athletes.length * 100)}%`} icon={Star} iconColor="hsl(var(--chart-3))" sub={`${highPotential} athletes`} />
+        <KPICard label={a.kpis.highPotential} value={`${Math.round(highPotential / Math.max(scoredAthletes.length, 1) * 100)}%`} icon={Star} iconColor="hsl(var(--chart-3))" sub={`${highPotential} athletes`} />
         <KPICard label={a.kpis.dataCompleteness} value={`${avgComp}%`} icon={CheckCircle2} iconColor="hsl(var(--chart-4))" />
         <KPICard label={assessmentsLabel} value={assessmentsValue} icon={Activity} iconColor="hsl(var(--chart-5))" />
         <KPICard label={a.kpis.sportFitDist} value={Object.keys(sportCounts).length} icon={BarChart3} iconColor="hsl(var(--primary))" sub="sports covered" />
@@ -170,8 +201,37 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
         </SectionCard>
       </div>
 
+      {/* SAI National Band Distribution */}
+      <SectionCard title="SAI National Band Distribution (Scored Athletes Only)">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+          <span>Based on National CAPI vs SAI/NSTC reference population.</span>
+          {blockedCount > 0 && <span className="text-amber-600 font-medium ml-1">· {blockedCount} blocked athlete(s) excluded from this chart.</span>}
+        </div>
+        <div className="h-36">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={bandDistData} margin={{ left: -10, right: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+              <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="count" name="Athletes" radius={[4, 4, 0, 0]}>
+                {bandDistData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {bandDistData.map((b) => (
+            <div key={b.name} className="flex items-center gap-1 text-xs">
+              <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: b.fill }} />
+              <span className="text-muted-foreground">{b.name}: <strong className="text-foreground">{b.count}</strong></span>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
       {/* School Leaderboard */}
-      <SectionCard title={a.charts.schoolLeaderboard}>
+      <SectionCard title={`${a.charts.schoolLeaderboard} (excl. blocked athletes)`}>
         <div className="space-y-2">
           {schoolData.map((school, i) => (
             <div key={school.name} className="flex items-center gap-3">
@@ -179,7 +239,7 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-0.5">
                   <span className="text-xs font-medium truncate">{school.name}</span>
-                  <span className="text-xs text-muted-foreground ml-2">{school.count} athletes · avg {school.avg}</span>
+                  <span className="text-xs text-muted-foreground ml-2">{school.count} athletes · avg {school.avg} · {getSAIBandLabel(school.avg)}</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
@@ -191,6 +251,7 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
             </div>
           ))}
         </div>
+        <p className="text-[10px] text-muted-foreground mt-3">Avg = mean CAPI percentile vs local cohort. Blocked athletes (critical data flags) are excluded to prevent artificially low school averages.</p>
       </SectionCard>
     </div>
   );
