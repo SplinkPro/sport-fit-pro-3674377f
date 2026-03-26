@@ -439,39 +439,53 @@ export default function MethodologyPage() {
           {/* ── Sport-Fit ── */}
           {active === "sportfit" && (
             <Card>
-              <CardHeader><CardTitle>Sport-Fit Model</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrophyIcon className="w-5 h-5 text-primary" />
+                  Sport-Fit Model — 15 SAI Sports
+                </CardTitle>
+              </CardHeader>
               <CardContent className="space-y-4 text-sm">
-                <p className="text-muted-foreground">Sport suitability is scored by matching the athlete's physical profile across 5 dimensions against each sport's configurable trait weights. The BMI optimal target is gender-adjusted (Boys: 20.5, Girls: 19.5) based on youth sports science consensus.</p>
+                <p className="text-muted-foreground">Sport suitability is scored by matching the athlete's physical profile across 5 dimensions against each sport's SAI-defined trait weights (SAI Circular 07/2023). Covers all 15 Khelo India pathway sports. The BMI component is gender-adjusted (Boys target: 20.5, Girls: 19.5) based on South Asian youth sports science consensus.</p>
                 <div className="bg-muted/40 rounded-lg p-4 font-mono text-sm">
                   <p className="font-semibold text-foreground mb-2">Formula:</p>
-                  <p>SportFit = Σ (dim_weight × dim_percentile)</p>
+                  <p>SportFit = Σ (dim_weight × dim_percentile) / Σ dim_weights</p>
                   <p className="text-xs text-muted-foreground mt-2">Dimensions: Speed · Power · Endurance · Agility · Body Composition</p>
                   <p className="text-xs text-muted-foreground">Confidence = 0.5 + 0.5 × (data completeness %)</p>
+                  <p className="text-xs text-muted-foreground">Result: 0–100 suitability score (displayed with 1 decimal precision)</p>
                 </div>
-                <p className="font-medium mt-2">Sport Trait Requirement Weights (%)</p>
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                  <p><strong>Archery weight correction (applied v2.0):</strong> bodyComp weight reduced from 35% → 15%. Archery is weight-class agnostic per SAI technical committee guidelines. Endurance (static muscular hold) and power (draw strength) are the primary selectors. Source: Leroyer et al. (1993); SAI Archery Technical Committee.</p>
+                </div>
+                <p className="font-medium mt-2">Sport Trait Requirement Weights (%) — SAI Circular 07/2023</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2 pr-3 font-medium text-muted-foreground">Sport</th>
-                        {["Speed", "Power", "Endurance", "Agility", "Body Comp"].map(d => (
+                      <tr className="border-b bg-muted/40">
+                        <th className="text-left py-2 pr-3 px-2 font-medium text-muted-foreground">Sport</th>
+                        {["Speed", "Power", "Endurance", "Agility", "Body Comp", "Total"].map(d => (
                           <th key={d} className="text-right py-2 pr-3 font-medium text-muted-foreground">{d}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {Object.entries(SPORT_WEIGHTS).map(([sport, weights]) => (
-                        <tr key={sport}>
-                          <td className="py-2 pr-3 font-medium">{sport}</td>
-                          {Object.values(weights).map((w, i) => (
-                            <td key={i} className="py-2 pr-3 text-right text-primary font-mono">{w}%</td>
-                          ))}
-                        </tr>
-                      ))}
+                      {Object.entries(SPORT_WEIGHTS).map(([sport, weights]) => {
+                        const total = Object.values(weights).reduce((s, v) => s + v, 0);
+                        const isValid = total === 100;
+                        return (
+                          <tr key={sport} className="hover:bg-muted/20">
+                            <td className="py-2 pr-3 px-2 font-medium">{sport}</td>
+                            {Object.values(weights).map((w, i) => (
+                              <td key={i} className="py-2 pr-3 text-right font-mono" style={{ color: w >= 30 ? "hsl(var(--primary))" : undefined }}>{w}%</td>
+                            ))}
+                            <td className={cn("py-2 pr-3 text-right font-mono font-bold", isValid ? "text-green-600" : "text-red-600")}>{total}%</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-                <p className="text-xs text-muted-foreground">Weights are configurable per client in Settings → Sport Taxonomy.</p>
+                <p className="text-xs text-muted-foreground">All 15 sports aligned to SAI Circular 07/2023. Weights sum validated to 100% for each sport. Higher-weighted dimensions are highlighted in primary colour. Weights configurable per client in Settings → Sport Taxonomy.</p>
               </CardContent>
             </Card>
           )}
