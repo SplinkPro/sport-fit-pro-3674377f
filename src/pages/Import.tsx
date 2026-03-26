@@ -266,7 +266,7 @@ export default function ImportPage() {
                 s.id < step  ? "bg-primary text-primary-foreground border-primary" :
                 "border-muted-foreground text-muted-foreground"
               )}>
-                {s.id < step ? <CheckCircle className="w-3.5 h-3.5" /> : Math.ceil(s.id)}
+                {s.id < step ? <CheckCircle className="w-3.5 h-3.5" /> : s.num}
               </span>
               {s.label}
             </button>
@@ -413,10 +413,14 @@ export default function ImportPage() {
                         )}
                       </div>
                     )}
+                    <p className="text-xs text-muted-foreground">Click anywhere in this zone to upload a different file</p>
                     <Button variant="outline" size="sm" onClick={(e) => {
                       e.stopPropagation();
                       setUploadedFile(null); setParseResult(null); setRawRows([]);
-                      if (fileInputRef.current) fileInputRef.current.value = "";
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = "";
+                        fileInputRef.current.click();
+                      }
                     }}>
                       <RotateCcw className="w-3 h-3 mr-1.5" /> Change file
                     </Button>
@@ -917,6 +921,11 @@ export default function ImportPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
+            {importHistory.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No imports yet. Upload a file above to get started.
+              </p>
+            )}
             {importHistory.map((entry, i) => (
               <div
                 key={entry.id}
