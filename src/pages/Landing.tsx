@@ -125,7 +125,7 @@ export default function Landing() {
 
   const stats = [
     { value: 41, suffix: "+", label: "Athletes Assessed Per Import" },
-    { value: 5, suffix: "", label: "Sports Ranked Simultaneously" },
+    { value: 15, suffix: "", label: "SAI Pathway Sports Covered" },
     { value: 12, suffix: "+", label: "Biometric Metrics Analysed" },
     { value: 0, suffix: "%", label: "Data Shared With Vendor" },
   ];
