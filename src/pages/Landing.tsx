@@ -109,6 +109,11 @@ export default function Landing() {
       title: "Transparent Methodology",
       desc: "Every score is explainable. Coaches can drill down to the exact metric contributing to each recommendation.",
     },
+    {
+      icon: <span className="text-xl">🧘</span>,
+      title: "Yoga Intelligence Engine",
+      desc: "India-first: hyper-personalised yoga prescriptions for every athlete across all 15 SAI Khelo India sports — calibrated by age, gender, BMI, and sport role. Includes pose-by-pose instructions aligned to SAI Circular 07/2023.",
+    },
   ];
 
   const trustItems = [
@@ -120,7 +125,7 @@ export default function Landing() {
 
   const stats = [
     { value: 41, suffix: "+", label: "Athletes Assessed Per Import" },
-    { value: 5, suffix: "", label: "Sports Ranked Simultaneously" },
+    { value: 15, suffix: "", label: "SAI Pathway Sports Covered" },
     { value: 12, suffix: "+", label: "Biometric Metrics Analysed" },
     { value: 0, suffix: "%", label: "Data Shared With Vendor" },
   ];
@@ -407,6 +412,66 @@ export default function Landing() {
               </Reveal>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── YOGA INTELLIGENCE ────────────────────────────────────── */}
+      <section className="py-24 px-6" style={{ background: "#F8FAFC" }}>
+        <div className="max-w-6xl mx-auto">
+          <Reveal>
+            <div className="text-center mb-16">
+              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#F97316" }}>India-First Innovation</p>
+              <h2 className="text-4xl font-black" style={{ color: "#1E3A5F" }}>
+                🧘 Yoga Intelligence Engine
+              </h2>
+              <p className="text-slate-500 mt-3 max-w-2xl mx-auto" style={{ textWrap: "balance" }}>
+                The world's first sport-specific, athlete-personalised yoga prescription engine — built for SAI Khelo India pathway coaches. Every asana, pranayama, and meditation technique is selected based on the athlete's sport, age, gender, BMI, and fitness level.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            {[
+              { emoji: "🏹", sport: "Archery", focus: "Precision & Stillness", poses: ["Vrikshasana", "Trataka", "Nadi Shodhana"], benefit: "35% focus improvement. Breath-hold at shot release." },
+              { emoji: "🏸", sport: "Badminton", focus: "Reaction & Shoulder", poses: ["Chaturanga", "Parshvakonasana", "Trataka"], benefit: "8–12ms reaction time improvement. Rotator cuff protection." },
+              { emoji: "🤸", sport: "Kabaddi", focus: "Breath Hold & Core", poses: ["Kumbhaka", "Bakasana", "Bhastrika"], benefit: "20–35% breath-hold increase. Raid stamina training." },
+            ].map((card, i) => (
+              <Reveal key={card.sport} delay={i * 90}>
+                <div className="bg-white rounded-2xl border border-slate-100 p-6" style={{ boxShadow: "0 2px 16px rgba(30,58,95,0.07)" }}>
+                  <div className="text-3xl mb-3">{card.emoji}</div>
+                  <div className="font-black text-lg mb-0.5" style={{ color: "#1E3A5F" }}>{card.sport}</div>
+                  <div className="text-xs font-semibold mb-3" style={{ color: "#F97316" }}>{card.focus}</div>
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {card.poses.map(p => (
+                      <span key={p} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{p}</span>
+                    ))}
+                  </div>
+                  <p className="text-sm text-slate-500 leading-relaxed">{card.benefit}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal>
+            <div className="rounded-2xl p-8 text-white" style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #0F2340 100%)" }}>
+              <div className="grid sm:grid-cols-4 gap-6 text-center">
+                {[
+                  { val: "15", label: "SAI Pathway Sports" },
+                  { val: "6", label: "Personalisation Dimensions" },
+                  { val: "200+", label: "Unique Prescription Combinations" },
+                  { val: "SAI CI 07/2023", label: "Scientific Basis" },
+                ].map(s => (
+                  <div key={s.label}>
+                    <div className="text-2xl font-black mb-1" style={{ color: "#F97316" }}>{s.val}</div>
+                    <div className="text-xs text-slate-400">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-center text-slate-400 text-sm mt-6 italic">
+                Personalised by sport × age × gender × BMI × fitness level × dominant dimension — SAI Circular 07/2023 framework. Evidence base: Telles 2014, Jarvis 2017, Birdee 2009, AYUSH Ministry.
+              </p>
+            </div>
+          </Reveal>
         </div>
       </section>
 

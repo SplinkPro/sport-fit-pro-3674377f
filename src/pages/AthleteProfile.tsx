@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NutritionTab from "@/components/nutrition/NutritionTab";
+import YogaTab from "@/components/yoga/YogaTab";
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 export default function AthleteProfilePage() {
@@ -141,9 +142,9 @@ export default function AthleteProfilePage() {
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col min-h-0">
         <TabsList className="mx-6 mt-4 w-auto inline-flex shrink-0 justify-start bg-muted/60 p-1 rounded-lg gap-0.5 flex-wrap">
-          {(["overview", "performance", "trajectory", "insights", "sportFit", "health", "nutrition", "reports"] as const).map((t) => (
+          {(["overview", "performance", "trajectory", "insights", "sportFit", "health", "nutrition", "yoga", "reports"] as const).map((t) => (
             <TabsTrigger key={t} value={t} className="text-xs px-3 py-1.5 data-[state=active]:shadow-sm">
-              {t === "trajectory" ? p.trajectoryTab : p.tabs[t as keyof typeof p.tabs] ?? t}
+              {t === "trajectory" ? p.trajectoryTab : t === "yoga" ? "🧘 Yoga" : p.tabs[t as keyof typeof p.tabs] ?? t}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -156,6 +157,7 @@ export default function AthleteProfilePage() {
           <TabsContent value="sportFit" className="mt-0"><SportFitTab athlete={athlete} dict={dict} /></TabsContent>
           <TabsContent value="health" className="mt-0"><HealthTab athlete={athlete} dict={dict} /></TabsContent>
           <TabsContent value="nutrition" className="mt-0"><NutritionTab athlete={athlete} /></TabsContent>
+          <TabsContent value="yoga" className="mt-0"><YogaTab athlete={athlete} /></TabsContent>
           <TabsContent value="reports" className="mt-0"><ReportsTab athlete={athlete} dict={dict} /></TabsContent>
         </div>
       </Tabs>

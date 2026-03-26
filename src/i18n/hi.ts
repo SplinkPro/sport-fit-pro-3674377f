@@ -146,6 +146,7 @@ export const hi = {
       sportFit: "खेल उपयुक्तता",
       health: "स्वास्थ्य एवं विकास",
       nutrition: "पोषण",
+      yoga: "🧘 योग",
       reports: "रिपोर्ट",
     },
     readinessSnapshot: "तत्परता स्नैपशॉट",
