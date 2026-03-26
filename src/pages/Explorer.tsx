@@ -53,7 +53,7 @@ const PAGE_SIZE = 20;
 
 // ─── Component ─────────────────────────────────────────────────────────────
 export default function ExplorerPage() {
-  const { athletes, loading, datasetMeta, savedDatasets, loadDataset } = useAthletes();
+  const { athletes, loading, datasetMeta } = useAthletes();
   const { dict, language } = useT();
   const navigate = useNavigate();
 
@@ -213,8 +213,20 @@ export default function ExplorerPage() {
           }
         />
 
-        {/* Dataset Switcher */}
-        <DatasetSwitcher current={datasetMeta} datasets={savedDatasets} onSwitch={loadDataset} />
+        {/* Active Dataset Banner */}
+        <div className="flex items-center gap-3 mb-4 px-3 py-2.5 rounded-xl border border-border bg-muted/40">
+          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Database size={15} className="text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide leading-none mb-0.5">Active Dataset</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-sm text-foreground truncate">{datasetMeta.name}</span>
+              <span className="text-xs text-muted-foreground">{datasetMeta.count} athletes · {datasetMeta.version}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 font-semibold tracking-wide">DEMO</span>
+            </div>
+          </div>
+        </div>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-4 gap-3 mb-4">
