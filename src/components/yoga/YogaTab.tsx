@@ -52,7 +52,35 @@ const SPORT_DISPLAY: Record<string, { emoji: string; label: string }> = {
 // ─── POSE CARD ───────────────────────────────────────────────────────────────
 function PoseCard({ pose }: { pose: YogaPose }) {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
   const domain = DOMAIN_META[pose.domain];
+
+  const searchQuery = `${pose.name} ${pose.sanskrit} yoga how to perform`;
+
+  const handleCopySearch = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(searchQuery).then(() => {
+      setCopied(true);
+      toast({
+        title: "Search query copied!",
+        description: `Paste into YouTube or Google: "${pose.name} ${pose.sanskrit}"`,
+        duration: 3000,
+      });
+      setTimeout(() => setCopied(false), 2500);
+    }).catch(() => {
+      // Fallback: select a temp input
+      const el = document.createElement("textarea");
+      el.value = searchQuery;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      toast({ title: "Copied!", description: searchQuery, duration: 3000 });
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
 
   return (
     <div className={cn("rounded-xl border bg-white overflow-hidden transition-shadow duration-200", domain.border, open ? "shadow-md" : "shadow-sm hover:shadow-md")}>
@@ -60,7 +88,6 @@ function PoseCard({ pose }: { pose: YogaPose }) {
         onClick={() => setOpen(v => !v)}
         className="w-full text-left px-4 py-3 flex items-start gap-3"
       >
-        {/* Domain pill */}
         <span className={cn("mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0", domain.bg, domain.color, domain.border, "border")}>
           {domain.icon}{domain.label}
         </span>
@@ -79,21 +106,34 @@ function PoseCard({ pose }: { pose: YogaPose }) {
 
       {open && (
         <div className="px-4 pb-4 space-y-3 border-t border-slate-100 pt-3">
-          {/* Wikipedia image placeholder + link */}
           <div className="flex gap-3">
-            <a
-              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(pose.name + ' ' + pose.sanskrit + ' yoga how to perform')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn("shrink-0 w-24 h-24 rounded-lg flex flex-col items-center justify-center gap-1 text-center border text-xs font-semibold transition-colors cursor-pointer", domain.bg, domain.border, domain.color, "hover:opacity-80")}
-            >
-              <ExternalLink className="w-5 h-5" />
-              <span>Watch on<br/>YouTube</span>
-            </a>
+            {/* Copy search query box */}
+            <div className={cn("shrink-0 w-28 rounded-lg flex flex-col items-center justify-center gap-2 text-center border p-3", domain.bg, domain.border)}>
+              <Search className={cn("w-5 h-5", domain.color)} />
+              <p className={cn("text-[10px] font-semibold leading-tight", domain.color)}>Search to learn</p>
+              <button
+                onClick={handleCopySearch}
+                className={cn(
+                  "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all duration-200",
+                  copied
+                    ? "bg-green-100 text-green-700 border-green-300"
+                    : cn(domain.border, domain.color, "hover:opacity-80 border")
+                )}
+              >
+                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {copied ? "Copied!" : "Copy query"}
+              </button>
+            </div>
+
             <div className="flex-1 space-y-2">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">How to perform</span>
                 <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{pose.instruction}</p>
+              </div>
+              {/* Search hint */}
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">
+                <Search className="w-3 h-3 text-slate-400 shrink-0" />
+                <p className="text-[10px] text-slate-500 font-mono truncate">{searchQuery}</p>
               </div>
               {pose.contraindication && (
                 <div className="flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
