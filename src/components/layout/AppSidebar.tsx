@@ -162,6 +162,26 @@ export function AppSidebar() {
         {BOTTOM_NAV.map((item) => (
           <NavItem key={item.key} item={item} />
         ))}
+        {/* Admin Panel — only visible to admins */}
+        {isAdmin && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <NavLink
+                to="/admin"
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150",
+                  "text-amber-600 hover:text-amber-700 hover:bg-amber-50",
+                  location.pathname === "/admin" && "bg-amber-50 font-semibold",
+                  collapsed && "justify-center px-2"
+                )}
+              >
+                <ShieldCheck size={18} className="shrink-0" />
+                {!collapsed && <span className="truncate">Admin Panel</span>}
+              </NavLink>
+            </TooltipTrigger>
+            {collapsed && <TooltipContent side="right">Admin Panel</TooltipContent>}
+          </Tooltip>
+        )}
       </div>
 
       {/* Collapse toggle */}
