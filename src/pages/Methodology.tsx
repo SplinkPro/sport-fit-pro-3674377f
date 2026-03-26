@@ -6,16 +6,18 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { cn } from "@/lib/utils";
 import { INDIAN_BENCHMARKS, SAI_BAND_COLORS } from "@/data/indianBenchmarks";
 
-type Section = "composite" | "national" | "derived" | "percentile" | "zscore" | "sportfit" | "bands" | "assumptions" | "refs";
+type Section = "composite" | "national" | "derived" | "percentile" | "zscore" | "sportfit" | "bands" | "validation" | "nutrition" | "assumptions" | "refs";
 
 const SECTIONS: { id: Section; label: string; icon: React.ElementType }[] = [
-  { id: "composite",   label: "Composite Score",           icon: FlaskConical  },
+  { id: "composite",   label: "Composite Score (CAPI)",    icon: FlaskConical  },
   { id: "national",    label: "Indian National Benchmarks",icon: Globe         },
   { id: "derived",     label: "Derived Indices",           icon: Dumbbell      },
   { id: "percentile",  label: "Percentile Ranking",        icon: BarChartIcon  },
   { id: "zscore",      label: "Z-Score Normalization",     icon: TrendIcon     },
-  { id: "sportfit",    label: "Sport-Fit Model",           icon: TrophyIcon    },
+  { id: "sportfit",    label: "Sport-Fit Model (15 Sports)",icon: TrophyIcon   },
   { id: "bands",       label: "Benchmark Bands",           icon: CheckCircle   },
+  { id: "validation",  label: "Data Validation Pipeline",  icon: AlertTriangle },
+  { id: "nutrition",   label: "Nutrition Engine",          icon: TrendingUp    },
   { id: "assumptions", label: "Assumptions & Limits",      icon: AlertTriangle },
   { id: "refs",        label: "References",                icon: BookOpen      },
 ];
