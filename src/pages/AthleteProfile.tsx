@@ -721,6 +721,33 @@ function TrajectoryTab({ athlete }: { athlete: EnrichedAthlete }) {
           })}
         </div>
 
+        {/* Per-metric direction indicator — critical for coaches reading time vs jump metrics */}
+        <div className={cn(
+          "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium mb-3 border",
+          metaOpt.lowerBetter
+            ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300"
+            : "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
+        )}>
+          {metaOpt.lowerBetter ? (
+            <>
+              <span className="text-base">⏱️</span>
+              <span>
+                <strong>Time metric</strong> — lower values = better performance.
+                The chart Y-axis is <strong>inverted</strong> so the line going <em>up</em> always means improvement.
+                The table shows the actual time value (e.g. 4.23s).
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-base">📏</span>
+              <span>
+                <strong>Distance / Height metric</strong> — higher values = better performance.
+                The line going <em>up</em> means the athlete is projected to jump further / higher.
+              </span>
+            </>
+          )}
+        </div>
+
         {currentValue != null && trajectory.length > 0 ? (
           <>
             <div className="h-56">
@@ -1061,20 +1088,54 @@ function SportFitTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
   const p = dict.profile;
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  // Pre-compute the top score to show delta gaps
+  const topScore = (athlete.sportFit ?? [])[0]?.matchScore ?? 0;
+
   return (
     <div className="space-y-3">
       <div className="text-xs text-muted-foreground mb-2">{p.configDisclaimer}</div>
-      {(athlete.sportFit ?? []).map((fit, i) => (
-        <div key={fit.sport.key} className="bg-card border rounded-lg overflow-hidden">
+      {(athlete.sportFit ?? []).map((fit, i) => {
+        const delta = i > 0 ? (fit.matchScore - topScore).toFixed(1) : null; // negative = below top
+        const isTop = i === 0;
+        const isClose = i > 0 && Math.abs(fit.matchScore - topScore) <= 2; // within 2% of top
+        return (
+        <div key={fit.sport.key} className={cn(
+          "bg-card border rounded-lg overflow-hidden transition-all",
+          isTop ? "border-amber-300 dark:border-amber-700 shadow-sm" : ""
+        )}>
+          {isTop && (
+            <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-700 px-3 py-1.5 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                <Trophy size={11} /> #1 Recommended Sport
+              </div>
+              <span className="text-[10px] text-amber-700 dark:text-amber-400">Based on this athlete's physical profile across 15 SAI sports</span>
+            </div>
+          )}
           <button
             className="w-full flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors text-left"
             onClick={() => setExpanded(expanded === fit.sport.key ? null : fit.sport.key)}
           >
+            {/* Rank number */}
+            <span className={cn(
+              "text-[11px] font-bold tabular-nums w-5 text-center shrink-0",
+              isTop ? "text-amber-600" : "text-muted-foreground"
+            )}>#{i + 1}</span>
             <span className="text-xl shrink-0">{fit.sport.icon}</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-sm">{fit.sport.nameEn}</span>
-                <span className="font-bold text-sm tabular-nums mr-2">{fit.matchScore.toFixed(1)}%</span>
+                <div className="flex items-center gap-1.5 mr-2">
+                  <span className="font-bold text-sm tabular-nums">{fit.matchScore.toFixed(1)}%</span>
+                  {delta !== null && (
+                    <span className={cn(
+                      "text-[10px] tabular-nums font-medium",
+                      isClose ? "text-amber-600" : "text-muted-foreground"
+                    )}>
+                      ({delta}%)
+                      {isClose && <span className="ml-0.5 text-amber-600">≈ close</span>}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="mt-1 h-2 bg-muted rounded-full overflow-hidden">
                 <div
@@ -1083,7 +1144,6 @@ function SportFitTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
                 />
               </div>
             </div>
-            {i === 0 && <Badge className="text-[10px] bg-amber-100 text-amber-800 border-amber-200 shrink-0">Top Match</Badge>}
             {expanded === fit.sport.key ? <ChevronUp size={14} className="shrink-0 text-muted-foreground" /> : <ChevronDown size={14} className="shrink-0 text-muted-foreground" />}
           </button>
 
@@ -1108,7 +1168,8 @@ function SportFitTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
