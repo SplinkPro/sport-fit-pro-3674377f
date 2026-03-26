@@ -40,8 +40,9 @@ function PageLoader() {
 // ─── Root redirect — send logged-in users straight to Explorer ──────────
 function RootRoute() {
   const { user, loading } = useAuth();
-  if (loading) return <PageLoader />;
-  if (user) return <Navigate to="/explorer" replace />;
+  // Show landing immediately; redirect to explorer once auth confirms a logged-in user.
+  // This prevents blank skeleton flash for unauthenticated visitors.
+  if (!loading && user) return <Navigate to="/explorer" replace />;
   return <LandingPage />;
 }
 
