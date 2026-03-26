@@ -751,6 +751,36 @@ export default function MethodologyPage() {
                     journal: "Indian Pediatrics, 52(1), 47–55 (2015)",
                     tag: "Youth BMI",
                   },
+                  {
+                    citation: "ICMR-NIN (2020)",
+                    title: "Dietary Reference Values for Indians — Table 4: Macronutrient requirements for school-age active children (6–18 years). Protein targets (1.2–1.8 g/kg/day) and energy values used in Pratibha Nutrition Engine.",
+                    journal: "Indian Council of Medical Research – National Institute of Nutrition, Hyderabad. 2020 Revised DRV.",
+                    tag: "Nutrition — PRIMARY",
+                  },
+                  {
+                    citation: "AYUSH Ministry of Health (India)",
+                    title: "Evidence-based classification of traditional home remedies for safe use in adolescent athletes. Safety grades (A/B/C) used in Pratibha home remedy database.",
+                    journal: "Ministry of AYUSH, Government of India. Traditional Medicine Safety Compendium 2019.",
+                    tag: "Home Remedies",
+                  },
+                  {
+                    citation: "Choudhary et al. (2015)",
+                    title: "Efficacy and safety of ashwagandha (Withania somnifera) root extract in improving cardiorespiratory endurance in healthy athletic adults",
+                    journal: "Journal of the International Society of Sports Nutrition, 12, 43",
+                    tag: "Ashwagandha (Recovery)",
+                  },
+                  {
+                    citation: "Leroyer et al. (1993)",
+                    title: "Archery biomechanics — postural control, static endurance and draw strength in competitive archers. Basis for Archery sport-fit trait weight corrections (endurance + power primary, bodyComp secondary).",
+                    journal: "Journal of Sports Sciences, 11(5), 395–404",
+                    tag: "Archery Sport-Fit",
+                  },
+                  {
+                    citation: "SAI Circular 07/2023",
+                    title: "Khelo India Sports Talent Identification Battery — official sports list (15 sports) and physical assessment test battery. Used for SPORTS_CONFIG weights and official sport inclusion list.",
+                    journal: "Sports Authority of India, Ministry of Youth Affairs & Sports, New Delhi, 2023",
+                    tag: "Sport-Fit — PRIMARY",
+                  },
                 ].map((r) => (
                   <div key={r.citation} className="border border-border rounded-lg p-3 flex gap-3">
                     <div className="flex-1">
