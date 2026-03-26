@@ -2,12 +2,13 @@ import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Users, BarChart3, Search, Upload, FileText, Settings, BookOpen, Shield,
-  ChevronLeft, ChevronRight, Zap,
+  ChevronLeft, ChevronRight, Zap, ShieldCheck,
 } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useT } from "@/i18n/useTranslation";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
 
 const NAV_ITEMS = [
   { key: "explorer", path: "/explorer", icon: Users, labelKey: "nav.explorer" },
