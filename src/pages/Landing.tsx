@@ -124,9 +124,9 @@ export default function Landing() {
   ];
 
   const stats = [
-    { value: 41, suffix: "+", label: "Athletes Assessed Per Import" },
+    { value: 500, suffix: "+", label: "Athletes Per Import Batch" },
     { value: 15, suffix: "", label: "SAI Pathway Sports Covered" },
-    { value: 12, suffix: "+", label: "Biometric Metrics Analysed" },
+    { value: 9, suffix: "", label: "SAI Mandated Tests Tracked" },
     { value: 0, suffix: "%", label: "Data Shared With Vendor" },
   ];
 
