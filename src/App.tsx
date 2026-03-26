@@ -37,6 +37,14 @@ function PageLoader() {
   );
 }
 
+// ─── Root redirect — send logged-in users straight to Explorer ──────────
+function RootRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return <PageLoader />;
+  if (user) return <Navigate to="/explorer" replace />;
+  return <LandingPage />;
+}
+
 // ─── Auth guard — redirects to /login if not signed in ──────────────────
 function RequireAuth() {
   const location = useLocation();
@@ -71,8 +79,8 @@ const App = () => (
           <AthleteProvider>
             <Suspense fallback={<PageLoader />}>
               <Routes>
-                {/* Public */}
-                <Route path="/" element={<LandingPage />} />
+              {/* Public */}
+                <Route path="/" element={<RootRoute />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 <Route path="/proposal" element={<ProposalPage />} />
