@@ -79,8 +79,8 @@ const App = () => (
           <AthleteProvider>
             <Suspense fallback={<PageLoader />}>
               <Routes>
-                {/* Public */}
-                <Route path="/" element={<LandingPage />} />
+              {/* Public */}
+                <Route path="/" element={<RootRoute />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 <Route path="/proposal" element={<ProposalPage />} />
