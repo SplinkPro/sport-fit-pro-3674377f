@@ -807,7 +807,11 @@ function getRelevantRegionalFoods(ctx: NutritionContext): RegionalFood[] {
   return REGIONAL_FOODS_DB.filter(food => {
     const districtMatch = food.districts.includes("All") || food.districts.includes(ctx.district);
     const seasonMatch = food.season.includes(season);
-    const dietMatch = ctx.dietPref === "veg" ? food.vegSafe : true;
+    // Diet filter:
+    //   veg → only vegSafe foods
+    //   egg-veg → vegSafe foods (eggs are separate items, not in regional food atlas)
+    //   nonveg → all foods
+    const dietMatch = (ctx.dietPref === "veg" || ctx.dietPref === "egg-veg") ? food.vegSafe : true;
     return districtMatch && (seasonMatch || food.season.length === 3) && dietMatch;
   });
 }
@@ -825,23 +829,33 @@ function getRelevantRemedies(ctx: NutritionContext): HomeRemedy[] {
   return HOME_REMEDIES_DB.filter(remedy => {
     const ageOk = ctx.age >= remedy.ageMin;
     const districtOk = remedy.districts.includes("All") || remedy.districts.includes(ctx.district);
-    // Prioritise: iron remedies for female athletes, energy/recovery for all
     return ageOk && districtOk;
   });
 }
 
-// ─── Weekly tips ────────────────────────────────────────────────────────
+// ─── Weekly tips ─────────────────────────────────────────────────────────
+// CRITICAL FIX: tip 2 was always "boiled eggs-equivalent" regardless of diet pref.
+// Veg athletes should NOT see egg equivalents. Provide diet-appropriate protein reference.
 
 function buildWeeklyTips(ctx: NutritionContext): string[] {
+  const proteinTarget = Math.round(ctx.weight * 1.5);
+  
+  // Diet-appropriate protein reference — no egg equivalents for vegetarians
+  const proteinTip = ctx.dietPref === "veg"
+    ? `Your daily protein target: ${proteinTarget}g. That's ~${Math.ceil(proteinTarget / 8)} servings of dal/paneer — spread across all meals.`
+    : ctx.dietPref === "egg-veg"
+    ? `Your daily protein target: ${proteinTarget}g. That's ${Math.ceil(proteinTarget / 13)} boiled eggs-equivalent. Combine eggs + dal + milk across meals.`
+    : `Your daily protein target: ${proteinTarget}g. That's roughly ${Math.ceil(proteinTarget / 22)} palm-sized chicken servings. Spread protein across all 5 meals.`;
+
   const tips = [
     "Eat within 30 minutes of training completing — this is your anabolic window.",
-    `Your daily protein target: ${Math.round(ctx.weight * 1.5)}g. That's ${Math.ceil(Math.round(ctx.weight * 1.5) / 13)} boiled eggs-equivalent.`,
+    proteinTip,
     "Bihar tip: Replace packaged biscuits with sattu chikki or til-gud ladoo for far better nutrition.",
     "Never skip breakfast on training days — 30% of your daily energy should come from breakfast.",
   ];
 
   if (ctx.gender === "F") {
-    tips.push("Female athletes: Add 1 piece of jaggery + 1 tsp sesame seeds daily to prevent iron deficiency.");
+    tips.push("Female athletes: Add 1 piece of jaggery + 1 tsp sesame seeds daily to prevent iron deficiency anaemia.");
   }
 
   if (ctx.bmi < 18.5) {
@@ -855,17 +869,29 @@ function buildWeeklyTips(ctx: NutritionContext): string[] {
   return tips.slice(0, 5);
 }
 
-// ─── Pre/post workout guidance ──────────────────────────────────────────
+// ─── Pre/post workout guidance ────────────────────────────────────────────
+// CRITICAL FIX: was using `hasEgg = dietPref !== "veg"` — treating nonveg same as egg-veg.
+// Now provides 3-way differentiated post-workout guidance.
 
 function buildWorkoutGuidance(ctx: NutritionContext) {
-  const hasEgg = ctx.dietPref !== "veg";
+  const isVeg    = ctx.dietPref === "veg";
+  const isEggVeg = ctx.dietPref === "egg-veg";
+  const isNonVeg = ctx.dietPref === "nonveg";
+
   const preworkout = ctx.goal === "performance"
     ? `30–45 min before: Sattu drink (2 tbsp sattu + water + lemon + jaggery). This gives 22g slow-release carbs + 5g protein — Bihar's original sports nutrition.`
     : `1–1.5 hrs before: Litti-Chokha (half portion) or poha with peanuts. Avoid heavy meals within 1 hour.`;
 
-  const postworkout = hasEgg
-    ? `Within 30 min: 2 boiled eggs + 1 banana + 250ml milk. Target: 15–20g protein + 30g carbs within the recovery window.`
-    : `Within 30 min: Banana-milk shake (2 bananas + 250ml milk + honey). Or: Paneer 50g + 1 cup lassi. Target: 15g protein + 30g carbs.`;
+  // Three distinct post-workout recommendations based on diet preference
+  let postworkout: string;
+  if (isNonVeg) {
+    postworkout = `Within 30 min: 2 boiled eggs OR 100g grilled chicken + 1 banana + 250ml milk. Target: 20–25g complete animal protein + 30g carbs. Chicken/eggs provide the best leucine trigger for muscle synthesis.`;
+  } else if (isEggVeg) {
+    postworkout = `Within 30 min: 2 boiled eggs + 1 banana + 250ml milk. Target: 15–20g protein + 30g carbs within the recovery window. Eggs provide complete amino acid profile not available in plant protein alone.`;
+  } else {
+    // Pure veg
+    postworkout = `Within 30 min: Banana-milk shake (2 bananas + 250ml milk + honey). Or: Paneer 50g + 1 cup lassi. Target: 15g protein + 30g carbs. Veg athletes should combine dal+rice+curd at dinner to complete amino acid profile.`;
+  }
 
   return { preworkout, postworkout };
 }
