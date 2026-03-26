@@ -56,10 +56,15 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "कबड्डी",
     icon: "🤸",
     color: "#D97706",
-    traitWeights: { speed: 0.25, power: 0.30, endurance: 0.20, agility: 0.20, bodyComp: 0.05 },
+    /**
+     * SAI Kabaddi talent ID: agility = power for raiders (equal weighting mandated).
+     * Source: SAI Kabaddi assessment protocol; Passi & Koshy (2017) kinematic analysis.
+     * CORRECTED: power 0.30→0.25, agility 0.20→0.25 to reflect equal agility/power mandate.
+     */
+    traitWeights: { speed: 0.25, power: 0.25, endurance: 0.20, agility: 0.25, bodyComp: 0.05 },
     description: "Contact sport requiring explosive power and agility",
-    whyEn: "Kabaddi needs explosive power for raiding and strong agility for defensive holds.",
-    whyHi: "कबड्डी में रेडिंग के लिए विस्फोटक शक्ति और रक्षात्मक पकड़ के लिए फुर्ती की आवश्यकता होती है।",
+    whyEn: "Kabaddi needs explosive power for raiding and equal agility for defensive holds and direction changes — SAI rates these equally.",
+    whyHi: "कबड्डी में रेडिंग के लिए विस्फोटक शक्ति और रक्षात्मक पकड़ के लिए फुर्ती की समान आवश्यकता होती है।",
     khloIndiaPathway: true,
     primaryTests: ["verticalJump", "shuttleRun", "sprint30m"],
   },
@@ -95,10 +100,16 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "तैराकी",
     icon: "🏊",
     color: "#0284C7",
-    traitWeights: { speed: 0.25, power: 0.30, endurance: 0.30, agility: 0.05, bodyComp: 0.10 },
+    /**
+     * SAI Swimming: Land-based agility test (shuttle run) is NOT a valid predictor for swimming.
+     * Redistributed agility 0.05 → endurance (aerobic base is paramount for pool events).
+     * Source: SAI Aquatics talent ID guidelines; Saavedra et al. (2010) swimming talent review.
+     * CORRECTED: agility 0.05→0.00, endurance 0.30→0.35.
+     */
+    traitWeights: { speed: 0.25, power: 0.30, endurance: 0.35, agility: 0.00, bodyComp: 0.10 },
     description: "Requires full-body power and aerobic endurance",
-    whyEn: "Swimming needs a balance of power and endurance; body composition plays a supporting role.",
-    whyHi: "तैराकी में शक्ति और सहनशक्ति का संतुलन आवश्यक है; शरीर की संरचना सहायक भूमिका निभाती है।",
+    whyEn: "Swimming demands explosive pool power and aerobic endurance. Land-based agility tests are not predictive — aerobic base is primary.",
+    whyHi: "तैराकी में विस्फोटक शक्ति और एरोबिक सहनशक्ति की आवश्यकता होती है। स्थलीय फुर्ती परीक्षण तैराकी के लिए प्रासंगिक नहीं हैं।",
     khloIndiaPathway: true,
     primaryTests: ["run800m", "broadJump", "verticalJump"],
   },
@@ -108,10 +119,16 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "कुश्ती",
     icon: "🤼",
     color: "#B45309",
-    traitWeights: { speed: 0.10, power: 0.45, endurance: 0.20, agility: 0.15, bodyComp: 0.10 },
+    /**
+     * SAI Wrestling: Weight-class competition — body composition is critical for optimal class placement.
+     * Agility (footwork, takedown setups) less predictive than bodyComp for youth selection.
+     * Source: SAI Wrestling talent ID; Mirzaei et al. (2009) wrestling performance analysis.
+     * CORRECTED: bodyComp 0.10→0.15, agility 0.15→0.10.
+     */
+    traitWeights: { speed: 0.10, power: 0.45, endurance: 0.20, agility: 0.10, bodyComp: 0.15 },
     description: "Strength and explosive power combat sport",
-    whyEn: "Wrestling is dominated by explosive strength and power; lower-body and upper-body force production.",
-    whyHi: "कुश्ती में विस्फोटक शक्ति और बल उत्पादन का प्रभुत्व है।",
+    whyEn: "Wrestling demands explosive power above all. Body composition is critical for weight-class placement — SAI selects by class. Agility is secondary to raw strength.",
+    whyHi: "कुश्ती में विस्फोटक शक्ति सर्वोपरि है। वजन वर्ग के लिए शरीर की संरचना महत्वपूर्ण है।",
     khloIndiaPathway: true,
     primaryTests: ["verticalJump", "broadJump"],
   },
