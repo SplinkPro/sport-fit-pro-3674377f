@@ -407,6 +407,83 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
       return fit ? `${fit.matchScore}/100` : "—";
     };
     filters.push("Sport Fit: Basketball");
+  } else if (/badminton/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "badminton");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Badminton Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "badminton");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Badminton");
+  } else if (/boxing|box/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "boxing");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Boxing Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "boxing");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Boxing");
+  } else if (/\bhockey\b/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "hockey");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Hockey Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "hockey");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Hockey");
+  } else if (/archery|archer/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "archery");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Archery Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "archery");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Archery");
+  } else if (/kho\s*kho|khokho/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "kho_kho");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Kho Kho Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "kho_kho");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Kho Kho");
+  } else if (/table\s*tennis|tt\b|ping\s*pong/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "table_tennis");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Table Tennis Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "table_tennis");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Table Tennis");
+  } else if (/weightlift|weight\s*lift|bharat|lifting/i.test(q)) {
+    sortFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "weightlifting");
+      return -(fit?.matchScore ?? 0);
+    };
+    metricLabel = "Weightlifting Fit Score";
+    metricFn = (a) => {
+      const fit = a.sportFit?.find((s) => s.sport.key === "weightlifting");
+      return fit ? `${fit.matchScore}/100` : "—";
+    };
+    filters.push("Sport Fit: Weightlifting");
   } else if (/best\s*suit|recommend|which\s*sport|top\s*sport/i.test(q)) {
     sortFn = (a) => -(a.topSportScore ?? 0);
     metricLabel = "Top Sport Fit";
