@@ -155,15 +155,27 @@ export default function BadmintonExplorer() {
             ))}
           </div>
           <div className="w-px bg-border mx-1" />
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1 flex-wrap items-center">
+            <span className="text-[10px] text-muted-foreground font-medium mr-0.5">Quadrant:</span>
             {([
-              { v: "All" as const, label: "All Profiles" },
-              { v: "CHAMPION_PROFILE" as const, label: "Champion" },
-              { v: "RAW_PHYSICAL_TALENT" as const, label: "Raw Talent" },
-              { v: "SKILL_FIRST" as const, label: "Skill First" },
-              { v: "EARLY_DEVELOPMENT" as const, label: "Early Dev" },
-            ]).map(({ v, label }) => (
-              <FilterChip key={v} label={label} active={quad === v} onClick={() => setQuad(v)} />
+              { v: "All" as const,               label: "All Profiles",   desc: null },
+              { v: "CHAMPION_PROFILE" as const,   label: "Champion",       desc: "BII ≥ 60 & SQ ≥ 60 — elite physical + skill" },
+              { v: "RAW_PHYSICAL_TALENT" as const,label: "Raw Talent",     desc: "BII ≥ 60 & SQ < 60 — strong physique, skill needs development" },
+              { v: "SKILL_FIRST" as const,        label: "Skill First",    desc: "BII < 60 & SQ ≥ 60 — high skill, physical conditioning needed" },
+              { v: "EARLY_DEVELOPMENT" as const,  label: "Early Dev",      desc: "BII < 60 & SQ < 60 — foundational stage, full development needed" },
+            ]).map(({ v, label, desc }) => (
+              <div key={v} className="relative group">
+                <FilterChip label={label} active={quad === v} onClick={() => setQuad(v)} />
+                {desc && (
+                  <div className="absolute bottom-full left-0 mb-1.5 z-20 hidden group-hover:block pointer-events-none">
+                    <div className="bg-foreground text-background text-[10px] rounded-md px-2.5 py-1.5 whitespace-nowrap shadow-lg max-w-[240px] leading-relaxed">
+                      <div className="font-semibold mb-0.5">{label}</div>
+                      <div className="font-mono opacity-80">{desc}</div>
+                    </div>
+                    <div className="w-2 h-2 bg-foreground rotate-45 ml-3 -mt-1" />
+                  </div>
+                )}
+              </div>
             ))}
           </div>
           <div className="w-px bg-border mx-1" />
