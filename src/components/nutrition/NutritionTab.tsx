@@ -70,7 +70,10 @@ export default function NutritionTab({ athlete }: NutritionTabProps) {
   const { t, language } = useTranslation();
   const isHi = language === "hi";
 
-  const autoGoal: NutritionGoal = (athlete.bmi ?? 20) < 16 ? "weightGain" : (athlete.bmi ?? 20) > 23 ? "maintenance" : "performance";
+  // FIX: IAP normal BMI range for active youth athletes is up to 25 (not 23).
+  // Using 23 caused healthy teen athletes (BMI 23–25) to be incorrectly routed to "maintenance"
+  // instead of "performance". Corrected threshold to 25 (IAP overweight boundary for South Asian youth).
+  const autoGoal: NutritionGoal = (athlete.bmi ?? 20) < 16 ? "weightGain" : (athlete.bmi ?? 20) > 25 ? "maintenance" : "performance";
   const [goal, setGoal] = useState<NutritionGoal>(autoGoal);
   const [dietPref, setDietPref] = useState<DietPref>("egg-veg");
   const [subTab, setSubTab] = useState("meal");
