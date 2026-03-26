@@ -195,9 +195,12 @@ export const SPORTS_CONFIG: SportConfig[] = [
   /**
    * Archery — SAI Circular 07/2023 included sport
    * Key traits: body stability and postural control; psychological composure; moderate upper-body strength.
-   * Physical tests are less predictive for archery — BMI and postural stability dominate.
-   * Body composition (lighter, controlled BMI) and endurance for standing steadiness are key.
+   * Physical tests are less predictive for archery — static endurance and upper-body strength dominate.
    * Source: SAI archery talent ID + Ertan et al. (2003) archery biomechanics.
+   * NOTE FIX: bodyComp weight corrected from 0.35 → 0.15.
+   *   0.35 was unscientific — it penalised normal-BMI athletes and contradicts SAI archery selection criteria.
+   *   Archery is weight-class agnostic. Endurance (static muscle hold) and power (draw strength) are primary.
+   *   Source: SAI archery technical committee guidelines; Leroyer et al. (1993) biomechanical analysis.
    */
   {
     key: "archery",
@@ -205,10 +208,10 @@ export const SPORTS_CONFIG: SportConfig[] = [
     nameHi: "तीरंदाज़ी",
     icon: "🏹",
     color: "#4B5563",
-    traitWeights: { speed: 0.05, power: 0.25, endurance: 0.25, agility: 0.10, bodyComp: 0.35 },
-    description: "Precision sport requiring postural stability and body control",
-    whyEn: "Archery favours athletes with exceptional postural control and body stability. Optimal body composition, upper-body strength, and aerobic base for static endurance are the primary selectors.",
-    whyHi: "तीरंदाज़ी में शारीरिक स्थिरता और नियंत्रण उत्कृष्ट होना चाहिए। शरीर की सर्वोत्तम संरचना प्राथमिक चयन मानदंड है।",
+    traitWeights: { speed: 0.05, power: 0.30, endurance: 0.35, agility: 0.15, bodyComp: 0.15 },
+    description: "Precision sport requiring postural stability, static endurance and upper-body strength",
+    whyEn: "Archery favours athletes with exceptional static muscular endurance and upper-body draw strength. Aerobic base supports sustained concentration across rounds. Body composition plays a supporting role — not a primary selector.",
+    whyHi: "तीरंदाज़ी में स्थैतिक पेशीय सहनशक्ति और ऊपरी शरीर की शक्ति उत्कृष्ट होनी चाहिए। एरोबिक आधार एकाग्रता को सहारा देता है।",
     khloIndiaPathway: true,
     primaryTests: ["run800m", "broadJump"],
   },
