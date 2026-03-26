@@ -267,7 +267,7 @@ export default function Landing() {
             <Reveal key={s.label} delay={i * 80}>
               <div className="space-y-1">
                 <div className="text-4xl font-black" style={{ color: "#1E3A5F" }}>
-                  <Counter to={s.value} suffix={s.suffix} />
+                  {"display" in s && s.display ? s.display : <Counter to={s.value} suffix={s.suffix} />}
                 </div>
                 <div className="text-sm text-slate-500 font-medium">{s.label}</div>
               </div>
