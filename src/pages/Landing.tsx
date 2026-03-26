@@ -109,6 +109,11 @@ export default function Landing() {
       title: "Transparent Methodology",
       desc: "Every score is explainable. Coaches can drill down to the exact metric contributing to each recommendation.",
     },
+    {
+      icon: <span className="text-xl">🧘</span>,
+      title: "Yoga Intelligence Engine",
+      desc: "India-first: hyper-personalised yoga prescriptions for every athlete across all 15 SAI Khelo India sports — calibrated by age, gender, BMI, and sport role. Includes pose-by-pose instructions aligned to SAI Circular 07/2023.",
+    },
   ];
 
   const trustItems = [
