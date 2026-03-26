@@ -1168,7 +1168,8 @@ function SportFitTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: Return
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
