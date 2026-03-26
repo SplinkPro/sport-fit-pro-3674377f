@@ -54,25 +54,7 @@ const GENDERS: { value: BatchMeta["gender"]; label: string; desc: string }[] = [
   { value: "Mixed",  label: "Mixed",      desc: "Use gender column in file (M/F per row)" },
 ];
 
-const IMPORT_HISTORY_KEY = "pratibha_import_history";
 
-interface HistoryEntry {
-  id: string; date: string; file: string; rows: number;
-  valid: number; warnings: number; errors: number;
-  status: "success" | "partial"; version: string;
-}
-
-function loadHistory(): HistoryEntry[] {
-  try {
-    const saved = localStorage.getItem(IMPORT_HISTORY_KEY);
-    if (saved) return JSON.parse(saved);
-  } catch { /* ignore */ }
-  // Return empty array — no fake/hardcoded history
-  return [];
-}
-function saveHistory(entries: HistoryEntry[]) {
-  try { localStorage.setItem(IMPORT_HISTORY_KEY, JSON.stringify(entries)); } catch { /* ignore */ }
-}
 
 // ─── Severity config ─────────────────────────────────────────────────────────
 const SEVERITY_CONFIG = {
