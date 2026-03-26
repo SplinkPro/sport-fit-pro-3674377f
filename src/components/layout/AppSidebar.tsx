@@ -33,6 +33,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { dict } = useT();
   const location = useLocation();
+  const { isAdmin } = useAuth();
 
   function getLabel(key: string): string {
     const parts = key.split(".");
