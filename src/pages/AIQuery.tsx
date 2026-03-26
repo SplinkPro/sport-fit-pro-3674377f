@@ -549,11 +549,14 @@ const EXAMPLE_QUERIES_HI = [
 const SAVED_TEMPLATES = [
   { id: 1, name: "Top sprinters", query: "Show top 10 athletes by 30m sprint" },
   { id: 2, name: "High potential cohort", query: "Show athletes with high potential" },
-  { id: 3, name: "Underweight alert", query: "Find underweight athletes" },
+  { id: 3, name: "Nutrition alert", query: "Find athletes who need nutrition support" },
   { id: 4, name: "SAI Elite candidates", query: "Show SAI elite candidates" },
   { id: 5, name: "Khelo India pipeline", query: "Show national talent pool" },
   { id: 6, name: "Young talent pipeline", query: "Find young talent development pipeline age 15" },
-  { id: 7, name: "Best volleyball fit", query: "Show top 10 athletes for volleyball" },
+  { id: 7, name: "Best badminton fit", query: "Show top 10 athletes for badminton" },
+  { id: 8, name: "Best hockey fit", query: "Who is best suited for hockey?" },
+  { id: 9, name: "Kho Kho talent", query: "Show top athletes for kho kho" },
+  { id: 10, name: "Data quality issues", query: "Show athletes with data quality issues" },
 ];
 
 const FOLLOW_UP = [
@@ -561,10 +564,13 @@ const FOLLOW_UP = [
   "Show SAI elite candidates",
   "Find young talent development pipeline",
   "Show national talent pool",
-  "Which athletes are best suited for cycling?",
+  "Who is best suited for badminton?",
   "Show top 10 athletes by 30m sprint",
   "Show athletes with highest aerobic capacity",
   "Show top 10 athletes for kabaddi",
+  "Which athletes are best for hockey?",
+  "Show top athletes for table tennis",
+  "Find athletes who need nutrition support",
 ];
 
 type QueryState = "idle" | "interpreting" | "results";
