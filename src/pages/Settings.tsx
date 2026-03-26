@@ -20,12 +20,8 @@ const TABS = [
   { id: "data", label: "Data Retention", icon: Database },
 ];
 
-const USERS = [
-  { id: 1, name: "Admin User", email: "admin@splink.in", role: "Super Admin", status: "active" },
-  { id: 2, name: "Coach Sharma", email: "sharma@school.in", role: "Coach", status: "active" },
-  { id: 3, name: "Analyst Priya", email: "priya@school.in", role: "Analyst", status: "active" },
-  { id: 4, name: "Viewer Rahul", email: "rahul@school.in", role: "Viewer", status: "inactive" },
-];
+// Note: Real user management is in the Admin Panel (/admin).
+// This settings page shows configuration options only.
 
 const ROLE_COLORS: Record<string, string> = {
   "Super Admin": "bg-primary/10 text-primary",
@@ -166,31 +162,19 @@ export default function SettingsPage() {
           {/* Users & Roles */}
           {activeTab === "users" && (
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Users & Roles</CardTitle>
-                  <CardDescription>Manage platform users and their access levels.</CardDescription>
-                </div>
-                <Button size="sm" className="gap-1" onClick={() => saveSimple("User invite")}>+ Invite User</Button>
+              <CardHeader>
+                <CardTitle>Users & Roles</CardTitle>
+                <CardDescription>User management has moved to the dedicated Admin Panel for better security and control.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="divide-y">
-                  {USERS.map((u) => (
-                    <div key={u.id} className="py-3 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                        {u.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{u.name}</div>
-                        <div className="text-xs text-muted-foreground">{u.email}</div>
-                      </div>
-                      <Badge className={cn("text-xs border-0", ROLE_COLORS[u.role])}>{u.role}</Badge>
-                      <Badge variant={u.status === "active" ? "default" : "outline"} className="text-xs">
-                        {u.status}
-                      </Badge>
-                      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => saveSimple("User edit")}>Edit</Button>
-                    </div>
-                  ))}
+                <div className="flex flex-col items-center gap-4 py-8">
+                  <Users className="w-10 h-10 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground text-center max-w-sm">
+                    All user management — invitations, role assignments, and access control — is handled through the Admin Panel.
+                  </p>
+                  <Button size="sm" className="gap-2" onClick={() => window.location.href = "/admin"}>
+                    <Shield className="w-4 h-4" /> Open Admin Panel
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -229,7 +213,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { task: "Insight Summaries", model: "gpt-4o-mini" },
+                      { task: "Insight Summaries", model: "gemini-2.5-flash" },
                       { task: "Sport Recommendations", model: "rules-engine" },
                       { task: "Query Assistant", model: "rules-engine" },
                       { task: "Report Writing", model: "template-engine" },
