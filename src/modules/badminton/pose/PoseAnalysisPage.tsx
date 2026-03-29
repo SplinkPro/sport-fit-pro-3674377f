@@ -318,6 +318,7 @@ export default function PoseAnalysisPage() {
                   players={players}
                   selectedPlayerIdx={selectedPlayerIdx}
                   metrics={currentAnalysis?.biomechanics.metrics}
+                  phase={currentAnalysis?.classification.phase}
                   width={displayW}
                   height={displayH}
                 />
