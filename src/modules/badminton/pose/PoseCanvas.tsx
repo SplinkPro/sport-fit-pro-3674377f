@@ -238,7 +238,7 @@ function drawAngleAnnotations(
   scaleY: number
 ) {
   const handedness = detectHandedness(player.pose.keypoints);
-  const annotationJoints = getAngleAnnotationJoints(handedness);
+  const annotationJoints = getAngleAnnotationJoints(handedness, player.pose.keypoints);
 
   for (const metric of metrics) {
     const jointIdx = annotationJoints[metric.label];
