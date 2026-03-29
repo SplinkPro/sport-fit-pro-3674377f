@@ -28,12 +28,18 @@ export default function Login() {
         redirect_uri: window.location.origin,
         extraParams: { prompt: "select_account" },
       });
-      // If not redirected (e.g. popup flow or error), reset loading
+
       if (result?.error) {
         toast({ title: "Sign-in failed", description: String(result.error), variant: "destructive" });
         setAuthLoading(false);
+        return;
       }
-      // If redirected, the page will unload — no need to reset loading
+
+      if (result?.redirected) {
+        return;
+      }
+
+      navigate("/explorer", { replace: true });
     } catch (err) {
       toast({ title: "Sign-in failed", description: String(err), variant: "destructive" });
       setAuthLoading(false);
