@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from "react";
 import type { Keypoint } from "./poseEngine";
 import { SKELETON_CONNECTIONS, KEYPOINT_INDEX as KI } from "./poseEngine";
+import { detectHandedness } from "./biomechanics";
 import type { BiomechanicsMetric } from "./biomechanics";
 import type { DetectedPlayer } from "./poseEngine";
 import type { ShotPhase } from "./shotClassifier";
