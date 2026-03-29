@@ -1,4 +1,4 @@
-// ─── Pose Results v2 — Tabbed Layout + Specific Corrections ──────────────
+// ─── Pose Results v3 — Coach-First + Technical Deep-Dive ─────────────────
 import React, { useState } from "react";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -7,24 +7,18 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import type { BiomechanicsResult, CorrectionTip } from "./biomechanics";
+import type { BiomechanicsResult } from "./biomechanics";
 import type { ClassificationResult, ShotPhase } from "./shotClassifier";
 import type { ReferenceModel } from "./referenceModels";
+import { CoachSummary } from "./CoachSummary";
 import { cn } from "@/lib/utils";
 
 interface PoseResultsProps {
   classification: ClassificationResult;
   biomechanics: BiomechanicsResult;
   reference: ReferenceModel | null;
+  playerLabel?: string;
 }
-
-const PHASE_BADGES: Record<ShotPhase, { label: string; color: string }> = {
-  preparation: { label: "Preparation Phase", color: "bg-amber-500/10 text-amber-700 border-amber-300" },
-  contact: { label: "Contact Phase", color: "bg-emerald-500/10 text-emerald-700 border-emerald-300" },
-  "follow-through": { label: "Follow-Through", color: "bg-blue-500/10 text-blue-700 border-blue-300" },
-  ready: { label: "Ready Position", color: "bg-purple-500/10 text-purple-700 border-purple-300" },
-  unknown: { label: "Unknown Phase", color: "bg-muted text-muted-foreground border-border" },
-};
 
 const SEVERITY_COLORS = {
   excellent: "text-emerald-600",
@@ -40,10 +34,10 @@ const SEVERITY_BG = {
   critical: "[&>div]:bg-red-500",
 };
 
-type Tab = "summary" | "angles" | "coaching";
+type Tab = "coach" | "technical" | "comparison";
 
-export function PoseResults({ classification, biomechanics, reference }: PoseResultsProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("summary");
+export function PoseResults({ classification, biomechanics, reference, playerLabel }: PoseResultsProps) {
+  const [activeTab, setActiveTab] = useState<Tab>("coach");
   const { shotType, phase, confidence, reasoning, allScores } = classification;
   const { metrics, overallScore, armScore, coreScore, legScore, radarData, tips, handedness, confidence: metricConfidence } = biomechanics;
 
@@ -60,18 +54,13 @@ export function PoseResults({ classification, biomechanics, reference }: PoseRes
           <div className="flex items-center justify-between">
             <div>
               <div className="text-4xl font-black tabular-nums">{overallScore}</div>
-              <div className="text-xs opacity-90 font-medium">
-                Form Score / 100
-              </div>
+              <div className="text-xs opacity-90 font-medium">Form Score / 100</div>
             </div>
             <div className="text-right space-y-1">
               <div className="flex items-center gap-2 justify-end">
                 <span className="text-lg">{reference?.icon ?? "🏸"}</span>
                 <span className="text-base font-bold">{shotType}</span>
               </div>
-              <Badge variant="outline" className={cn("text-[9px] border-white/40 text-white/90", PHASE_BADGES[phase].color.includes("bg-") ? "" : "")}>
-                {PHASE_BADGES[phase].label}
-              </Badge>
               <div className="text-[10px] opacity-80">
                 {Math.round(confidence * 100)}% confidence · {handedness}-handed
               </div>
@@ -89,10 +78,7 @@ export function PoseResults({ classification, biomechanics, reference }: PoseRes
                 <div className="text-[10px] opacity-80">{cat.icon} {cat.label}</div>
                 <div className="text-sm font-bold">{cat.score}</div>
                 <div className="h-1 rounded-full bg-white/20 mt-0.5">
-                  <div
-                    className="h-full rounded-full bg-white/80 transition-all"
-                    style={{ width: `${cat.score}%` }}
-                  />
+                  <div className="h-full rounded-full bg-white/80 transition-all" style={{ width: `${cat.score}%` }} />
                 </div>
               </div>
             ))}
@@ -103,102 +89,41 @@ export function PoseResults({ classification, biomechanics, reference }: PoseRes
       {/* ── Tab Navigation ── */}
       <div className="flex gap-1 bg-muted/30 rounded-lg p-0.5">
         {[
-          { key: "summary" as Tab, label: "📊 Summary" },
-          { key: "angles" as Tab, label: "📐 Angles" },
-          { key: "coaching" as Tab, label: "🎯 Coaching" },
+          { key: "coach" as Tab, label: "📋 Coach View", desc: "Summary & drills" },
+          { key: "technical" as Tab, label: "📐 Technical", desc: "Angles & data" },
+          { key: "comparison" as Tab, label: "📊 Analysis", desc: "Charts & scores" },
         ].map((t) => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
             className={cn(
-              "flex-1 py-1.5 text-xs font-semibold rounded-md transition-all",
+              "flex-1 py-2 text-xs font-semibold rounded-md transition-all",
               activeTab === t.key
                 ? "bg-background shadow-sm text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {t.label}
+            <div>{t.label}</div>
+            <div className="text-[9px] font-normal opacity-70">{t.desc}</div>
           </button>
         ))}
       </div>
 
       {/* ── Tab Content ── */}
-      {activeTab === "summary" && (
-        <div className="space-y-3">
-          {/* Shot classification details */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold">Shot Classification</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-xs text-muted-foreground">{reasoning}</p>
 
-              {/* Alternative classifications */}
-              {allScores.length > 1 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {allScores.slice(0, 4).map((s, i) => (
-                    <Badge
-                      key={s.type}
-                      variant={i === 0 ? "default" : "outline"}
-                      className="text-[9px]"
-                    >
-                      {s.type} {Math.round(s.score * 100)}%
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {reference && (
-                <div className="mt-2 p-2 rounded bg-muted/30 text-[10px] text-muted-foreground">
-                  <p className="font-semibold text-foreground mb-1">{reference.label} — Reference</p>
-                  <p>{reference.description}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Radar chart */}
-          {radarData.length >= 3 && (
-            <Card>
-              <CardHeader className="pb-1">
-                <CardTitle className="text-xs font-semibold">Biomechanical Profile</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-56 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="72%">
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis
-                        dataKey="metric"
-                        tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                      />
-                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 8 }} />
-                      <Radar name="Ideal" dataKey="ideal" stroke="hsl(var(--muted-foreground))" fill="hsl(var(--muted-foreground))" fillOpacity={0.08} strokeDasharray="4 4" />
-                      <Radar name="Athlete" dataKey="athlete" stroke={reference?.color ?? "#1A5C38"} fill={reference?.color ?? "#1A5C38"} fillOpacity={0.25} strokeWidth={2} />
-                      <Tooltip />
-                      <Legend wrapperStyle={{ fontSize: 10 }} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Confidence indicator */}
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground px-1">
-            <span>📏 Measurement confidence:</span>
-            <div className="flex-1 h-1.5 rounded-full bg-muted">
-              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${metricConfidence * 100}%` }} />
-            </div>
-            <span className="tabular-nums">{Math.round(metricConfidence * 100)}%</span>
-            <span>({metrics.length}/9 joints measured)</span>
-          </div>
-        </div>
+      {/* COACH VIEW — Plain language, actionable */}
+      {activeTab === "coach" && (
+        <CoachSummary
+          classification={classification}
+          biomechanics={biomechanics}
+          reference={reference}
+          playerLabel={playerLabel}
+        />
       )}
 
-      {activeTab === "angles" && (
+      {/* TECHNICAL VIEW — Angle measurements by body group */}
+      {activeTab === "technical" && (
         <div className="space-y-2">
-          {/* Group by category */}
           {(["arm", "core", "leg"] as const).map((cat) => {
             const catMetrics = metrics.filter((m) => m.category === cat);
             if (catMetrics.length === 0) return null;
@@ -232,54 +157,108 @@ export function PoseResults({ classification, biomechanics, reference }: PoseRes
               </Card>
             );
           })}
-        </div>
-      )}
 
-      {activeTab === "coaching" && (
-        <div className="space-y-3">
-          {/* Priority corrections */}
+          {/* Shot classification transparency */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold">
-                {tips.length === 1 && tips[0].priority === 0 ? "✅ Assessment" : "🎯 Priority Corrections"}
-              </CardTitle>
+              <CardTitle className="text-xs font-semibold">🔬 Classification Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {tips.map((tip, i) => (
-                <div key={i} className="flex gap-2.5 items-start">
-                  <div className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5",
-                    tip.priority > 80 ? "bg-red-100 text-red-700" :
-                    tip.priority > 40 ? "bg-amber-100 text-amber-700" :
-                    "bg-emerald-100 text-emerald-700"
-                  )}>
-                    {tip.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-foreground">{tip.title}</span>
-                      {tip.angleDiff > 0 && (
-                        <Badge variant="outline" className="text-[8px] py-0">
-                          {Math.round(tip.angleDiff)}° correction
-                        </Badge>
-                      )}
+            <CardContent className="space-y-2">
+              <p className="text-[11px] text-muted-foreground">{reasoning}</p>
+              {allScores.length > 1 && (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-semibold text-muted-foreground">All shot probabilities:</p>
+                  {allScores.slice(0, 5).map((s, i) => (
+                    <div key={s.type} className="flex items-center gap-2 text-[10px]">
+                      <div className="w-20 text-right font-medium">{s.type}</div>
+                      <div className="flex-1 h-1.5 rounded-full bg-muted">
+                        <div
+                          className={cn("h-full rounded-full transition-all", i === 0 ? "bg-primary" : "bg-muted-foreground/30")}
+                          style={{ width: `${s.score * 100}%` }}
+                        />
+                      </div>
+                      <span className="w-8 tabular-nums text-muted-foreground">{Math.round(s.score * 100)}%</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{tip.detail}</p>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </CardContent>
           </Card>
 
-          {/* Key coaching points from reference model */}
+          {/* Confidence */}
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground px-1">
+            <span>📏</span>
+            <div className="flex-1 h-1.5 rounded-full bg-muted">
+              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${metricConfidence * 100}%` }} />
+            </div>
+            <span className="tabular-nums">{Math.round(metricConfidence * 100)}%</span>
+            <span>({metrics.length}/9 joints)</span>
+          </div>
+        </div>
+      )}
+
+      {/* ANALYSIS VIEW — Radar chart + reference */}
+      {activeTab === "comparison" && (
+        <div className="space-y-3">
+          {radarData.length >= 3 && (
+            <Card>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-semibold">Biomechanical Profile vs Reference</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="72%">
+                      <PolarGrid stroke="hsl(var(--border))" />
+                      <PolarAngleAxis dataKey="metric" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 8 }} />
+                      <Radar name="Ideal" dataKey="ideal" stroke="hsl(var(--muted-foreground))" fill="hsl(var(--muted-foreground))" fillOpacity={0.08} strokeDasharray="4 4" />
+                      <Radar name="Athlete" dataKey="athlete" stroke={reference?.color ?? "#1A5C38"} fill={reference?.color ?? "#1A5C38"} fillOpacity={0.25} strokeWidth={2} />
+                      <Tooltip />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Metric heat map */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold">📊 Metric Heat Map</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-1.5">
+                {metrics.map((m) => (
+                  <div
+                    key={m.label}
+                    className={cn(
+                      "p-2 rounded-lg text-center border transition-colors",
+                      m.severity === "excellent" ? "bg-emerald-500/10 border-emerald-200" :
+                      m.severity === "good" ? "bg-lime-500/10 border-lime-200" :
+                      m.severity === "needs-work" ? "bg-amber-500/10 border-amber-200" :
+                      "bg-red-500/10 border-red-200"
+                    )}
+                  >
+                    <div className={cn("text-lg font-black tabular-nums", SEVERITY_COLORS[m.severity])}>{m.value}</div>
+                    <div className="text-[9px] text-muted-foreground font-medium mt-0.5">{m.shortLabel}</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Reference model key points */}
           {reference && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs font-semibold">
-                  📖 {reference.label} — Key Technique Points
+                  📖 {reference.label} — Pro Reference
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                <p className="text-[11px] text-muted-foreground mb-2">{reference.description}</p>
                 <ul className="space-y-1.5">
                   {reference.keyCoachingPoints.map((point, i) => (
                     <li key={i} className="text-[11px] text-muted-foreground flex items-start gap-2">
