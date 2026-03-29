@@ -7,11 +7,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const NAV_TABS = [
-  { label: "Dashboard",  path: "/sports/badminton",             exact: true,  icon: "⚡" },
-  { label: "Explorer",   path: "/sports/badminton/explorer",    exact: false, icon: "🔍" },
-  { label: "Analytics",  path: "/sports/badminton/analytics",   exact: false, icon: "📊" },
-  { label: "Import",     path: "/sports/badminton/import",      exact: false, icon: "⬆" },
-  { label: "Glossary",   path: "/sports/badminton/glossary",    exact: false, icon: "📖" },
+  { label: "Dashboard",     path: "/sports/badminton",                exact: true,  icon: "⚡" },
+  { label: "Explorer",      path: "/sports/badminton/explorer",       exact: false, icon: "🔍" },
+  { label: "Pose Analysis", path: "/sports/badminton/pose-analysis",  exact: false, icon: "🎯" },
+  { label: "Analytics",     path: "/sports/badminton/analytics",      exact: false, icon: "📊" },
+  { label: "Import",        path: "/sports/badminton/import",         exact: false, icon: "⬆" },
+  { label: "Glossary",      path: "/sports/badminton/glossary",       exact: false, icon: "📖" },
 ];
 
 export function BadmintonShell({ children }: { children: React.ReactNode }) {
