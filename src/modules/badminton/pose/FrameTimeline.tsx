@@ -50,7 +50,7 @@ export function FrameTimeline({ frames, selectedIndex, onSelectFrame }: FrameTim
                 height: `${Math.max(barH, 4)}%`,
                 backgroundColor: f.isHitFrame
                   ? "#ef4444"
-                  : f.pose && f.pose.score > 0.3
+                  : f.players.length > 0
                   ? "#22c55e"
                   : "#9ca3af40",
               }}
@@ -92,9 +92,15 @@ export function FrameTimeline({ frames, selectedIndex, onSelectFrame }: FrameTim
               <div className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-red-500 ring-1 ring-white" />
             )}
             {/* No pose indicator */}
-            {(!f.pose || f.pose.score < 0.3) && (
+            {f.players.length === 0 && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                 <span className="text-[8px] text-white/80">✕</span>
+              </div>
+            )}
+            {/* Player count badge */}
+            {f.players.length >= 2 && (
+              <div className="absolute top-0.5 left-0.5 bg-blue-500 text-white text-[7px] rounded-full w-3 h-3 flex items-center justify-center leading-none">
+                {f.players.length}
               </div>
             )}
             {/* Timestamp */}

@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from "react";
 import type { Keypoint } from "./poseEngine";
 import { SKELETON_CONNECTIONS, KEYPOINT_INDEX as KI } from "./poseEngine";
+import { detectHandedness } from "./biomechanics";
 import type { BiomechanicsMetric } from "./biomechanics";
 import type { DetectedPlayer } from "./poseEngine";
 import type { ShotPhase } from "./shotClassifier";
@@ -43,14 +44,20 @@ const PHASE_LABELS: Record<ShotPhase, { label: string; color: string }> = {
   unknown: { label: "ANALYZING", color: "#9ca3af" },
 };
 
-// Map metric labels to joint keypoint indices for angle annotation
-const ANGLE_ANNOTATION_JOINTS: Record<string, number> = {
-  "Racket Arm Elbow": KI.right_elbow,
-  "Racket Shoulder": KI.right_shoulder,
-  "Balance Arm Elbow": KI.left_elbow,
-  "Front Knee Bend": KI.left_knee,
-  "Back Knee": KI.right_knee,
-};
+// Map metric labels to joint keypoint indices for angle annotation (handedness-aware)
+function getAngleAnnotationJoints(handedness: "right" | "left"): Record<string, number> {
+  const isRight = handedness === "right";
+  return {
+    "Racket Arm Elbow": isRight ? KI.right_elbow : KI.left_elbow,
+    "Racket Shoulder": isRight ? KI.right_shoulder : KI.left_shoulder,
+    "Balance Arm Elbow": isRight ? KI.left_elbow : KI.right_elbow,
+    "Balance Shoulder": isRight ? KI.left_shoulder : KI.right_shoulder,
+    "Front Knee Bend": isRight ? KI.left_knee : KI.right_knee,
+    "Back Knee": isRight ? KI.right_knee : KI.left_knee,
+    "Torso Lean": KI.left_hip, // mid-torso approximation
+    "Shoulder-Hip Rotation": isRight ? KI.right_shoulder : KI.left_shoulder,
+  };
+}
 
 export function PoseCanvas({
   imageSrc,
@@ -216,10 +223,11 @@ function drawAngleAnnotations(
   scaleX: number,
   scaleY: number
 ) {
-  const handedness = metrics[0]?.label.includes("Racket") ? "right" : "right"; // detect from context
+  const handedness = detectHandedness(player.pose.keypoints);
+  const annotationJoints = getAngleAnnotationJoints(handedness);
 
   for (const metric of metrics) {
-    let jointIdx = ANGLE_ANNOTATION_JOINTS[metric.label];
+    const jointIdx = annotationJoints[metric.label];
 
     // Adjust for handedness (swap left/right indices)
     // This is a simplification — works for right-handed players
