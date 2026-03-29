@@ -1,15 +1,16 @@
-// ─── Pose Analysis Page — Photo + Video Analysis ──────────────────────────
+// ─── Pose Analysis Page — Multi-Player Video + Photo Analysis ─────────────
 import React, { useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { detectPose, type PoseResult } from "./poseEngine";
+import { detectAllPoses, type DetectedPlayer } from "./poseEngine";
 import { classifyShot, type ClassificationResult } from "./shotClassifier";
 import { scoreBiomechanics, type BiomechanicsResult } from "./biomechanics";
 import { getReferenceModel, type ReferenceModel } from "./referenceModels";
 import { PoseCanvas } from "./PoseCanvas";
 import { PoseResults } from "./PoseResults";
+import { PlayerSelector } from "./PlayerSelector";
 import {
   extractVideoFrames,
   getBestFrame,
@@ -19,23 +20,15 @@ import {
 import { FrameTimeline } from "./FrameTimeline";
 
 type MediaType = "none" | "image" | "video";
-type AnalysisState =
-  | "idle"
-  | "loading-model"
-  | "detecting"
-  | "extracting"
-  | "done"
-  | "error";
+type AnalysisState = "idle" | "loading-model" | "detecting" | "extracting" | "done" | "error";
 
-interface FrameAnalysis {
-  pose: PoseResult;
+interface PlayerAnalysis {
   classification: ClassificationResult;
   biomechanics: BiomechanicsResult;
   reference: ReferenceModel | null;
 }
 
 export default function PoseAnalysisPage() {
-  // Core state
   const [state, setState] = useState<AnalysisState>("idle");
   const [mediaType, setMediaType] = useState<MediaType>("none");
   const [error, setError] = useState("");
@@ -44,14 +37,17 @@ export default function PoseAnalysisPage() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [imgDimensions, setImgDimensions] = useState({ w: 0, h: 0 });
 
+  // Multi-player detection
+  const [players, setPlayers] = useState<DetectedPlayer[]>([]);
+  const [selectedPlayerIdx, setSelectedPlayerIdx] = useState(0);
+  const [compareMode, setCompareMode] = useState(false);
+  const [playerAnalyses, setPlayerAnalyses] = useState<Map<number, PlayerAnalysis>>(new Map());
+
   // Video mode
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [frames, setFrames] = useState<ExtractedFrame[]>([]);
   const [selectedFrameIdx, setSelectedFrameIdx] = useState(0);
   const [videoProgress, setVideoProgress] = useState<VideoAnalysisProgress | null>(null);
-
-  // Analysis results (for current frame/image)
-  const [frameAnalysis, setFrameAnalysis] = useState<FrameAnalysis | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -62,20 +58,33 @@ export default function PoseAnalysisPage() {
     setError("");
     setImageSrc(null);
     setImgDimensions({ w: 0, h: 0 });
+    setPlayers([]);
+    setSelectedPlayerIdx(0);
+    setCompareMode(false);
+    setPlayerAnalyses(new Map());
     setVideoFile(null);
     setFrames([]);
     setSelectedFrameIdx(0);
     setVideoProgress(null);
-    setFrameAnalysis(null);
   }, []);
 
-  // ── Analyze a single pose from keypoints ──
-  const analyzeFromPose = useCallback((pose: PoseResult): FrameAnalysis => {
-    const cls = classifyShot(pose.keypoints);
+  const analyzePlayer = useCallback((player: DetectedPlayer): PlayerAnalysis => {
+    const cls = classifyShot(player.pose.keypoints);
     const ref = getReferenceModel(cls.shotType);
     const bio = scoreBiomechanics(cls.angles, (ref ?? getReferenceModel("Smash")!).angles);
-    return { pose, classification: cls, biomechanics: bio, reference: ref };
+    return { classification: cls, biomechanics: bio, reference: ref };
   }, []);
+
+  const analyzeAllPlayers = useCallback(
+    (detectedPlayers: DetectedPlayer[]) => {
+      const analyses = new Map<number, PlayerAnalysis>();
+      detectedPlayers.forEach((p, idx) => {
+        analyses.set(idx, analyzePlayer(p));
+      });
+      setPlayerAnalyses(analyses);
+    },
+    [analyzePlayer]
+  );
 
   // ── File Selection ──
   const handleFileSelect = useCallback(
@@ -84,9 +93,7 @@ export default function PoseAnalysisPage() {
         setError("File too large. Maximum 100MB for video, 20MB for images.");
         return;
       }
-
       resetAll();
-
       if (file.type.startsWith("video/")) {
         setMediaType("video");
         setVideoFile(file);
@@ -111,7 +118,7 @@ export default function PoseAnalysisPage() {
     [handleFileSelect]
   );
 
-  // ── Image Analysis ──
+  // ── Image Analysis (multi-pose) ──
   const runImageAnalysis = useCallback(async () => {
     if (!imgRef.current) return;
     try {
@@ -120,20 +127,22 @@ export default function PoseAnalysisPage() {
         await new Promise<void>((r) => { imgRef.current!.onload = () => r(); });
       }
       setState("detecting");
-      const pose = await detectPose(imgRef.current);
-      if (!pose || pose.score < 0.2) {
-        setError("Could not detect a clear human pose. Try a different image with a single player clearly visible.");
+      const detected = await detectAllPoses(imgRef.current);
+      if (detected.length === 0) {
+        setError("No players detected. Try a different image with clear full-body views.");
         setState("error");
         return;
       }
-      setFrameAnalysis(analyzeFromPose(pose));
+      setPlayers(detected);
+      setSelectedPlayerIdx(0);
+      analyzeAllPlayers(detected);
       setState("done");
     } catch (err) {
       console.error("Image analysis error:", err);
       setError("Analysis failed. Please try Chrome or Edge browser.");
       setState("error");
     }
-  }, [analyzeFromPose]);
+  }, [analyzeAllPlayers]);
 
   // ── Video Analysis ──
   const runVideoAnalysis = useCallback(async () => {
@@ -141,46 +150,49 @@ export default function PoseAnalysisPage() {
     try {
       setState("extracting");
       const extracted = await extractVideoFrames(videoFile, (p) => setVideoProgress(p));
-
       setFrames(extracted);
 
-      // Auto-select best frame
       const best = getBestFrame(extracted);
       if (best) {
         const idx = extracted.indexOf(best);
         setSelectedFrameIdx(idx);
         setImageSrc(best.imageSrc);
-        if (best.pose) {
-          setFrameAnalysis(analyzeFromPose(best.pose));
-        }
+        setPlayers(best.players);
+        setSelectedPlayerIdx(0);
+        analyzeAllPlayers(best.players);
       } else if (extracted.length > 0) {
         setSelectedFrameIdx(0);
         setImageSrc(extracted[0].imageSrc);
+        setPlayers(extracted[0].players);
+        analyzeAllPlayers(extracted[0].players);
       }
 
       setState("done");
     } catch (err) {
       console.error("Video analysis error:", err);
-      setError("Video analysis failed. Try a shorter clip or different format (MP4 recommended).");
+      setError("Video analysis failed. Try a shorter clip or MP4 format.");
       setState("error");
     }
-  }, [videoFile, analyzeFromPose]);
+  }, [videoFile, analyzeAllPlayers]);
 
-  // ── Frame Selection (video mode) ──
+  // ── Frame Selection (video) ──
   const handleSelectFrame = useCallback(
     (idx: number) => {
       setSelectedFrameIdx(idx);
       const frame = frames[idx];
       if (!frame) return;
       setImageSrc(frame.imageSrc);
-      if (frame.pose && frame.pose.score > 0.2) {
-        setFrameAnalysis(analyzeFromPose(frame.pose));
-      } else {
-        setFrameAnalysis(null);
-      }
+      setPlayers(frame.players);
+      setSelectedPlayerIdx(0);
+      analyzeAllPlayers(frame.players);
     },
-    [frames, analyzeFromPose]
+    [frames, analyzeAllPlayers]
   );
+
+  // ── Player Selection ──
+  const handleSelectPlayer = useCallback((idx: number) => {
+    setSelectedPlayerIdx(idx);
+  }, []);
 
   const handleImageLoad = useCallback(() => {
     if (imgRef.current) {
@@ -197,32 +209,43 @@ export default function PoseAnalysisPage() {
 
   const isProcessing = state === "loading-model" || state === "detecting" || state === "extracting";
   const selectedFrame = frames[selectedFrameIdx];
+  const currentAnalysis = playerAnalyses.get(selectedPlayerIdx);
+  const compareAnalysis = compareMode && players.length >= 2
+    ? playerAnalyses.get(selectedPlayerIdx === 0 ? 1 : 0)
+    : null;
 
   return (
-    <div className="p-5 space-y-5 max-w-6xl mx-auto">
+    <div className="p-5 space-y-5 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-lg font-bold flex items-center gap-2">
             🎯 Video & Pose Analysis
             <Badge variant="outline" className="text-[10px] font-bold border-amber-400 text-amber-700">
-              AI-POWERED
+              AI · MULTI-PLAYER
             </Badge>
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Upload a badminton video or photo — AI detects player skeleton, classifies shots, and scores technique against professional references.
+            Upload a badminton video or photo — AI detects <strong>all players</strong>, classifies shots, and scores technique against professional references.
           </p>
         </div>
         {mediaType !== "none" && (
-          <Badge variant="secondary" className="text-xs">
-            {mediaType === "video" ? "🎬 Video Mode" : "📸 Photo Mode"}
-          </Badge>
+          <div className="flex gap-2">
+            {players.length > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                👥 {players.length} Player{players.length > 1 ? "s" : ""} Detected
+              </Badge>
+            )}
+            <Badge variant="secondary" className="text-xs">
+              {mediaType === "video" ? "🎬 Video" : "📸 Photo"}
+            </Badge>
+          </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className={`grid gap-5 ${compareMode ? "grid-cols-1 xl:grid-cols-3" : "grid-cols-1 lg:grid-cols-2"}`}>
         {/* ═══ Left Column — Upload, Canvas, Timeline ═══ */}
-        <div className="space-y-4">
+        <div className={`space-y-4 ${compareMode ? "xl:col-span-1" : ""}`}>
           {/* Upload Zone */}
           {mediaType === "none" && (
             <Card
@@ -247,9 +270,10 @@ export default function PoseAnalysisPage() {
                     <span>📸</span> Photo up to 20MB
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-3 max-w-xs">
-                  For video: AI extracts frames at 3fps, auto-detects hit moments using wrist acceleration tracking, and analyzes the best action frame.
-                </p>
+                <div className="mt-4 p-3 rounded bg-muted/30 text-[10px] text-muted-foreground max-w-xs">
+                  <p className="font-semibold mb-1">👥 Multi-Player Detection:</p>
+                  <p>AI detects <strong>all players</strong> on court simultaneously. Select which player to analyze, or compare both side-by-side.</p>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -274,31 +298,26 @@ export default function PoseAnalysisPage() {
                   <div className="animate-spin text-lg">⚙️</div>
                   <div className="flex-1">
                     <p className="text-xs font-semibold">{videoProgress.message}</p>
-                    <p className="text-[10px] text-muted-foreground capitalize">
-                      Phase: {videoProgress.phase}
-                    </p>
+                    <p className="text-[10px] text-muted-foreground capitalize">Phase: {videoProgress.phase}</p>
                   </div>
                 </div>
                 <Progress
-                  value={
-                    videoProgress.total > 0
-                      ? (videoProgress.current / videoProgress.total) * 100
-                      : 0
-                  }
+                  value={videoProgress.total > 0 ? (videoProgress.current / videoProgress.total) * 100 : 0}
                   className="h-2"
                 />
               </CardContent>
             </Card>
           )}
 
-          {/* Image / Canvas Display */}
+          {/* Canvas Display */}
           {imageSrc && state !== "extracting" && (
             <div className="space-y-3">
-              {frameAnalysis ? (
+              {players.length > 0 ? (
                 <PoseCanvas
                   imageSrc={imageSrc}
-                  keypoints={frameAnalysis.pose.keypoints}
-                  metrics={frameAnalysis.biomechanics.metrics}
+                  players={players}
+                  selectedPlayerIdx={selectedPlayerIdx}
+                  metrics={currentAnalysis?.biomechanics.metrics}
                   width={displayW}
                   height={displayH}
                 />
@@ -314,8 +333,7 @@ export default function PoseAnalysisPage() {
                 />
               )}
 
-              {/* Hidden img for pose detection */}
-              {frameAnalysis && (
+              {players.length > 0 && (
                 <img
                   ref={imgRef}
                   src={imageSrc}
@@ -326,26 +344,29 @@ export default function PoseAnalysisPage() {
                 />
               )}
 
-              {/* Frame info badge for video */}
+              {/* Player Selector */}
+              <PlayerSelector
+                players={players}
+                selectedIdx={selectedPlayerIdx}
+                onSelect={handleSelectPlayer}
+                compareMode={compareMode}
+                onToggleCompare={() => setCompareMode((c) => !c)}
+              />
+
+              {/* Video frame info */}
               {mediaType === "video" && selectedFrame && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                   <span className="font-mono">
                     Frame {selectedFrameIdx + 1}/{frames.length}
                   </span>
                   <span>•</span>
                   <span>{selectedFrame.timestamp.toFixed(1)}s</span>
+                  <span>•</span>
+                  <span>👥 {selectedFrame.players.length} player{selectedFrame.players.length !== 1 ? "s" : ""}</span>
                   {selectedFrame.isHitFrame && (
                     <>
                       <span>•</span>
-                      <Badge variant="destructive" className="text-[10px] py-0">
-                        HIT FRAME
-                      </Badge>
-                    </>
-                  )}
-                  {selectedFrame.wristSpeed > 0 && (
-                    <>
-                      <span>•</span>
-                      <span>Wrist speed: {selectedFrame.wristSpeed.toFixed(0)}px/f</span>
+                      <Badge variant="destructive" className="text-[10px] py-0">HIT FRAME</Badge>
                     </>
                   )}
                 </div>
@@ -361,12 +382,12 @@ export default function PoseAnalysisPage() {
                     style={{ background: "linear-gradient(135deg, #1A5C38, #0d3d25)" }}
                   >
                     {state === "loading-model"
-                      ? "⏳ Loading AI model..."
+                      ? "⏳ Loading AI..."
                       : state === "detecting"
-                      ? "🔍 Analyzing..."
+                      ? "🔍 Detecting players..."
                       : state === "done"
                       ? "🔄 Re-analyze"
-                      : "🎯 Analyze Pose"}
+                      : "🎯 Detect & Analyze"}
                   </Button>
                 )}
                 {mediaType === "video" && state === "idle" && (
@@ -386,21 +407,19 @@ export default function PoseAnalysisPage() {
 
               {state === "loading-model" && (
                 <p className="text-xs text-muted-foreground animate-pulse">
-                  Loading TensorFlow.js MoveNet model (first time ~5-10 seconds)...
+                  Loading TensorFlow.js MoveNet multi-pose model (~5-10 seconds)...
                 </p>
               )}
             </div>
           )}
 
-          {/* Video ready but not yet analyzed */}
+          {/* Video ready but not analyzed */}
           {mediaType === "video" && !imageSrc && state === "idle" && (
             <Card>
               <CardContent className="py-8 text-center space-y-4">
                 <div className="text-4xl">🎬</div>
                 <div>
-                  <p className="text-sm font-semibold">
-                    {videoFile?.name}
-                  </p>
+                  <p className="text-sm font-semibold">{videoFile?.name}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {((videoFile?.size ?? 0) / 1024 / 1024).toFixed(1)} MB
                   </p>
@@ -409,16 +428,16 @@ export default function PoseAnalysisPage() {
                   onClick={runVideoAnalysis}
                   style={{ background: "linear-gradient(135deg, #1A5C38, #0d3d25)" }}
                 >
-                  🎬 Start Video Analysis
+                  🎬 Start Multi-Player Video Analysis
                 </Button>
                 <p className="text-[10px] text-muted-foreground max-w-xs mx-auto">
-                  AI will extract frames, detect poses, measure wrist acceleration to find hit moments, and classify each shot.
+                  AI will detect <strong>both players</strong> in each frame, track wrist acceleration for hit detection, and classify shots per player.
                 </p>
               </CardContent>
             </Card>
           )}
 
-          {/* Frame Timeline (video mode) */}
+          {/* Frame Timeline */}
           {mediaType === "video" && frames.length > 0 && (
             <FrameTimeline
               frames={frames}
@@ -438,36 +457,76 @@ export default function PoseAnalysisPage() {
         </div>
 
         {/* ═══ Right Column — Results ═══ */}
-        <div>
-          {state === "done" && frameAnalysis ? (
+        {state === "done" && currentAnalysis ? (
+          compareMode && compareAnalysis ? (
+            // ── Compare Mode: side-by-side ──
+            <>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-1 border-b border-emerald-300">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                  <span className="text-xs font-bold">
+                    Player {selectedPlayerIdx + 1}
+                    {players[selectedPlayerIdx]?.courtPosition !== "unknown" &&
+                      ` · ${players[selectedPlayerIdx]?.courtPosition === "near" ? "Near" : "Far"} Court`}
+                  </span>
+                </div>
+                <PoseResults
+                  classification={currentAnalysis.classification}
+                  biomechanics={currentAnalysis.biomechanics}
+                  reference={currentAnalysis.reference}
+                />
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-1 border-b border-blue-300">
+                  <div className="w-3 h-3 rounded-full bg-blue-500" />
+                  <span className="text-xs font-bold">
+                    Player {selectedPlayerIdx === 0 ? 2 : 1}
+                    {players[selectedPlayerIdx === 0 ? 1 : 0]?.courtPosition !== "unknown" &&
+                      ` · ${players[selectedPlayerIdx === 0 ? 1 : 0]?.courtPosition === "near" ? "Near" : "Far"} Court`}
+                  </span>
+                </div>
+                <PoseResults
+                  classification={compareAnalysis.classification}
+                  biomechanics={compareAnalysis.biomechanics}
+                  reference={compareAnalysis.reference}
+                />
+              </div>
+            </>
+          ) : (
+            // ── Single Player Results ──
             <div className="space-y-4">
-              {/* Video summary stats */}
+              {/* Video summary */}
               {mediaType === "video" && frames.length > 0 && (
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-semibold">📊 Video Summary</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="grid grid-cols-4 gap-2 text-center">
                       <div>
-                        <div className="text-2xl font-black text-foreground">{frames.length}</div>
-                        <div className="text-[10px] text-muted-foreground">Frames Analyzed</div>
+                        <div className="text-xl font-black">{frames.length}</div>
+                        <div className="text-[10px] text-muted-foreground">Frames</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-black text-destructive">
+                        <div className="text-xl font-black text-destructive">
                           {frames.filter((f) => f.isHitFrame).length}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">Hit Frames</div>
+                        <div className="text-[10px] text-muted-foreground">Hits</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-black text-emerald-600">
-                          {frames.filter((f) => f.pose && f.pose.score > 0.3).length}
+                        <div className="text-xl font-black text-emerald-600">
+                          {Math.max(...frames.map((f) => f.players.length))}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">Poses Detected</div>
+                        <div className="text-[10px] text-muted-foreground">Max Players</div>
+                      </div>
+                      <div>
+                        <div className="text-xl font-black text-blue-600">
+                          {frames.filter((f) => f.players.length >= 2).length}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">Both Visible</div>
                       </div>
                     </div>
 
-                    {/* Hit frame chips */}
                     {frames.filter((f) => f.isHitFrame).length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {frames
@@ -482,7 +541,7 @@ export default function PoseAnalysisPage() {
                                   : "bg-destructive/10 text-destructive border-destructive/30 hover:bg-destructive/20"
                               }`}
                             >
-                              ⚡ {f.timestamp.toFixed(1)}s
+                              ⚡ {f.timestamp.toFixed(1)}s · {f.players.length}p
                             </button>
                           ))}
                       </div>
@@ -491,13 +550,30 @@ export default function PoseAnalysisPage() {
                 </Card>
               )}
 
+              {/* Selected player header */}
+              {players.length > 1 && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <span>
+                    Showing analysis for <strong className="text-foreground">Player {selectedPlayerIdx + 1}</strong>
+                    {players[selectedPlayerIdx]?.courtPosition !== "unknown" &&
+                      ` (${players[selectedPlayerIdx]?.courtPosition === "near" ? "Near" : "Far"} Court)`}
+                  </span>
+                  <span>•</span>
+                  <span>Click another player above to switch</span>
+                </div>
+              )}
+
               <PoseResults
-                classification={frameAnalysis.classification}
-                biomechanics={frameAnalysis.biomechanics}
-                reference={frameAnalysis.reference}
+                classification={currentAnalysis.classification}
+                biomechanics={currentAnalysis.biomechanics}
+                reference={currentAnalysis.reference}
               />
             </div>
-          ) : (
+          )
+        ) : (
+          // ── Placeholder ──
+          <div className={compareMode ? "xl:col-span-2" : ""}>
             <Card className="h-full min-h-[300px] flex items-center justify-center">
               <CardContent className="text-center py-16">
                 <div className="text-4xl mb-3">🏸</div>
@@ -508,26 +584,19 @@ export default function PoseAnalysisPage() {
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
                   {state === "extracting"
-                    ? "AI is extracting frames, detecting poses, and identifying hit moments. This may take 30-60 seconds."
-                    : "The AI will detect skeleton, classify shot type (Smash, Net Drop, Defense, Backhand Clear), and score technique against professional references."}
+                    ? "AI is detecting all players, tracking wrist motion, and identifying hit moments."
+                    : "AI detects both players simultaneously. Choose which to analyze or compare side-by-side."}
                 </p>
-
                 {state !== "extracting" && (
                   <div className="mt-6 space-y-3">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Detectable Shots
-                    </p>
                     <div className="grid grid-cols-2 gap-2 text-xs max-w-xs mx-auto">
                       {[
                         { icon: "💥", label: "Smash", desc: "Overhead power" },
-                        { icon: "🎯", label: "Net Drop", desc: "Front court finesse" },
+                        { icon: "🎯", label: "Net Drop", desc: "Finesse" },
                         { icon: "🛡️", label: "Defense", desc: "Ready stance" },
-                        { icon: "↩️", label: "Backhand", desc: "Cross-body clear" },
+                        { icon: "↩️", label: "Backhand", desc: "Cross-body" },
                       ].map((s) => (
-                        <div
-                          key={s.label}
-                          className="flex items-center gap-1.5 px-2 py-2 rounded bg-muted/50"
-                        >
+                        <div key={s.label} className="flex items-center gap-1.5 px-2 py-2 rounded bg-muted/50">
                           <span className="text-base">{s.icon}</span>
                           <div className="text-left">
                             <div className="font-medium text-foreground">{s.label}</div>
@@ -536,23 +605,22 @@ export default function PoseAnalysisPage() {
                         </div>
                       ))}
                     </div>
-
-                    <div className="mt-4 p-3 rounded bg-muted/30 text-[10px] text-muted-foreground max-w-xs mx-auto">
-                      <p className="font-semibold mb-1">🎬 Video Analysis Features:</p>
+                    <div className="p-3 rounded bg-muted/30 text-[10px] text-muted-foreground max-w-xs mx-auto">
+                      <p className="font-semibold mb-1">👥 Multi-Player Features:</p>
                       <ul className="space-y-0.5 list-disc list-inside">
-                        <li>Frame extraction at 3fps</li>
-                        <li>Auto hit-frame detection via wrist acceleration</li>
-                        <li>Frame-by-frame skeleton overlay</li>
-                        <li>Shot classification per frame</li>
-                        <li>Biomechanical scoring vs pro references</li>
+                        <li>Detects all players on court simultaneously</li>
+                        <li>Auto-labels Near Court vs Far Court</li>
+                        <li>Side-by-side comparison mode</li>
+                        <li>Per-player shot classification & scoring</li>
+                        <li>Hit-frame detection via wrist acceleration</li>
                       </ul>
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
