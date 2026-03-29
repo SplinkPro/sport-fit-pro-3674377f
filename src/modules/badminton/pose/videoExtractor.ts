@@ -1,14 +1,16 @@
-// ─── Video Frame Extractor — Extract Key Frames from Video ────────────────
-// Uses canvas-based frame capture + wrist acceleration for hit-frame detection
-import { detectPose, type PoseResult, KEYPOINT_INDEX as KI } from "./poseEngine";
+// ─── Video Frame Extractor — Multi-Pose Version ──────────────────────────
+import { detectAllPoses, type DetectedPlayer, KEYPOINT_INDEX as KI } from "./poseEngine";
+import type { PoseResult } from "./poseEngine";
 
 export interface ExtractedFrame {
   index: number;
-  timestamp: number;       // seconds into the video
-  imageSrc: string;        // data URL of the frame
+  timestamp: number;
+  imageSrc: string;
+  players: DetectedPlayer[];    // all detected players in this frame
+  isHitFrame: boolean;
+  wristSpeed: number;           // max wrist speed across tracked player
+  /** Legacy compat */
   pose: PoseResult | null;
-  isHitFrame: boolean;     // auto-detected contact moment
-  wristSpeed: number;      // px/frame of dominant wrist
 }
 
 export interface VideoAnalysisProgress {
@@ -18,14 +20,10 @@ export interface VideoAnalysisProgress {
   message: string;
 }
 
-const EXTRACTION_FPS = 3;        // frames per second to sample
-const MAX_FRAMES = 60;           // cap at 20 seconds of video
-const HIT_SPEED_PERCENTILE = 85; // top 15% wrist speed = candidate hit frames
+const EXTRACTION_FPS = 3;
+const MAX_FRAMES = 60;
+const HIT_SPEED_PERCENTILE = 85;
 
-/**
- * Extract frames from a video element at EXTRACTION_FPS,
- * run pose detection on each, and identify hit frames
- */
 export async function extractVideoFrames(
   videoFile: File,
   onProgress?: (p: VideoAnalysisProgress) => void
@@ -38,17 +36,13 @@ export async function extractVideoFrames(
   const url = URL.createObjectURL(videoFile);
   video.src = url;
 
-  // Wait for metadata
   await new Promise<void>((resolve, reject) => {
     video.onloadedmetadata = () => resolve();
     video.onerror = () => reject(new Error("Could not load video"));
   });
 
   const duration = video.duration;
-  const totalFrames = Math.min(
-    Math.floor(duration * EXTRACTION_FPS),
-    MAX_FRAMES
-  );
+  const totalFrames = Math.min(Math.floor(duration * EXTRACTION_FPS), MAX_FRAMES);
 
   const canvas = document.createElement("canvas");
   canvas.width = video.videoWidth;
@@ -60,7 +54,6 @@ export async function extractVideoFrames(
   // Phase 1: Extract frames
   for (let i = 0; i < totalFrames; i++) {
     const timestamp = i / EXTRACTION_FPS;
-
     onProgress?.({
       phase: "extracting",
       current: i + 1,
@@ -68,13 +61,9 @@ export async function extractVideoFrames(
       message: `Extracting frame ${i + 1}/${totalFrames} (${timestamp.toFixed(1)}s)`,
     });
 
-    // Seek to timestamp
     video.currentTime = timestamp;
-    await new Promise<void>((resolve) => {
-      video.onseeked = () => resolve();
-    });
+    await new Promise<void>((resolve) => { video.onseeked = () => resolve(); });
 
-    // Capture frame
     ctx.drawImage(video, 0, 0);
     const imageSrc = canvas.toDataURL("image/jpeg", 0.85);
 
@@ -82,31 +71,37 @@ export async function extractVideoFrames(
       index: i,
       timestamp,
       imageSrc,
-      pose: null,
+      players: [],
       isHitFrame: false,
       wristSpeed: 0,
+      pose: null,
     });
   }
 
-  // Phase 2: Run pose detection on each frame
+  // Phase 2: Run multi-pose detection on each frame
   for (let i = 0; i < frames.length; i++) {
     onProgress?.({
       phase: "detecting",
       current: i + 1,
       total: frames.length,
-      message: `Analyzing pose ${i + 1}/${frames.length}...`,
+      message: `Detecting players in frame ${i + 1}/${frames.length}...`,
     });
 
-    // Create temp image for detection
     const img = new Image();
     img.src = frames[i].imageSrc;
-    await new Promise<void>((resolve) => {
-      img.onload = () => resolve();
-    });
+    await new Promise<void>((resolve) => { img.onload = () => resolve(); });
 
     try {
-      frames[i].pose = await detectPose(img);
+      const players = await detectAllPoses(img);
+      frames[i].players = players;
+      // Legacy: set pose to best player's pose
+      if (players.length > 0) {
+        frames[i].pose = players.reduce((a, b) =>
+          a.pose.score > b.pose.score ? a : b
+        ).pose;
+      }
     } catch {
+      frames[i].players = [];
       frames[i].pose = null;
     }
   }
@@ -116,13 +111,12 @@ export async function extractVideoFrames(
     phase: "scoring",
     current: 0,
     total: 1,
-    message: "Detecting hit frames...",
+    message: "Detecting hit frames via wrist acceleration...",
   });
 
   calculateWristSpeeds(frames);
   detectHitFrames(frames);
 
-  // Cleanup
   URL.revokeObjectURL(url);
 
   onProgress?.({
@@ -135,36 +129,41 @@ export async function extractVideoFrames(
   return frames;
 }
 
-/** Calculate wrist movement speed between consecutive frames */
+/** Calculate max wrist speed across all tracked players */
 function calculateWristSpeeds(frames: ExtractedFrame[]) {
   for (let i = 1; i < frames.length; i++) {
-    const prev = frames[i - 1].pose;
-    const curr = frames[i].pose;
-    if (!prev || !curr) continue;
+    let maxSpeed = 0;
 
-    // Use right wrist (dominant hand) speed
-    const prevWrist = prev.keypoints[KI.right_wrist];
-    const currWrist = curr.keypoints[KI.right_wrist];
+    // For each player in current frame, find matching player in prev frame by court position
+    for (const currPlayer of frames[i].players) {
+      const prevPlayer = frames[i - 1].players.find(
+        (p) => p.courtPosition === currPlayer.courtPosition
+      );
+      if (!prevPlayer) continue;
 
-    if (prevWrist.score > 0.2 && currWrist.score > 0.2) {
-      const dx = currWrist.x - prevWrist.x;
-      const dy = currWrist.y - prevWrist.y;
-      frames[i].wristSpeed = Math.sqrt(dx * dx + dy * dy);
+      const prevWrist = prevPlayer.pose.keypoints[KI.right_wrist];
+      const currWrist = currPlayer.pose.keypoints[KI.right_wrist];
+
+      if (prevWrist.score > 0.2 && currWrist.score > 0.2) {
+        const dx = currWrist.x - prevWrist.x;
+        const dy = currWrist.y - prevWrist.y;
+        const speed = Math.sqrt(dx * dx + dy * dy);
+        maxSpeed = Math.max(maxSpeed, speed);
+      }
     }
+
+    frames[i].wristSpeed = maxSpeed;
   }
 }
 
-/** Detect hit frames — moments of peak wrist acceleration (contact moments) */
 function detectHitFrames(frames: ExtractedFrame[]) {
   const speeds = frames.map((f) => f.wristSpeed).filter((s) => s > 0);
   if (speeds.length < 3) return;
 
-  // Sort speeds to find percentile threshold
   const sorted = [...speeds].sort((a, b) => a - b);
   const threshIdx = Math.floor(sorted.length * (HIT_SPEED_PERCENTILE / 100));
   const threshold = sorted[threshIdx] || sorted[sorted.length - 1];
 
-  // Mark frames above threshold as hit frames, but enforce minimum gap
   let lastHitIdx = -5;
   for (let i = 0; i < frames.length; i++) {
     if (frames[i].wristSpeed >= threshold && i - lastHitIdx >= 3) {
@@ -173,7 +172,6 @@ function detectHitFrames(frames: ExtractedFrame[]) {
     }
   }
 
-  // If no hit frames detected, mark the frame with highest speed
   if (!frames.some((f) => f.isHitFrame)) {
     let maxSpeed = 0;
     let maxIdx = 0;
@@ -187,18 +185,21 @@ function detectHitFrames(frames: ExtractedFrame[]) {
   }
 }
 
-/** Get the best frame for analysis (highest wrist speed with valid pose) */
 export function getBestFrame(frames: ExtractedFrame[]): ExtractedFrame | null {
-  // Prefer hit frames with good pose detection
-  const hitFrames = frames.filter((f) => f.isHitFrame && f.pose && f.pose.score > 0.3);
+  const hitFrames = frames.filter(
+    (f) => f.isHitFrame && f.players.length > 0
+  );
   if (hitFrames.length > 0) {
     return hitFrames.reduce((a, b) => (a.wristSpeed > b.wristSpeed ? a : b));
   }
 
-  // Fallback: highest pose confidence
-  const withPose = frames.filter((f) => f.pose && f.pose.score > 0.3);
-  if (withPose.length > 0) {
-    return withPose.reduce((a, b) => (a.pose!.score > b.pose!.score ? a : b));
+  const withPlayers = frames.filter((f) => f.players.length > 0);
+  if (withPlayers.length > 0) {
+    return withPlayers.reduce((a, b) => {
+      const aScore = Math.max(...a.players.map((p) => p.pose.score));
+      const bScore = Math.max(...b.players.map((p) => p.pose.score));
+      return aScore > bScore ? a : b;
+    });
   }
 
   return null;
