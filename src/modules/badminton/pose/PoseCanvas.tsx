@@ -223,8 +223,6 @@ function drawAngleAnnotations(
   scaleX: number,
   scaleY: number
 ) {
-  // Detect handedness from the biomechanics result via the player's pose
-  const { detectHandedness } = require("./biomechanics");
   const handedness = detectHandedness(player.pose.keypoints);
   const annotationJoints = getAngleAnnotationJoints(handedness);
 

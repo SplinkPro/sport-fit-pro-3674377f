@@ -129,26 +129,37 @@ export async function extractVideoFrames(
   return frames;
 }
 
-/** Calculate max wrist speed across all tracked players */
+/** Calculate max wrist speed across all tracked players using spatial proximity matching */
 function calculateWristSpeeds(frames: ExtractedFrame[]) {
   for (let i = 1; i < frames.length; i++) {
     let maxSpeed = 0;
 
-    // For each player in current frame, find matching player in prev frame by court position
     for (const currPlayer of frames[i].players) {
-      const prevPlayer = frames[i - 1].players.find(
-        (p) => p.courtPosition === currPlayer.courtPosition
-      );
-      if (!prevPlayer) continue;
+      // Match by closest spatial position (centerY proximity), not courtPosition label
+      let bestMatch: DetectedPlayer | null = null;
+      let bestDist = Infinity;
+      for (const prevPlayer of frames[i - 1].players) {
+        const dist = Math.abs(prevPlayer.centerY - currPlayer.centerY);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestMatch = prevPlayer;
+        }
+      }
+      if (!bestMatch || bestDist > 200) continue; // skip if no reasonable match
 
-      const prevWrist = prevPlayer.pose.keypoints[KI.right_wrist];
+      const prevWrist = bestMatch.pose.keypoints[KI.right_wrist];
       const currWrist = currPlayer.pose.keypoints[KI.right_wrist];
+      const prevWristL = bestMatch.pose.keypoints[KI.left_wrist];
+      const currWristL = currPlayer.pose.keypoints[KI.left_wrist];
 
-      if (prevWrist.score > 0.2 && currWrist.score > 0.2) {
-        const dx = currWrist.x - prevWrist.x;
-        const dy = currWrist.y - prevWrist.y;
-        const speed = Math.sqrt(dx * dx + dy * dy);
-        maxSpeed = Math.max(maxSpeed, speed);
+      // Check both wrists and take max speed
+      for (const [pw, cw] of [[prevWrist, currWrist], [prevWristL, currWristL]]) {
+        if (pw.score > 0.2 && cw.score > 0.2) {
+          const dx = cw.x - pw.x;
+          const dy = cw.y - pw.y;
+          const speed = Math.sqrt(dx * dx + dy * dy);
+          maxSpeed = Math.max(maxSpeed, speed);
+        }
       }
     }
 
