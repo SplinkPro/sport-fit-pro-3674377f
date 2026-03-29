@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,46 +28,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
 
-  const fetchRoles = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    if (data) setRoles(data.map((r) => r.role as AppRole));
-  };
+  const fetchRoles = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+
+      if (error) {
+        setRoles([]);
+        return;
+      }
+
+      setRoles((data ?? []).map((r) => r.role as AppRole));
+    } catch {
+      setRoles([]);
+    }
+  }, []);
 
   useEffect(() => {
-    // Safety timeout — if Supabase doesn't respond within 3s, unblock the UI
-    const safetyTimer = setTimeout(() => setLoading(false), 3000);
+    let isMounted = true;
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 3000);
 
-    // Set up listener BEFORE getSession
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
-        clearTimeout(safetyTimer);
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        if (newSession?.user) {
-          await fetchRoles(newSession.user.id);
-        } else {
-          setRoles([]);
-        }
-        setLoading(false);
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      clearTimeout(safetyTimer);
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) fetchRoles(s.user.id);
+    const applySession = (nextSession: Session | null) => {
+      if (!isMounted) return;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
       setLoading(false);
+
+      if (nextSession?.user) {
+        void fetchRoles(nextSession.user.id);
+      } else {
+        setRoles([]);
+      }
+    };
+
+    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      clearTimeout(safetyTimer);
+      applySession(initialSession);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      clearTimeout(safetyTimer);
+      applySession(nextSession);
     });
 
     return () => {
+      isMounted = false;
       clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchRoles]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
