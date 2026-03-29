@@ -21,6 +21,48 @@ export default function Login() {
     if (!loading && user) navigate("/explorer", { replace: true });
   }, [user, loading, navigate]);
 
+  // Handle OAuth return token on hard redirect back to /login
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("__lovable_token")) return;
+
+    let cancelled = false;
+    setAuthLoading(true);
+
+    const completeOAuthSignIn = async () => {
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (cancelled) return;
+
+        if (session?.user) {
+          navigate("/explorer", { replace: true });
+          return;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
+      if (cancelled) return;
+
+      setAuthLoading(false);
+      window.history.replaceState({}, "", window.location.pathname);
+      toast({
+        title: "Google sign-in did not complete",
+        description: "Please try again. If it still hangs, refresh once and retry.",
+        variant: "destructive",
+      });
+    };
+
+    void completeOAuthSignIn();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, toast]);
+
   const handleGoogle = async () => {
     setAuthLoading(true);
     try {
