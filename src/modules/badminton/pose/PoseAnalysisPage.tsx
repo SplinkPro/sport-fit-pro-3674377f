@@ -576,6 +576,7 @@ export default function PoseAnalysisPage() {
                 classification={currentAnalysis.classification}
                 biomechanics={currentAnalysis.biomechanics}
                 reference={currentAnalysis.reference}
+                playerLabel={players.length > 1 ? `Player ${selectedPlayerIdx + 1} · ${players[selectedPlayerIdx]?.courtPosition === "near" ? "Near" : players[selectedPlayerIdx]?.courtPosition === "far" ? "Far" : ""} Court` : undefined}
               />
             </div>
           )

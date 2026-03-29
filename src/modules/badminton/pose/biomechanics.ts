@@ -3,7 +3,7 @@
 import type { Keypoint } from "./poseEngine";
 import { KEYPOINT_INDEX as KI } from "./poseEngine";
 
-const MIN_SCORE = 0.25;
+const MIN_SCORE = 0.20; // Lowered for better coverage on distant/occluded players
 
 /** Calculate angle at point B given three points A-B-C (degrees) */
 export function angleBetween(
@@ -192,11 +192,12 @@ export interface CorrectionTip {
 }
 
 /** Gaussian scoring: bell curve centered on ideal value.
- *  sigma controls how forgiving (higher = more forgiving) */
+ *  sigma controls how forgiving (higher = more forgiving)
+ *  Clamped to [5, 100] to prevent extreme outlier scores */
 function gaussianScore(actual: number, ideal: number, sigma: number): number {
   const diff = actual - ideal;
   const score = Math.exp(-(diff * diff) / (2 * sigma * sigma));
-  return Math.round(score * 100);
+  return Math.max(5, Math.round(score * 100)); // Floor at 5 — never show 0
 }
 
 function getSeverity(score: number): "excellent" | "good" | "needs-work" | "critical" {
