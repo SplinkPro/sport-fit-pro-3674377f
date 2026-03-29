@@ -45,17 +45,31 @@ const PHASE_LABELS: Record<ShotPhase, { label: string; color: string }> = {
 };
 
 // Map metric labels to joint keypoint indices for angle annotation (handedness-aware)
-function getAngleAnnotationJoints(handedness: "right" | "left"): Record<string, number> {
+function getAngleAnnotationJoints(handedness: "right" | "left", keypoints?: Keypoint[]): Record<string, number> {
   const isRight = handedness === "right";
+
+  // For lead/rear knee, detect which leg is forward dynamically
+  let leadKneeIdx = isRight ? KI.right_knee : KI.left_knee;
+  let rearKneeIdx = isRight ? KI.left_knee : KI.right_knee;
+  if (keypoints) {
+    const rAnkle = keypoints[KI.right_ankle];
+    const lAnkle = keypoints[KI.left_ankle];
+    if (rAnkle && lAnkle && rAnkle.score >= 0.2 && lAnkle.score >= 0.2) {
+      const rForward = rAnkle.y > lAnkle.y;
+      leadKneeIdx = rForward ? KI.right_knee : KI.left_knee;
+      rearKneeIdx = rForward ? KI.left_knee : KI.right_knee;
+    }
+  }
+
   return {
     "Racket Arm Elbow": isRight ? KI.right_elbow : KI.left_elbow,
     "Racket Shoulder": isRight ? KI.right_shoulder : KI.left_shoulder,
     "Balance Arm Elbow": isRight ? KI.left_elbow : KI.right_elbow,
     "Balance Shoulder": isRight ? KI.left_shoulder : KI.right_shoulder,
-    "Front Knee Bend": isRight ? KI.left_knee : KI.right_knee,
-    "Back Knee": isRight ? KI.right_knee : KI.left_knee,
-    "Torso Lean": KI.left_hip, // mid-torso approximation
-    "Shoulder-Hip Rotation": isRight ? KI.right_shoulder : KI.left_shoulder,
+    "Lead Knee": leadKneeIdx,
+    "Rear Knee": rearKneeIdx,
+    "Torso Lean": KI.left_hip,
+    "Shoulder-Hip Separation": isRight ? KI.right_shoulder : KI.left_shoulder,
   };
 }
 
@@ -224,7 +238,7 @@ function drawAngleAnnotations(
   scaleY: number
 ) {
   const handedness = detectHandedness(player.pose.keypoints);
-  const annotationJoints = getAngleAnnotationJoints(handedness);
+  const annotationJoints = getAngleAnnotationJoints(handedness, player.pose.keypoints);
 
   for (const metric of metrics) {
     const jointIdx = annotationJoints[metric.label];
