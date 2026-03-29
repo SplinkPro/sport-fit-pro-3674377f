@@ -1,5 +1,5 @@
 // ─── Pose Analysis Page — Multi-Player Video + Photo Analysis ─────────────
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -199,6 +199,13 @@ export default function PoseAnalysisPage() {
       setImgDimensions({ w: imgRef.current.naturalWidth, h: imgRef.current.naturalHeight });
     }
   }, []);
+
+  // Auto-start analysis when image loads and no analysis has been run yet
+  useEffect(() => {
+    if (mediaType === "image" && imageSrc && state === "idle" && imgRef.current?.complete) {
+      runImageAnalysis();
+    }
+  }, [mediaType, imageSrc, state, runImageAnalysis]);
 
   // Display dimensions
   const maxW = 560;
