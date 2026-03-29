@@ -220,11 +220,19 @@ export function CoachSummary({ classification, biomechanics, reference, playerLa
         </Card>
       )}
 
-      {/* ── Reference comparison note ── */}
+      {/* ── Reference comparison note with research source ── */}
       {reference && (
-        <div className="text-[10px] text-muted-foreground px-1 flex items-center gap-1.5">
-          <span>📖</span>
-          <span>Compared against <strong>{reference.label}</strong> professional reference model</span>
+        <div className="text-[10px] text-muted-foreground px-1 space-y-0.5">
+          <div className="flex items-center gap-1.5">
+            <span>📖</span>
+            <span>Compared against <strong>{reference.label}</strong> professional reference model</span>
+          </div>
+          {'source' in reference && (reference as any).source && (
+            <div className="flex items-center gap-1.5 pl-4 italic">
+              <span>📚</span>
+              <span>Sources: {(reference as any).source}</span>
+            </div>
+          )}
         </div>
       )}
     </div>
