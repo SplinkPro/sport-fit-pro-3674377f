@@ -54,7 +54,8 @@ export default function Login() {
     setAuthLoading(false);
   };
 
-  if (loading) return (
+  // Don't block the login page on auth loading — if user is detected, the redirect effect handles it
+  if (loading && !user) return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
       <div className="flex flex-col items-center gap-3">
         <div className="w-10 h-10 border-4 border-[#1E3A5F] border-t-transparent rounded-full animate-spin" />
