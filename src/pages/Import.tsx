@@ -462,6 +462,7 @@ export default function ImportPage() {
                     <Button variant="outline" size="sm" onClick={(e) => {
                       e.stopPropagation();
                       setUploadedFile(null); setParseResult(null); setRawRows([]);
+                      setPreflightErrors([]); setFileReadError(null);
                       if (fileInputRef.current) {
                         fileInputRef.current.value = "";
                         fileInputRef.current.click();
