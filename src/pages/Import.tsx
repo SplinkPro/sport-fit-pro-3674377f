@@ -16,7 +16,7 @@ import { useAthletes } from "@/hooks/useAthletes";
 import { enrichAthletes } from "@/engine/analyticsEngine";
 import {
   parseCSVText, rowsToAthletes, generateCSVTemplate,
-  ParseResult, BatchMeta, DataQualityIssue,
+  ParseResult, BatchMeta, DataQualityIssue, preflightValidate, PreflightError,
 } from "@/lib/csvParser";
 import { cn } from "@/lib/utils";
 
@@ -97,6 +97,8 @@ export default function ImportPage() {
   const [processing, setProcessing]   = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
   const [showAllValid, setShowAllValid] = useState(false);
+  const [preflightErrors, setPreflightErrors] = useState<PreflightError[]>([]);
+  const [fileReadError, setFileReadError]     = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fileUploaded  = uploadedFile !== null;
