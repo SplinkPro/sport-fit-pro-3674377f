@@ -3,7 +3,7 @@
  * Covers: header normalisation, time parsing, Bihar file format, edge cases
  */
 import { describe, it, expect } from "vitest";
-import { parseCSVText, rowsToAthletes, generateCSVTemplate } from "@/lib/csvParser";
+import { parseCSVText, rowsToAthletes, generateCSVTemplate, preflightValidate } from "@/lib/csvParser";
 
 // ─── 1. HEADER NORMALISATION ──────────────────────────────────────────────────
 
@@ -191,5 +191,74 @@ describe("generateCSVTemplate", () => {
     expect(result.skipped).toBe(0);
     // 800m should parse correctly (3:45 = 225s)
     expect(result.athletes[0].run800m).toBe(225);
+  });
+});
+
+// ─── 6. PREFLIGHT VALIDATION (BLOCKING ERRORS BEFORE IMPORT) ─────────────────
+
+describe("preflightValidate — blocking gate", () => {
+  it("blocks empty file with EMPTY_FILE error", () => {
+    const errors = preflightValidate([], "empty.csv");
+    expect(errors).toHaveLength(1);
+    expect(errors[0].code).toBe("EMPTY_FILE");
+    expect(errors[0].fix).toMatch(/header row/i);
+  });
+
+  it("blocks file missing the Athlete Name column", () => {
+    const csv = `Height,Weight,Verticaljump\n165,55,42`;
+    const rows = parseCSVText(csv);
+    const errors = preflightValidate(rows, "no-name.csv");
+    const codes = errors.map((e) => e.code);
+    expect(codes).toContain("MISSING_NAME_COLUMN");
+    const nameErr = errors.find((e) => e.code === "MISSING_NAME_COLUMN")!;
+    expect(nameErr.fix).toMatch(/Athlete Name/);
+  });
+
+  it("blocks file with no recognised metric columns", () => {
+    const csv = `Athlete Name,FavouriteColour,LuckyNumber\nRahul,Blue,7`;
+    const rows = parseCSVText(csv);
+    const errors = preflightValidate(rows, "no-metrics.csv");
+    const codes = errors.map((e) => e.code);
+    expect(codes).toContain("NO_METRIC_COLUMNS");
+  });
+
+  it("blocks file with header but no name values", () => {
+    const csv = `Athlete Name,Height,Weight\n,165,55\n,170,60`;
+    const rows = parseCSVText(csv);
+    const errors = preflightValidate(rows, "blank-names.csv");
+    expect(errors.some((e) => e.code === "NO_DATA_ROWS")).toBe(true);
+  });
+
+  it("detects duplicate normalised headers", () => {
+    const csv = `Athlete Name,Verticaljump,Vertical Jump\nRahul,42,43`;
+    const rows = parseCSVText(csv);
+    const errors = preflightValidate(rows, "dupes.csv");
+    expect(errors.some((e) => e.code === "DUPLICATE_HEADERS")).toBe(true);
+  });
+
+  it("passes a clean Bihar-format file", () => {
+    const csv = [
+      "Athlete Name,Height,Verticaljump,Eighthundredmetersrun,Weight",
+      "Rahul,165,42,3:45,55",
+    ].join("\n");
+    const rows = parseCSVText(csv);
+    const errors = preflightValidate(rows, "good.csv");
+    expect(errors).toHaveLength(0);
+  });
+
+  it("passes the generated CSV template", () => {
+    const csv = generateCSVTemplate();
+    const rows = parseCSVText(csv);
+    const errors = preflightValidate(rows, "template.csv");
+    expect(errors).toHaveLength(0);
+  });
+
+  it("every error includes title, detail, and fix", () => {
+    const errors = preflightValidate([], "x.csv");
+    errors.forEach((e) => {
+      expect(e.title.length).toBeGreaterThan(0);
+      expect(e.detail.length).toBeGreaterThan(0);
+      expect(e.fix.length).toBeGreaterThan(0);
+    });
   });
 });

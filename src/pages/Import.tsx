@@ -16,7 +16,7 @@ import { useAthletes } from "@/hooks/useAthletes";
 import { enrichAthletes } from "@/engine/analyticsEngine";
 import {
   parseCSVText, rowsToAthletes, generateCSVTemplate,
-  ParseResult, BatchMeta, DataQualityIssue,
+  ParseResult, BatchMeta, DataQualityIssue, preflightValidate, PreflightError,
 } from "@/lib/csvParser";
 import { cn } from "@/lib/utils";
 
@@ -97,6 +97,8 @@ export default function ImportPage() {
   const [processing, setProcessing]   = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
   const [showAllValid, setShowAllValid] = useState(false);
+  const [preflightErrors, setPreflightErrors] = useState<PreflightError[]>([]);
+  const [fileReadError, setFileReadError]     = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fileUploaded  = uploadedFile !== null;
@@ -128,35 +130,77 @@ export default function ImportPage() {
     if (!file) return;
     setUploadedFile(file);
     setParseResult(null);
+    setPreflightErrors([]);
+    setFileReadError(null);
     setProcessing(true);
 
     const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+    const isCsvLike = /\.(csv|tsv|txt)$/i.test(file.name);
+    if (!isExcel && !isCsvLike) {
+      setProcessing(false);
+      setFileReadError(
+        `Unsupported file type "${file.name.split(".").pop() ?? ""}". Upload .csv, .tsv, .xlsx, or .xls.`,
+      );
+      return;
+    }
+
+    const handleRows = (rows: Record<string, string>[]) => {
+      // Run preflight BEFORE expensive parse
+      const pre = preflightValidate(rows, file.name);
+      setPreflightErrors(pre);
+      setRawRows(rows);
+      if (pre.length === 0) {
+        const result = rowsToAthletes(rows);
+        setParseResult(result);
+      } else {
+        setParseResult(null);
+      }
+      setProcessing(false);
+    };
+
     if (isExcel) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
-          defval: "",
-          raw: false,
-        });
-        setRawRows(rows);
-        const result = rowsToAthletes(rows);
-        setParseResult(result);
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          if (!sheetName) {
+            setProcessing(false);
+            setFileReadError("Excel file contains no sheets.");
+            return;
+          }
+          const sheet = workbook.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
+            defval: "",
+            raw: false,
+          });
+          handleRows(rows);
+        } catch (err) {
+          setProcessing(false);
+          setFileReadError(`Could not read Excel file: ${(err as Error).message}`);
+        }
+      };
+      reader.onerror = () => {
         setProcessing(false);
+        setFileReadError("Failed to read the file. It may be corrupted or locked by another program.");
       };
       reader.readAsArrayBuffer(file);
     } else {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const rows = parseCSVText(text);
-        setRawRows(rows);
-        const result = rowsToAthletes(rows);
-        setParseResult(result);
+        try {
+          const text = e.target?.result as string;
+          const rows = parseCSVText(text);
+          handleRows(rows);
+        } catch (err) {
+          setProcessing(false);
+          setFileReadError(`Could not parse CSV: ${(err as Error).message}`);
+        }
+      };
+      reader.onerror = () => {
         setProcessing(false);
+        setFileReadError("Failed to read the file. It may be corrupted or locked by another program.");
       };
       reader.readAsText(file);
     }
@@ -418,6 +462,7 @@ export default function ImportPage() {
                     <Button variant="outline" size="sm" onClick={(e) => {
                       e.stopPropagation();
                       setUploadedFile(null); setParseResult(null); setRawRows([]);
+                      setPreflightErrors([]); setFileReadError(null);
                       if (fileInputRef.current) {
                         fileInputRef.current.value = "";
                         fileInputRef.current.click();
@@ -447,6 +492,52 @@ export default function ImportPage() {
                 </div>
               </div>
 
+              {/* ── File-read errors ── */}
+              {fileReadError && (
+                <div className="rounded-lg border border-red-300 bg-red-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-red-800 text-sm">Cannot read this file</p>
+                      <p className="text-xs text-red-700 mt-1">{fileReadError}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Preflight blocking errors ── */}
+              {preflightErrors.length > 0 && (
+                <div className="rounded-lg border border-red-300 bg-red-50 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                    <p className="font-semibold text-red-800 text-sm">
+                      File cannot be imported — {preflightErrors.length} blocking issue{preflightErrors.length > 1 ? "s" : ""} found
+                    </p>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {preflightErrors.map((err) => (
+                      <li
+                        key={err.code}
+                        className="rounded-md border border-red-200 bg-white p-3 text-xs"
+                      >
+                        <p className="font-semibold text-red-800 text-sm">{err.title}</p>
+                        <p className="text-red-700 mt-1">{err.detail}</p>
+                        <p className="text-foreground mt-2 flex items-start gap-1.5">
+                          <Wrench className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong className="text-emerald-700">How to fix: </strong>
+                            {err.fix}
+                          </span>
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-red-700">
+                    Fix the issues above and re-upload the file. Use the CSV template below as a reference.
+                  </p>
+                </div>
+              )}
+
               <div className="flex gap-3 flex-wrap">
                 <Button variant="outline" size="sm" className="gap-2" onClick={handleDownloadTemplate}>
                   <Download className="w-4 h-4" /> Download CSV Template
@@ -464,8 +555,20 @@ export default function ImportPage() {
             {!fileUploaded && metaComplete && (
               <p className="text-xs text-muted-foreground">Upload a file above to continue</p>
             )}
+            {preflightErrors.length > 0 && (
+              <p className="text-xs text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Fix the file errors above before continuing
+              </p>
+            )}
             <Button
-              disabled={!fileUploaded || !parseResult || parseResult.athletes.length === 0 || !metaComplete}
+              disabled={
+                !fileUploaded ||
+                !parseResult ||
+                parseResult.athletes.length === 0 ||
+                !metaComplete ||
+                preflightErrors.length > 0 ||
+                !!fileReadError
+              }
               onClick={handleContinueFromStep1}
               className="gap-2"
             >
