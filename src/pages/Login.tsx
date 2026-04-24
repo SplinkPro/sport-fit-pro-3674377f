@@ -104,22 +104,22 @@ export default function Login() {
 
   // Don't block the login page on auth loading — if user is detected, the redirect effect handles it
   if (loading && !user) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 border-4 border-[#1E3A5F] border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-slate-500 font-medium">Loading Pratibha…</p>
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground font-medium">Loading Pratibha…</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       {/* Background accents */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full opacity-[0.06]"
-          style={{ background: "radial-gradient(circle, #1E3A5F 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)" }} />
         <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full opacity-[0.05]"
-          style={{ background: "radial-gradient(circle, #F97316 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle, hsl(var(--accent)) 0%, transparent 70%)" }} />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -127,14 +127,13 @@ export default function Login() {
         <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-10">
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg"
-              style={{ background: "#1E3A5F" }}>
-              <Zap className="w-7 h-7 text-white" />
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg bg-primary">
+              <Zap className="w-7 h-7 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-black tracking-tight" style={{ color: "#1E3A5F" }}>
-              Pratibha <span className="font-light text-slate-400">by SPLINK</span>
+            <h1 className="text-2xl font-black tracking-tight text-primary">
+              Pratibha <span className="font-light text-muted-foreground">by SPLINK</span>
             </h1>
-            <p className="text-sm text-slate-500 mt-1">Athlete Intelligence Platform</p>
+            <p className="text-sm text-muted-foreground mt-1">Athlete Intelligence Platform</p>
           </div>
 
           {/* Google Sign-In */}
@@ -174,7 +173,7 @@ export default function Login() {
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="mt-1.5 w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm focus:outline-none focus:border-[#1E3A5F] transition-colors"
+                  className="mt-1.5 w-full px-4 py-3 rounded-xl border-2 border-border text-sm focus:outline-none focus:border-primary transition-colors bg-background"
                   placeholder="you@example.com"
                 />
               </div>
@@ -185,23 +184,22 @@ export default function Login() {
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="mt-1.5 w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm focus:outline-none focus:border-[#1E3A5F] transition-colors"
+                  className="mt-1.5 w-full px-4 py-3 rounded-xl border-2 border-border text-sm focus:outline-none focus:border-primary transition-colors bg-background"
                   placeholder="••••••••"
                 />
               </div>
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
-                style={{ background: "#F97316" }}
+                className="w-full py-3.5 rounded-2xl text-accent-foreground font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60 bg-accent"
               >
                 {authLoading ? "Please wait…" : isSignUp ? "Create Account" : "Sign In"}
               </button>
               <div className="flex items-center justify-between text-xs">
-                <button type="button" onClick={() => setEmailMode(false)} className="text-slate-400 hover:text-slate-600">
+                <button type="button" onClick={() => setEmailMode(false)} className="text-muted-foreground hover:text-foreground">
                   ← Back
                 </button>
-                <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-[#1E3A5F] font-semibold hover:underline">
+                <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-primary font-semibold hover:underline">
                   {isSignUp ? "Already have an account?" : "Create account"}
                 </button>
               </div>
