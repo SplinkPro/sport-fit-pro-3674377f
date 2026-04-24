@@ -230,7 +230,7 @@ describe("preflightValidate — blocking gate", () => {
   });
 
   it("detects duplicate normalised headers", () => {
-    const csv = `Athlete Name,Height,Height_cm\nRahul,165,166`;
+    const csv = `Athlete Name,Verticaljump,Vertical Jump\nRahul,42,43`;
     const rows = parseCSVText(csv);
     const errors = preflightValidate(rows, "dupes.csv");
     expect(errors.some((e) => e.code === "DUPLICATE_HEADERS")).toBe(true);
