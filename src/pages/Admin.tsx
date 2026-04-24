@@ -25,10 +25,10 @@ interface AdminUser {
 }
 
 const ROLE_COLORS: Record<AppRole, string> = {
-  admin: "bg-purple-100 text-purple-700",
-  coach: "bg-blue-100 text-blue-700",
-  analyst: "bg-amber-100 text-amber-700",
-  viewer: "bg-slate-100 text-slate-600",
+  admin: "bg-primary/10 text-primary",
+  coach: "bg-info/10 text-info",
+  analyst: "bg-warning/10 text-warning",
+  viewer: "bg-muted text-muted-foreground",
 };
 
 const ROLE_ICONS: Record<AppRole, React.ReactNode> = {
@@ -80,46 +80,45 @@ export default function Admin() {
   };
 
   const stats = [
-    { label: "Total Users", value: users.length, icon: <Users className="w-5 h-5" />, color: "#1E3A5F" },
-    { label: "Admins", value: users.filter(u => u.roles?.includes("admin")).length, icon: <Crown className="w-5 h-5" />, color: "#7C3AED" },
-    { label: "Coaches", value: users.filter(u => u.roles?.includes("coach")).length, icon: <UserCheck className="w-5 h-5" />, color: "#2563EB" },
+    { label: "Total Users", value: users.length, icon: <Users className="w-5 h-5" />, tone: "primary" },
+    { label: "Admins", value: users.filter(u => u.roles?.includes("admin")).length, icon: <Crown className="w-5 h-5" />, tone: "primary" },
+    { label: "Coaches", value: users.filter(u => u.roles?.includes("coach")).length, icon: <UserCheck className="w-5 h-5" />, tone: "info" },
     { label: "Last 7 Days", value: users.filter(u => {
       const d = new Date(u.created_at); const week = new Date(); week.setDate(week.getDate() - 7);
       return d > week;
-    }).length, icon: <Clock className="w-5 h-5" />, color: "#F97316" },
+    }).length, icon: <Clock className="w-5 h-5" />, tone: "accent" },
   ];
 
   if (loading || fetching) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-      <Loader2 className="w-8 h-8 animate-spin text-[#1E3A5F]" />
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-background">
       {/* Top bar */}
-      <header className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+      <header className="bg-card border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#1E3A5F" }}>
-            <ShieldCheck className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+            <ShieldCheck className="w-4 h-4 text-primary-foreground" />
           </div>
           <div>
-            <span className="font-black text-lg tracking-tight" style={{ color: "#1E3A5F" }}>Admin Panel</span>
-            <span className="ml-2 text-xs text-slate-400">Pratibha by SPLINK</span>
+            <span className="font-black text-lg tracking-tight text-primary">Admin Panel</span>
+            <span className="ml-2 text-xs text-muted-foreground">Pratibha by SPLINK</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button onClick={() => navigate("/explorer")}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all">
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-all">
             <Home className="w-4 h-4" /> Platform
           </button>
           <button onClick={fetchUsers}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all">
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-all">
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>
           <button onClick={async () => { await signOut(); navigate("/"); }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-            style={{ background: "#F97316" }}>
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-accent-foreground transition-all hover:opacity-90 bg-accent">
             <LogOut className="w-4 h-4" /> Sign Out
           </button>
         </div>
@@ -128,8 +127,8 @@ export default function Admin() {
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Welcome */}
         <div>
-          <h2 className="text-2xl font-black" style={{ color: "#1E3A5F" }}>User Management</h2>
-          <p className="text-slate-500 text-sm mt-1">Manage platform access, roles, and permissions across all registered users.</p>
+          <h2 className="text-2xl font-black text-primary">User Management</h2>
+          <p className="text-muted-foreground text-sm mt-1">Manage platform access, roles, and permissions across all registered users.</p>
         </div>
 
         {/* Stats grid */}
