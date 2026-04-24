@@ -315,6 +315,147 @@ export function parseCSVText(text: string): Record<string, string>[] {
   });
 }
 
+// ─── PREFLIGHT VALIDATION ────────────────────────────────────────────────────
+// Hard-blocks at upload time. Returns clear, actionable errors BEFORE the user
+// is allowed to advance through the import wizard. Every error includes a
+// human-readable fix.
+
+export interface PreflightError {
+  code:
+    | "EMPTY_FILE"
+    | "NO_HEADER_ROW"
+    | "NO_DATA_ROWS"
+    | "MISSING_NAME_COLUMN"
+    | "NO_METRIC_COLUMNS"
+    | "DUPLICATE_HEADERS"
+    | "ALL_ROWS_BLANK";
+  title: string;
+  detail: string;
+  fix: string;
+}
+
+const REQUIRED_NAME_ALIASES = [
+  "Athlete Name", "Name", "Full Name", "Student Name", "Player Name",
+];
+
+const RECOGNISED_METRIC_FIELDS: InternalField[] = [
+  "verticalJump", "broadJump", "sprint30m", "run800m",
+  "shuttleRun", "footballThrow", "height", "weight",
+];
+
+export function preflightValidate(
+  rows: Record<string, string>[],
+  fileName?: string,
+): PreflightError[] {
+  const errors: PreflightError[] = [];
+
+  // 1. Empty file
+  if (!rows || rows.length === 0) {
+    errors.push({
+      code: "EMPTY_FILE",
+      title: "File is empty or unreadable",
+      detail: fileName
+        ? `"${fileName}" contains no readable rows.`
+        : "The uploaded file contains no readable rows.",
+      fix: "Open the file and confirm it has a header row followed by at least one athlete row. Re-save as .csv or .xlsx and try again.",
+    });
+    return errors; // nothing else to check
+  }
+
+  const headers = Object.keys(rows[0] ?? {});
+
+  // 2. No header row (all headers blank)
+  if (headers.length === 0 || headers.every((h) => !h.trim())) {
+    errors.push({
+      code: "NO_HEADER_ROW",
+      title: "Header row is missing",
+      detail: "The first row must contain column names like 'Athlete Name', 'Height', 'Vertical Jump'.",
+      fix: "Add a header row as the first line of the file. Download the CSV template below for the exact format.",
+    });
+    return errors;
+  }
+
+  // 3. Duplicate headers (after normalisation)
+  const normCounts = new Map<string, string[]>();
+  headers.forEach((h) => {
+    if (!h.trim()) return;
+    const norm = normaliseHeader(h);
+    if (!norm) return;
+    const list = normCounts.get(norm) ?? [];
+    list.push(h);
+    normCounts.set(norm, list);
+  });
+  const dupes = [...normCounts.values()].filter((g) => g.length > 1);
+  if (dupes.length > 0) {
+    errors.push({
+      code: "DUPLICATE_HEADERS",
+      title: "Duplicate column headers detected",
+      detail: `These columns map to the same field: ${dupes.map((g) => g.join(" / ")).join("; ")}.`,
+      fix: "Remove or rename the duplicate columns so each metric appears only once.",
+    });
+  }
+
+  // 4. Missing required Name column
+  const headerMap: Partial<Record<string, InternalField>> = {};
+  headers.forEach((h) => {
+    const mapped = COLUMN_MAP[normaliseHeader(h)];
+    if (mapped) headerMap[h] = mapped;
+  });
+  const hasName = Object.values(headerMap).includes("name");
+  if (!hasName) {
+    errors.push({
+      code: "MISSING_NAME_COLUMN",
+      title: "Required column 'Athlete Name' not found",
+      detail: `Detected columns: ${headers.filter(Boolean).slice(0, 10).join(", ") || "(none)"}${headers.length > 10 ? "…" : ""}`,
+      fix: `Add a column named one of: ${REQUIRED_NAME_ALIASES.map((n) => `"${n}"`).join(", ")}. This column must contain the athlete's full name on each row.`,
+    });
+  }
+
+  // 5. No recognised metric columns at all
+  const recognisedMetrics = Object.values(headerMap).filter((f) =>
+    f && RECOGNISED_METRIC_FIELDS.includes(f as InternalField),
+  );
+  if (recognisedMetrics.length === 0) {
+    errors.push({
+      code: "NO_METRIC_COLUMNS",
+      title: "No performance metric columns recognised",
+      detail: "At least one of: Vertical Jump, Broad Jump, 30m Sprint, 800m Run, Shuttle Run, Football Throw, Height, Weight must be present.",
+      fix: "Rename your metric columns to match the template (e.g. 'Verticaljump', 'Standinggbroadjump', 'Eighthundredmetersrun'). Download the CSV template for exact names.",
+    });
+  }
+
+  // 6. All rows blank
+  const nonBlankRows = rows.filter((r) => Object.values(r).some((v) => v && String(v).trim()));
+  if (nonBlankRows.length === 0) {
+    errors.push({
+      code: "ALL_ROWS_BLANK",
+      title: "No data rows found",
+      detail: `Found ${rows.length} row(s) but every cell is empty.`,
+      fix: "Add at least one row of athlete data below the header. Re-check that you saved the file with data, not just column headings.",
+    });
+  } else if (nonBlankRows.length < rows.length / 2 && rows.length > 4) {
+    // Not blocking, but warn-ish — only block if literally nothing.
+  }
+
+  // 7. Has name column but no row has a value for it
+  if (hasName && nonBlankRows.length > 0) {
+    const nameHeader = Object.entries(headerMap).find(([, f]) => f === "name")?.[0];
+    if (nameHeader) {
+      const rowsWithName = rows.filter((r) => (r[nameHeader] ?? "").trim());
+      if (rowsWithName.length === 0) {
+        errors.push({
+          code: "NO_DATA_ROWS",
+          title: "Athlete Name column is empty on every row",
+          detail: `The "${nameHeader}" column exists but contains no values.`,
+          fix: "Fill in each athlete's full name in the 'Athlete Name' column. Rows without a name will be skipped.",
+        });
+      }
+    }
+  }
+
+  return errors;
+}
+
 function splitCSVLine(line: string, delim: string): string[] {
   const result: string[] = [];
   let current = "";
