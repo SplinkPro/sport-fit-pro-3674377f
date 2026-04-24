@@ -1,5 +1,6 @@
 // ─── Pose Engine — TensorFlow.js MoveNet Multi-Pose ───────────────────────
 import * as poseDetection from "@tensorflow-models/pose-detection";
+// @ts-ignore — backend has no .d.ts shipped but registers itself as a side-effect
 import "@tensorflow/tfjs-backend-webgl";
 import * as tf from "@tensorflow/tfjs";
 

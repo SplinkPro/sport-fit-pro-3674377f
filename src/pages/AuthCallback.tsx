@@ -1,45 +1,48 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const [stalled, setStalled] = useState(false);
 
   useEffect(() => {
-    // Listen for auth state change — this fires as soon as the session is ready
+    let done = false;
+    const finish = (target: string) => {
+      if (done) return;
+      done = true;
+      navigate(target, { replace: true });
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        subscription.unsubscribe();
-        navigate("/explorer", { replace: true });
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
+        finish("/explorer");
       }
     });
 
-    // Also check immediately in case session is already set
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        subscription.unsubscribe();
-        navigate("/explorer", { replace: true });
-      }
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) finish("/explorer");
     });
 
-    // Hard fallback — if nothing happens in 5s, go back to login
-    const fallback = setTimeout(() => {
-      subscription.unsubscribe();
-      navigate("/login", { replace: true });
-    }, 5000);
+    // Soft hint after 4s, hard fallback at 8s — gives slow networks a chance.
+    const stallTimer = setTimeout(() => setStalled(true), 4000);
+    const fallback = setTimeout(() => finish("/login"), 8000);
 
     return () => {
+      clearTimeout(stallTimer);
       clearTimeout(fallback);
       subscription.unsubscribe();
     };
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center space-y-3">
-        <div className="w-10 h-10 border-4 border-[#1E3A5F] border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-sm text-slate-500 font-medium">Signing you in…</p>
-        <p className="text-xs text-slate-400">Please wait a moment</p>
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-sm text-muted-foreground font-medium">Signing you in…</p>
+        <p className="text-xs text-muted-foreground/70">
+          {stalled ? "Taking longer than expected — almost there…" : "Please wait a moment"}
+        </p>
       </div>
     </div>
   );

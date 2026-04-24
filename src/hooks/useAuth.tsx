@@ -74,7 +74,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       clearTimeout(safetyTimer);
-      applySession(nextSession);
+      // CRITICAL: defer any Supabase calls (fetchRoles) outside the auth callback
+      // to prevent deadlocks. Synchronous state updates here are fine.
+      if (!isMounted) return;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setLoading(false);
+      if (nextSession?.user) {
+        const uid = nextSession.user.id;
+        setTimeout(() => { void fetchRoles(uid); }, 0);
+      } else {
+        setRoles([]);
+      }
     });
 
     return () => {
