@@ -130,35 +130,77 @@ export default function ImportPage() {
     if (!file) return;
     setUploadedFile(file);
     setParseResult(null);
+    setPreflightErrors([]);
+    setFileReadError(null);
     setProcessing(true);
 
     const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+    const isCsvLike = /\.(csv|tsv|txt)$/i.test(file.name);
+    if (!isExcel && !isCsvLike) {
+      setProcessing(false);
+      setFileReadError(
+        `Unsupported file type "${file.name.split(".").pop() ?? ""}". Upload .csv, .tsv, .xlsx, or .xls.`,
+      );
+      return;
+    }
+
+    const handleRows = (rows: Record<string, string>[]) => {
+      // Run preflight BEFORE expensive parse
+      const pre = preflightValidate(rows, file.name);
+      setPreflightErrors(pre);
+      setRawRows(rows);
+      if (pre.length === 0) {
+        const result = rowsToAthletes(rows);
+        setParseResult(result);
+      } else {
+        setParseResult(null);
+      }
+      setProcessing(false);
+    };
+
     if (isExcel) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
-          defval: "",
-          raw: false,
-        });
-        setRawRows(rows);
-        const result = rowsToAthletes(rows);
-        setParseResult(result);
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          if (!sheetName) {
+            setProcessing(false);
+            setFileReadError("Excel file contains no sheets.");
+            return;
+          }
+          const sheet = workbook.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
+            defval: "",
+            raw: false,
+          });
+          handleRows(rows);
+        } catch (err) {
+          setProcessing(false);
+          setFileReadError(`Could not read Excel file: ${(err as Error).message}`);
+        }
+      };
+      reader.onerror = () => {
         setProcessing(false);
+        setFileReadError("Failed to read the file. It may be corrupted or locked by another program.");
       };
       reader.readAsArrayBuffer(file);
     } else {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const rows = parseCSVText(text);
-        setRawRows(rows);
-        const result = rowsToAthletes(rows);
-        setParseResult(result);
+        try {
+          const text = e.target?.result as string;
+          const rows = parseCSVText(text);
+          handleRows(rows);
+        } catch (err) {
+          setProcessing(false);
+          setFileReadError(`Could not parse CSV: ${(err as Error).message}`);
+        }
+      };
+      reader.onerror = () => {
         setProcessing(false);
+        setFileReadError("Failed to read the file. It may be corrupted or locked by another program.");
       };
       reader.readAsText(file);
     }
