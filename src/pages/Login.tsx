@@ -124,7 +124,7 @@ export default function Login() {
 
       <div className="relative w-full max-w-md">
         {/* Card */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-10">
+        <div className="bg-card rounded-3xl shadow-xl shadow-border/60 border border-border p-10">
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg bg-primary">
@@ -142,21 +142,21 @@ export default function Login() {
               <button
                 onClick={handleGoogle}
                 disabled={authLoading}
-                className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl border-2 border-slate-200 bg-white font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 mb-4"
+                className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl border-2 border-border bg-background font-semibold text-foreground hover:border-primary/40 hover:bg-muted transition-all duration-200 active:scale-[0.98] disabled:opacity-60 mb-4"
               >
-                <Chrome className="w-5 h-5 text-blue-500" />
+                <Chrome className="w-5 h-5 text-info" />
                 {authLoading ? "Signing in…" : "Continue with Google"}
               </button>
 
               <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px bg-slate-100" />
-                <span className="text-xs text-slate-400 font-medium">or</span>
-                <div className="flex-1 h-px bg-slate-100" />
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground font-medium">or</span>
+                <div className="flex-1 h-px bg-border" />
               </div>
 
               <button
                 onClick={() => setEmailMode(true)}
-                className="w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all"
+                className="w-full py-3 rounded-2xl border-2 border-border text-sm font-semibold text-muted-foreground hover:bg-muted transition-all"
               >
                 Continue with Email
               </button>
@@ -167,7 +167,7 @@ export default function Login() {
           {emailMode && (
             <form onSubmit={handleEmail} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</label>
                 <input
                   type="email"
                   required
@@ -178,7 +178,7 @@ export default function Login() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Password</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Password</label>
                 <input
                   type="password"
                   required
@@ -207,15 +207,15 @@ export default function Login() {
           )}
 
           {/* Trust badge */}
-          <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center gap-1.5 text-xs text-slate-400">
-            <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
+          <div className="mt-8 pt-6 border-t border-border flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <ShieldCheck className="w-3.5 h-3.5 text-success" />
             <span>Zero data access · Enterprise security</span>
           </div>
         </div>
 
         {/* Back to landing */}
         <div className="text-center mt-5">
-          <a href="/" className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+          <a href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             ← Back to home
           </a>
         </div>
