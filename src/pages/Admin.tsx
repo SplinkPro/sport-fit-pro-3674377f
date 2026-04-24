@@ -133,17 +133,23 @@ export default function Admin() {
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {stats.map((s) => (
-            <div key={s.label} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${s.color}15`, color: s.color }}>
-                  {s.icon}
+          {stats.map((s) => {
+            const tone =
+              s.tone === "info"    ? { bg: "bg-info/10",    fg: "text-info",    num: "text-info" } :
+              s.tone === "accent"  ? { bg: "bg-accent/10",  fg: "text-accent",  num: "text-accent" } :
+                                     { bg: "bg-primary/10", fg: "text-primary", num: "text-primary" };
+            return (
+              <div key={s.label} className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tone.bg} ${tone.fg}`}>
+                    {s.icon}
+                  </div>
                 </div>
+                <div className={`text-3xl font-black mb-0.5 ${tone.num}`}>{s.value}</div>
+                <div className="text-xs text-muted-foreground font-medium">{s.label}</div>
               </div>
-              <div className="text-3xl font-black mb-0.5" style={{ color: s.color }}>{s.value}</div>
-              <div className="text-xs text-slate-500 font-medium">{s.label}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Users table */}
