@@ -153,6 +153,22 @@ function getAgeBand(age: number): AgeBand {
   return "Open";
 }
 
+// ─── Region detection ────────────────────────────────────────────────────
+// Bihar-specific copy (Sattu, Makhana, "Bihar summers", etc.) must only
+// surface when the athlete actually belongs to a Bihar district. For all
+// other districts we fall back to pan-India neutral copy.
+const BIHAR_DISTRICTS = new Set([
+  "Patna", "Gaya", "Bhojpur", "Arwal", "Jehanabad", "Aurangabad",
+  "Bhagalpur", "Nalanda", "Rohtas", "Buxar", "Muzaffarpur",
+  "Darbhanga", "Madhubani", "Sitamarhi", "Samastipur",
+  "Bihar", "All",
+]);
+
+function isBiharContext(district?: string): boolean {
+  if (!district) return false;
+  return BIHAR_DISTRICTS.has(district);
+}
+
 // ─── ICMR 2020 macro targets ────────────────────────────────────────────────
 // Source: ICMR-NIN 2020 Dietary Reference Values, Table 4 (school-age, active)
 // Agent A: adjusted upward 15% for sport-active children per NIN Sport Nutrition addendum
@@ -702,6 +718,7 @@ function buildMealPlan(ctx: NutritionContext): MealSlot[] {
 function buildHydrationPlan(ctx: NutritionContext): HydrationPlan {
   const base = Math.round(ctx.weight * 38);
   const trainingTopUp = ctx.weight < 40 ? 400 : 600;
+  const bihar = isBiharContext(ctx.district);
 
   const recs: HydrationRec[] = [
     {
@@ -720,8 +737,8 @@ function buildHydrationPlan(ctx: NutritionContext): HydrationPlan {
     },
     {
       icon: "🌡️",
-      label: "Hot Weather (Bihar Summers)",
-      labelHi: "गर्म मौसम (बिहार की गर्मियां)",
+      label: bihar ? "Hot Weather (Bihar Summers)" : "Hot Weather",
+      labelHi: bihar ? "गर्म मौसम (बिहार की गर्मियां)" : "गर्म मौसम",
       detail: "+500ml extra when temp >35°C. Add nimbu-paani or coconut water as natural electrolyte.",
       detailHi: "तापमान >35°C होने पर +500ml अतिरिक्त। प्राकृतिक इलेक्ट्रोलाइट के रूप में निम्बू-पानी या नारियल पानी मिलाएं।",
     },
@@ -732,20 +749,30 @@ function buildHydrationPlan(ctx: NutritionContext): HydrationPlan {
       detail: "Cold drinks (Coke, Pepsi) during training — carbonation inhibits fluid absorption. Tea/coffee dehydrates.",
       detailHi: "प्रशिक्षण के दौरान कोल्ड ड्रिंक से बचें — कार्बोनेशन द्रव अवशोषण में बाधा डालती है।",
     },
-    {
-      icon: "🥛",
-      label: "Bihar Traditional Electrolytes",
-      labelHi: "बिहार पारंपरिक इलेक्ट्रोलाइट्स",
-      detail: "Sattu sharbat, chaach (buttermilk), nimbu-paani with salt+jaggery — all superior to commercial sports drinks.",
-      detailHi: "सत्तू शर्बत, छाछ, नमक+गुड़ के साथ नींबू-पानी — सभी व्यावसायिक स्पोर्ट्स ड्रिंक से बेहतर।",
-    },
+    bihar
+      ? {
+          icon: "🥛",
+          label: "Bihar Traditional Electrolytes",
+          labelHi: "बिहार पारंपरिक इलेक्ट्रोलाइट्स",
+          detail: "Sattu sharbat, chaach (buttermilk), nimbu-paani with salt+jaggery — all superior to commercial sports drinks.",
+          detailHi: "सत्तू शर्बत, छाछ, नमक+गुड़ के साथ नींबू-पानी — सभी व्यावसायिक स्पोर्ट्स ड्रिंक से बेहतर।",
+        }
+      : {
+          icon: "🥛",
+          label: "Traditional Electrolytes",
+          labelHi: "पारंपरिक इलेक्ट्रोलाइट्स",
+          detail: "Chaach (buttermilk), nimbu-paani with salt+jaggery, and tender coconut water match WHO ORS composition and beat commercial sports drinks.",
+          detailHi: "छाछ, नमक+गुड़ के साथ नींबू-पानी और नारियल पानी — व्यावसायिक स्पोर्ट्स ड्रिंक से बेहतर।",
+        },
   ];
 
   return {
     dailyML: base,
     trainingTopUpML: trainingTopUp,
     hotWeatherTopUpML: 500,
-    electrolyteNote: "Bihar traditional drinks (sattu sharbat, chaach, nimbu-paani) match WHO oral rehydration solution composition and are preferred over packaged sports drinks.",
+    electrolyteNote: bihar
+      ? "Bihar traditional drinks (sattu sharbat, chaach, nimbu-paani) match WHO oral rehydration solution composition and are preferred over packaged sports drinks."
+      : "Traditional Indian drinks (chaach, nimbu-paani with salt+jaggery, coconut water) match WHO oral rehydration solution composition and are preferred over packaged sports drinks.",
     recommendations: recs,
   };
 }
@@ -804,7 +831,13 @@ function generateAlerts(ctx: NutritionContext, macros: MacroTarget): NutritionAl
 
 function getRelevantRegionalFoods(ctx: NutritionContext): RegionalFood[] {
   const season = getCurrentSeason();
+  const bihar = isBiharContext(ctx.district);
   return REGIONAL_FOODS_DB.filter(food => {
+    // For non-Bihar athletes, suppress foods that are exclusively tied to Bihar
+    // districts (no "All" tag) so we don't push Sattu/Makhana etc. out of context.
+    const isBiharOnlyFood = !food.districts.includes("All")
+      && food.districts.every(d => BIHAR_DISTRICTS.has(d));
+    if (!bihar && isBiharOnlyFood) return false;
     const districtMatch = food.districts.includes("All") || food.districts.includes(ctx.district);
     const seasonMatch = food.season.includes(season);
     // Diet filter:
@@ -839,6 +872,7 @@ function getRelevantRemedies(ctx: NutritionContext): HomeRemedy[] {
 
 function buildWeeklyTips(ctx: NutritionContext): string[] {
   const proteinTarget = Math.round(ctx.weight * 1.5);
+  const bihar = isBiharContext(ctx.district);
   
   // Diet-appropriate protein reference — no egg equivalents for vegetarians
   const proteinTip = ctx.dietPref === "veg"
@@ -850,7 +884,9 @@ function buildWeeklyTips(ctx: NutritionContext): string[] {
   const tips = [
     "Eat within 30 minutes of training completing — this is your anabolic window.",
     proteinTip,
-    "Bihar tip: Replace packaged biscuits with sattu chikki or til-gud ladoo for far better nutrition.",
+    bihar
+      ? "Bihar tip: Replace packaged biscuits with sattu chikki or til-gud ladoo for far better nutrition."
+      : "Replace packaged biscuits with roasted chana, peanut chikki or til-gud ladoo for far better nutrition.",
     "Never skip breakfast on training days — 30% of your daily energy should come from breakfast.",
   ];
 
@@ -877,10 +913,15 @@ function buildWorkoutGuidance(ctx: NutritionContext) {
   const isVeg    = ctx.dietPref === "veg";
   const isEggVeg = ctx.dietPref === "egg-veg";
   const isNonVeg = ctx.dietPref === "nonveg";
+  const bihar    = isBiharContext(ctx.district);
 
   const preworkout = ctx.goal === "performance"
-    ? `30–45 min before: Sattu drink (2 tbsp sattu + water + lemon + jaggery). This gives 22g slow-release carbs + 5g protein — Bihar's original sports nutrition.`
-    : `1–1.5 hrs before: Litti-Chokha (half portion) or poha with peanuts. Avoid heavy meals within 1 hour.`;
+    ? (bihar
+        ? `30–45 min before: Sattu drink (2 tbsp sattu + water + lemon + jaggery). This gives 22g slow-release carbs + 5g protein — Bihar's original sports nutrition.`
+        : `30–45 min before: Banana + 30g roasted chana + lemon water with a pinch of salt. Slow-release carbs + light protein, no GI distress.`)
+    : (bihar
+        ? `1–1.5 hrs before: Litti-Chokha (half portion) or poha with peanuts. Avoid heavy meals within 1 hour.`
+        : `1–1.5 hrs before: Poha with peanuts, idli-sambar, or roti+dal (half portion). Avoid heavy meals within 1 hour.`);
 
   // Three distinct post-workout recommendations based on diet preference
   let postworkout: string;

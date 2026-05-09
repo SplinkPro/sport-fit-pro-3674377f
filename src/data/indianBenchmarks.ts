@@ -122,6 +122,62 @@ export const LTAD_PROFILES: Record<string, LTADProfile> = {
     criticalMetrics: ["verticalJump", "broadJump", "shuttleRun"],
     coachNote: "India has strong Olympic wrestling pipeline (Sushil Kumar model). Weight class management is critical. Power-to-weight ratio (RPI) is the primary selector.",
   },
+  badminton: {
+    sport: "Badminton",
+    trainToTrainWindow: [10, 14],
+    trainToCompeteWindow: [14, 17],
+    peakPerformanceAge: [22, 28],
+    criticalMetrics: ["shuttleRun", "verticalJump", "sprint30m"],
+    coachNote: "Court agility and reactive footwork are the primary selectors — train multidirectional change-of-direction from age 10. Wrist & shoulder conditioning from 13. India's BAI pathway scouts at U13/U15 nationals.",
+  },
+  boxing: {
+    sport: "Boxing",
+    trainToTrainWindow: [12, 15],
+    trainToCompeteWindow: [15, 18],
+    peakPerformanceAge: [20, 28],
+    criticalMetrics: ["shuttleRun", "verticalJump", "broadJump"],
+    coachNote: "Hand-speed, footwork and reactive agility develop fastest 12–15. Weight category discipline begins at 14. BFI Sub-Junior nationals are the first selection gate; avoid heavy sparring before 14 (head-impact safety).",
+  },
+  hockey: {
+    sport: "Hockey",
+    trainToTrainWindow: [11, 14],
+    trainToCompeteWindow: [15, 18],
+    peakPerformanceAge: [22, 30],
+    criticalMetrics: ["sprint30m", "run800m", "shuttleRun"],
+    coachNote: "Repeated-sprint endurance and stick-skill technical base lock in by 14. Hockey India academy trials select 13–15. Aerobic capacity is non-negotiable for the modern rolling-substitution game.",
+  },
+  archery: {
+    sport: "Archery",
+    trainToTrainWindow: [12, 16],
+    trainToCompeteWindow: [16, 20],
+    peakPerformanceAge: [22, 32],
+    criticalMetrics: ["run800m"],
+    coachNote: "Postural endurance, breath control and shoulder-girdle stability matter more than raw speed. Build aerobic base first; introduce progressive draw-weight only after skeletal maturity (14+). AAI scouts at sub-junior nationals.",
+  },
+  kho_kho: {
+    sport: "Kho Kho",
+    trainToTrainWindow: [11, 14],
+    trainToCompeteWindow: [15, 18],
+    peakPerformanceAge: [20, 28],
+    criticalMetrics: ["sprint30m", "shuttleRun", "broadJump"],
+    coachNote: "Acceleration over short distances and direction-change agility are decisive. Train low-position dive technique from 13. Ultimate Kho Kho League and KKFI nationals are the visible selection paths.",
+  },
+  table_tennis: {
+    sport: "Table Tennis",
+    trainToTrainWindow: [9, 13],
+    trainToCompeteWindow: [13, 16],
+    peakPerformanceAge: [20, 28],
+    criticalMetrics: ["shuttleRun", "sprint30m"],
+    coachNote: "Reaction time, wrist control and short-zone footwork are the differentiators — start technical work early (8–10). TTFI Cadet/Sub-Junior circuits are the primary scouting platform; avoid early specialisation in one rubber/style before 13.",
+  },
+  weightlifting: {
+    sport: "Weightlifting",
+    trainToTrainWindow: [12, 15],
+    trainToCompeteWindow: [16, 19],
+    peakPerformanceAge: [22, 30],
+    criticalMetrics: ["verticalJump", "broadJump"],
+    coachNote: "Technique-first loading until skeletal maturity (≈15). Power-to-bodyweight ratio is the selector, not absolute load. IWLF Youth & Junior nationals are the qualification ladder; weight-category planning begins at 14.",
+  },
 };
 
 // ─── NATIONAL & OLYMPIC RECORDS (Indian context) ─────────────────────────────
@@ -623,23 +679,26 @@ export function getSAIBand(nationalPercentile: number): SAIBand {
  * Extended for all 15 Khelo India pathway sports.
  */
 export function getLTADProfile(topSportKey: string): LTADProfile | null {
+  // Each sport now has a dedicated LTAD profile with sport-specific coach notes,
+  // so the displayed sport name always matches the recommendation context.
+  // Legacy archetype mappings (cycling, swimming, basketball) still fall back to
+  // the closest validated profile.
   const map: Record<string, string> = {
-    athletics:    "athletics_sprint",
-    football:     "football",
-    kabaddi:      "kabaddi",
-    volleyball:   "volleyball",
-    wrestling:    "wrestling",
-    cycling:      "athletics_endurance",
-    swimming:     "athletics_endurance",
-    basketball:   "volleyball",
-    // New sports mapped to closest LTAD archetype
-    badminton:    "kabaddi",          // agility-dominant, explosive, similar window
-    boxing:       "kabaddi",          // explosive power + agility, similar LTAD window
-    hockey:       "football",         // endurance + speed, same development arc
-    archery:      "athletics_endurance", // static aerobic endurance base
-    kho_kho:      "kabaddi",          // explosive tag sport, same window as kabaddi
-    table_tennis: "kabaddi",          // agility-dominant court sport
-    weightlifting:"wrestling",        // power/strength sport, similar LTAD arc
+    athletics:     "athletics_sprint",
+    football:      "football",
+    kabaddi:       "kabaddi",
+    volleyball:    "volleyball",
+    wrestling:     "wrestling",
+    cycling:       "athletics_endurance",
+    swimming:      "athletics_endurance",
+    basketball:    "volleyball",
+    badminton:     "badminton",
+    boxing:        "boxing",
+    hockey:        "hockey",
+    archery:       "archery",
+    kho_kho:       "kho_kho",
+    table_tennis:  "table_tennis",
+    weightlifting: "weightlifting",
   };
   const key = map[topSportKey];
   return key ? LTAD_PROFILES[key] ?? null : null;

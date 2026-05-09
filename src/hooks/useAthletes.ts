@@ -1,4 +1,3 @@
-// useAthletes.ts — athlete context, always uses demo seed dataset
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { getSeedAthletes, AssessmentRecord } from "../data/seedAthletes";
@@ -56,12 +55,53 @@ export const AthleteContext = createContext<AthleteContextValue>({
   loadDataset: () => {},
 });
 
+// ─── localStorage persistence ────────────────────────────────────────────
+// Persist imported datasets across page refreshes / route changes so users
+// don't get bounced back to the Bihar seed after uploading their own data.
+const LS_KEY = "pratibha.activeDataset.v1";
+
+function safeLoadFromStorage(): { athletes: EnrichedAthlete[]; meta: DatasetMeta } | null {
+  try {
+    const raw = typeof window !== "undefined" ? window.localStorage.getItem(LS_KEY) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.meta || !Array.isArray(parsed?.athletes)) return null;
+    if (parsed.meta.source !== "import") return null; // only restore real imports
+    return { athletes: parsed.athletes as EnrichedAthlete[], meta: parsed.meta as DatasetMeta };
+  } catch {
+    return null;
+  }
+}
+
+function safeSaveToStorage(meta: DatasetMeta, athletes: EnrichedAthlete[]) {
+  try {
+    if (typeof window === "undefined") return;
+    if (meta.source !== "import") return;
+    window.localStorage.setItem(LS_KEY, JSON.stringify({ meta, athletes }));
+  } catch {
+    /* quota exceeded — silently skip */
+  }
+}
+
+function clearStorage() {
+  try {
+    if (typeof window !== "undefined") window.localStorage.removeItem(LS_KEY);
+  } catch { /* noop */ }
+}
+
 export function useAthleteProviderValue() {
   const [rawAthletes, setRawAthletes] = useState<EnrichedAthlete[]>([]);
   const [loading, setLoading] = useState(true);
   const [datasetMeta, setDatasetMeta] = useState<DatasetMeta>(SEED_META);
 
   useEffect(() => {
+    const restored = safeLoadFromStorage();
+    if (restored) {
+      setRawAthletes(restored.athletes);
+      setDatasetMeta(restored.meta);
+      setLoading(false);
+      return;
+    }
     const enriched = enrichAthletes(getSeedAthletes());
     setRawAthletes(enriched);
     setDatasetMeta({ ...SEED_META, count: enriched.length });
@@ -75,11 +115,19 @@ export function useAthleteProviderValue() {
       const full: DatasetMeta = { ...meta, id: newId, count: newAthletes.length };
       setRawAthletes(newAthletes);
       setDatasetMeta(full);
+      safeSaveToStorage(full, newAthletes);
     },
     []
   );
 
-  const loadDataset = useCallback((_id: string) => {}, []);
+  const loadDataset = useCallback((id: string) => {
+    if (id === "seed") {
+      clearStorage();
+      const enriched = enrichAthletes(getSeedAthletes());
+      setRawAthletes(enriched);
+      setDatasetMeta({ ...SEED_META, count: enriched.length });
+    }
+  }, []);
 
   const addBatchUpdate = useCallback(
     (meta: Omit<DatasetMeta, "id">, newBatch: EnrichedAthlete[]) => {
@@ -136,6 +184,7 @@ export function useAthleteProviderValue() {
         const newId = `import_${Date.now()}`;
         const fullMeta: DatasetMeta = { ...meta, id: newId, isBatchUpdate: true, count: reEnriched.length };
         setDatasetMeta(fullMeta);
+        safeSaveToStorage(fullMeta, reEnriched);
 
         toast({
           title: "Batch update merged",
