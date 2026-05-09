@@ -153,6 +153,22 @@ function getAgeBand(age: number): AgeBand {
   return "Open";
 }
 
+// ─── Region detection ────────────────────────────────────────────────────
+// Bihar-specific copy (Sattu, Makhana, "Bihar summers", etc.) must only
+// surface when the athlete actually belongs to a Bihar district. For all
+// other districts we fall back to pan-India neutral copy.
+const BIHAR_DISTRICTS = new Set([
+  "Patna", "Gaya", "Bhojpur", "Arwal", "Jehanabad", "Aurangabad",
+  "Bhagalpur", "Nalanda", "Rohtas", "Buxar", "Muzaffarpur",
+  "Darbhanga", "Madhubani", "Sitamarhi", "Samastipur",
+  "Bihar", "All",
+]);
+
+function isBiharContext(district?: string): boolean {
+  if (!district) return false;
+  return BIHAR_DISTRICTS.has(district);
+}
+
 // ─── ICMR 2020 macro targets ────────────────────────────────────────────────
 // Source: ICMR-NIN 2020 Dietary Reference Values, Table 4 (school-age, active)
 // Agent A: adjusted upward 15% for sport-active children per NIN Sport Nutrition addendum
