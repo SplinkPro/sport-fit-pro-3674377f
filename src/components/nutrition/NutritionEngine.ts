@@ -792,6 +792,7 @@ function buildHydrationPlan(ctx: NutritionContext): HydrationPlan {
 function generateAlerts(ctx: NutritionContext, macros: MacroTarget): NutritionAlert[] {
   const alerts: NutritionAlert[] = [];
   const { bmi, gender, age, goal } = ctx;
+  const bihar = isBiharContext(ctx.district);
 
   if (bmi < 14.0) {
     alerts.push({
@@ -805,7 +806,7 @@ function generateAlerts(ctx: NutritionContext, macros: MacroTarget): NutritionAl
       severity: "red",
       icon: "⚠️",
       title: "Thinness — Nutrition Intervention Recommended",
-      body: `BMI ${bmi.toFixed(1)} (IAP Grade 2 Thinness). Weight gain goal automatically suggested. Add 2–3 calorie-dense snacks per day. Sattu + makhana + desi ghee are ideal additions.`,
+      body: `BMI ${bmi.toFixed(1)} (IAP Grade 2 Thinness). Weight gain goal automatically suggested. Add 2–3 calorie-dense snacks per day. ${bihar ? "Sattu + makhana + desi ghee are ideal additions." : "Roasted chana + peanuts + desi ghee + dates + bananas are ideal additions."}`,
     });
   } else if (bmi < 18.5) {
     alerts.push({
@@ -913,7 +914,11 @@ function buildWeeklyTips(ctx: NutritionContext): string[] {
   }
 
   if (ctx.goal === "performance") {
-    tips.push("Pre-competition meal: Litti-Chokha or rice+dal 2–3 hours before. Never train on empty stomach.");
+    tips.push(
+      bihar
+        ? "Pre-competition meal: Litti-Chokha or rice+dal 2–3 hours before. Never train on empty stomach."
+        : "Pre-competition meal: Rice+dal, roti+sabzi, or poha+peanuts 2–3 hours before. Never train on empty stomach."
+    );
   }
 
   return tips.slice(0, 5);
