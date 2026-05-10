@@ -81,6 +81,7 @@ function normaliseQuery(raw: string): string {
 
 export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): QueryResult {
   const q = normaliseQuery(rawQuery);
+  const rawLower = rawQuery.toLowerCase();
   const filters: string[] = [];
   let pool = [...athletes];
   const totalAthletes = athletes.length;
@@ -153,6 +154,31 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
     filters.push("Gender: Female");
   }
 
+  // ── School / District entity extraction ──
+  // Build unique sets from the active dataset and match case-insensitive
+  // substrings inside the raw query. This respects scope: a query like
+  // "top 10 in Patna" or "athletes from Rajendra Prasad High School" filters
+  // the pool to just that school/district before any sport/metric sort.
+  {
+    const a0 = athletes[0] as (EnrichedAthlete & { school?: string; district?: string }) | undefined;
+    if (a0?.school || a0?.district) {
+      const schools = Array.from(new Set(athletes.map((a) => (a as EnrichedAthlete & { school?: string }).school).filter(Boolean) as string[]));
+      const districts = Array.from(new Set(athletes.map((a) => (a as EnrichedAthlete & { district?: string }).district).filter(Boolean) as string[]));
+      // Match longest names first so "Patna High" beats "Patna"
+      const schoolMatch = schools.sort((x, y) => y.length - x.length).find((s) => rawLower.includes(s.toLowerCase()));
+      if (schoolMatch) {
+        pool = pool.filter((a) => (a as EnrichedAthlete & { school?: string }).school === schoolMatch);
+        filters.push(`School: ${schoolMatch}`);
+      } else {
+        const districtMatch = districts.sort((x, y) => y.length - x.length).find((d) => new RegExp(`\\b${d.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(rawLower));
+        if (districtMatch) {
+          pool = pool.filter((a) => (a as EnrichedAthlete & { district?: string }).district === districtMatch);
+          filters.push(`District: ${districtMatch}`);
+        }
+      }
+    }
+  }
+
   // ── Age range filter ──
   const ageRange = parseAgeRange(q);
   if (ageRange) {
@@ -168,11 +194,16 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
 
   // ── BMI / body flags ── (check before general sort to allow compound queries)
   let bmiFilter = false;
-  // "nutrition support" / "nutrition alert" → maps to IAP thinness (BMI < 16.0)
-  // This is the demo query "Who needs nutrition support?" — must return the correct athletes
+  // "nutrition support" / "nutrition alert" → broad nutrition risk:
+  // any underweight OR overweight flag (covers BMI <18.5 and >25 South Asian
+  // thresholds). Previously this was BMI<16 only, which missed most at-risk
+  // athletes in non-Bihar cohorts.
   if (/nutrition\s*support|nutrition\s*alert|needs?\s*nutrition|खाना|पोषण/i.test(q)) {
-    pool = pool.filter((a) => a.bmi != null && a.bmi < 16.0);
-    filters.push("Flag: Thinness BMI < 16 (IAP)");
+    pool = pool.filter((a) =>
+      a.flags?.some((f) => f.type === "underweight" || f.type === "overweight")
+      || (a.bmi != null && (a.bmi < 18.5 || a.bmi > 25))
+    );
+    filters.push("Flag: Nutrition Risk (underweight or overweight)");
     bmiFilter = true;
     metricLabel = "BMI";
     metricFn = (a) => a.bmi != null ? `${a.bmi.toFixed(1)} BMI` : "—";
