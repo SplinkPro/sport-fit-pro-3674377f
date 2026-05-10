@@ -465,7 +465,7 @@ function AnalystDashboard({ athletes, dict }: { athletes: ReturnType<typeof useA
                 <tr key={at.id} className="border-b last:border-0 hover:bg-muted/30">
                   <td className="py-1.5 pr-3 font-bold text-muted-foreground">{i + 1}</td>
                   <td className="py-1.5 pr-3 font-medium">{at.name}</td>
-                  <td className="py-1.5 pr-3 text-muted-foreground">{at.school.split(" ").slice(-2).join(" ")}</td>
+                  <td className="py-1.5 pr-3 text-muted-foreground truncate max-w-[180px]" title={at.school}>{at.school}</td>
                   <td className="py-1.5 pr-3 text-right font-bold tabular-nums">{(at[selectedMetric] as number)?.toFixed(1)}</td>
                   <td className="py-1.5 text-right">
                     <span className={cn("font-bold tabular-nums", at.compositeScore >= 70 ? "text-green-600" : "text-yellow-600")}>{at.compositeScore}</span>
