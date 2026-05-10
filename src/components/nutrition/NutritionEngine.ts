@@ -480,6 +480,7 @@ export const HOME_REMEDIES_DB: HomeRemedy[] = [
     evidenceNote: "High in slowly digestible carbohydrates and plant protein. ICMR-approved traditional food.",
     ageMin: 8,
     districts: ["All"],
+    biharSpecific: true,
   },
   {
     name: "Ashwagandha Milk",
