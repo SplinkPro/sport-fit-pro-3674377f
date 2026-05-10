@@ -293,6 +293,7 @@ export const REGIONAL_FOODS_DB: RegionalFood[] = [
     vegSafe: true,
     preparation: "Dry roast in ghee + rock salt + turmeric. 30g at night before sleep.",
     preparationHi: "घी + सेंधा नमक + हल्दी में सूखा भूनें। सोने से पहले रात में 30 ग्राम।",
+    biharSpecific: true,
   },
   // ── Carbohydrates ──
   {
@@ -305,6 +306,7 @@ export const REGIONAL_FOODS_DB: RegionalFood[] = [
     keyNutrient: "Complex carb, Sattu protein, Calcium (from bati)",
     sportBenefit: "Complete meal: slow carb + protein. Ideal 2hrs before competition.",
     vegSafe: true,
+    biharSpecific: true,
     preparation: "Traditional litti baked in coal/gas. Chokha: roasted brinjal + tomato.",
     preparationHi: "पारंपरिक लिट्टी कोयले/गैस में बेक की जाती है। चोखा: भुनी बैंगन + टमाटर।",
   },
