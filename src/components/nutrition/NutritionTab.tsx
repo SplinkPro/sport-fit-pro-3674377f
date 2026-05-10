@@ -338,7 +338,7 @@ export default function NutritionTab({ athlete }: NutritionTabProps) {
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-muted/30 border rounded-lg p-2">
             <span className="text-sm">📍</span>
             <span>
-              {t("profile.showingFoodsIn")} <strong>{athlete.district ?? "Bihar"}</strong> {t("profile.district")} — {plan.regionalFoods.length} {t("profile.foodsMatched")}
+              {t("profile.showingFoodsIn")} <strong>{athlete.district || "your region"}</strong> {t("profile.district")} — {plan.regionalFoods.length} {t("profile.foodsMatched")}
             </span>
           </div>
 
