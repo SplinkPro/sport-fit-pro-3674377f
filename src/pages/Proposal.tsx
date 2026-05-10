@@ -213,7 +213,7 @@ export default function Proposal() {
               </div>
               <ul style={{ margin: 0, paddingLeft: "16px", fontSize: "11.5px", color: "#5a3a00" }}>
                 <li>AWS / Azure / GCP hosted application</li>
-                <li>OpenAI GPT-4 or Anthropic Claude APIs</li>
+                <li>Hosted third-party LLM APIs (e.g. GPT-4o)</li>
                 <li>Fastest time-to-deploy (~4 weeks)</li>
                 <li>Pay-per-query pricing model</li>
                 <li>Data may reside on US/EU servers</li>
@@ -291,7 +291,7 @@ export default function Proposal() {
               <rect x="272" y="52" width="120" height="72" rx="6" fill="#c0392b" />
               <text x="332" y="76" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">🤖 Proprietary</text>
               <text x="332" y="90" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">LLM API</text>
-              <text x="332" y="104" textAnchor="middle" fill="#ffcccc" fontSize="8.5">GPT-4o / Claude</text>
+              <text x="332" y="104" textAnchor="middle" fill="#ffcccc" fontSize="8.5">Hosted LLM API</text>
               <text x="332" y="116" textAnchor="middle" fill="#ffcccc" fontSize="8.5">$0.003–0.015/query</text>
               
               {/* Arrow 3 */}
@@ -572,7 +572,7 @@ export default function Proposal() {
         <div className="page-content">
           <h3 className="section-title first">Comprehensive Cost Comparison</h3>
           <p className="body" style={{ marginBottom: "12px" }}>
-            All costs in Indian Rupees (₹). Model A costs assume INR/USD rate of ₹83. LLM API costs benchmarked against GPT-4o ($0.0025/1K input tokens) and Claude 3.5 Sonnet ($0.003/1K tokens) as of Q1 2026. Model B assumes 4×A100 80GB GPU cluster on NIC empanelled cloud.
+            All costs in Indian Rupees (₹). Model A costs assume INR/USD rate of ₹83. LLM API costs benchmarked against hosted vendor pricing (~$0.0025–0.003 per 1K input tokens) as of Q1 2026. Model B assumes 4×A100 80GB GPU cluster on NIC empanelled cloud.
           </p>
 
           <table className="cost-table">

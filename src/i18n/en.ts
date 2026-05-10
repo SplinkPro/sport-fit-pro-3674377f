@@ -474,7 +474,7 @@ export const en = {
       reportModel: "Report Writing",
       queryModel: "NL Query",
       apiKey: "AI Provider API Key",
-      apiKeyPlaceholder: "sk-... (optional, uses Lovable AI by default)",
+      apiKeyPlaceholder: "sk-... (optional, uses bundled AI by default)",
       fallbackChain: "Fallback Chain",
       enableFallback: "Enable fallback to rules-only mode",
     },
