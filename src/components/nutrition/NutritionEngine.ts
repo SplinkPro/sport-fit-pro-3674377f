@@ -871,7 +871,9 @@ function getCurrentSeason(): Season {
 // ─── Home remedies filter ────────────────────────────────────────────────
 
 function getRelevantRemedies(ctx: NutritionContext): HomeRemedy[] {
+  const bihar = isBiharContext(ctx.district);
   return HOME_REMEDIES_DB.filter(remedy => {
+    if (!bihar && remedy.biharSpecific) return false;
     const ageOk = ctx.age >= remedy.ageMin;
     const districtOk = remedy.districts.includes("All") || remedy.districts.includes(ctx.district);
     return ageOk && districtOk;
