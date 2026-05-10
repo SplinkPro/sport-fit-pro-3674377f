@@ -240,6 +240,7 @@ export const REGIONAL_FOODS_DB: RegionalFood[] = [
     vegSafe: true,
     preparation: "Mix 2 tbsp in water with lemon + salt. Drink before training.",
     preparationHi: "2 चम्मच सत्तू को पानी में नींबू + नमक के साथ मिलाएं। प्रशिक्षण से पहले पीएं।",
+    biharSpecific: true,
   },
   {
     name: "Chana Dal (Split Bengal Gram)",
