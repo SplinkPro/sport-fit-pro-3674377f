@@ -843,8 +843,10 @@ function getRelevantRegionalFoods(ctx: NutritionContext): RegionalFood[] {
   const season = getCurrentSeason();
   const bihar = isBiharContext(ctx.district);
   return REGIONAL_FOODS_DB.filter(food => {
-    // For non-Bihar athletes, suppress foods that are exclusively tied to Bihar
-    // districts (no "All" tag) so we don't push Sattu/Makhana etc. out of context.
+    // For non-Bihar athletes, suppress (a) foods explicitly tagged as
+    // Bihar-iconic (Sattu, Makhana, Litti) even if "All" is in their
+    // district list, and (b) foods whose district list is entirely Bihar.
+    if (!bihar && food.biharSpecific) return false;
     const isBiharOnlyFood = !food.districts.includes("All")
       && food.districts.every(d => BIHAR_DISTRICTS.has(d));
     if (!bihar && isBiharOnlyFood) return false;
