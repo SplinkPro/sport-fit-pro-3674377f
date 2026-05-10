@@ -140,7 +140,10 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
     schoolScores[at.school].push(at.compositeScore);
   });
   const schoolData = Object.entries(schoolScores)
-    .map(([name, scores]) => ({ name: name.split(" ").slice(-2).join(" "), avg: Math.round(scores.reduce((s, v) => s + v, 0) / scores.length), count: scores.length }))
+    // Preserve full school name as uploaded — no truncation/normalisation.
+    // Generic suffixes like "Public School" / "Convent School" collide when
+    // trimmed and produce duplicate rows in the leaderboard.
+    .map(([name, scores]) => ({ name, avg: Math.round(scores.reduce((s, v) => s + v, 0) / scores.length), count: scores.length }))
     .sort((a, b) => b.avg - a.avg);
 
   return (
