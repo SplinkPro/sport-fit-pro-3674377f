@@ -80,6 +80,10 @@ export interface RegionalFood {
   vegSafe: boolean;
   preparation: string;
   preparationHi: string;
+  /** True for foods that are culturally Bihar-iconic (Sattu, Makhana, Litti).
+   *  Suppressed for non-Bihar districts to avoid regional leakage even when
+   *  ingredients are technically available pan-India. */
+  biharSpecific?: boolean;
 }
 
 export interface HomeRemedy {
@@ -98,6 +102,8 @@ export interface HomeRemedy {
   contraindications?: string;
   ageMin: number;
   districts: string[];  // where ingredients are locally available
+  /** Bihar-iconic remedy (e.g. Sattu drink) — hidden outside Bihar context. */
+  biharSpecific?: boolean;
 }
 
 export interface NutritionPlan {
