@@ -80,6 +80,10 @@ export interface RegionalFood {
   vegSafe: boolean;
   preparation: string;
   preparationHi: string;
+  /** True for foods that are culturally Bihar-iconic (Sattu, Makhana, Litti).
+   *  Suppressed for non-Bihar districts to avoid regional leakage even when
+   *  ingredients are technically available pan-India. */
+  biharSpecific?: boolean;
 }
 
 export interface HomeRemedy {
@@ -98,6 +102,8 @@ export interface HomeRemedy {
   contraindications?: string;
   ageMin: number;
   districts: string[];  // where ingredients are locally available
+  /** Bihar-iconic remedy (e.g. Sattu drink) — hidden outside Bihar context. */
+  biharSpecific?: boolean;
 }
 
 export interface NutritionPlan {
@@ -234,6 +240,7 @@ export const REGIONAL_FOODS_DB: RegionalFood[] = [
     vegSafe: true,
     preparation: "Mix 2 tbsp in water with lemon + salt. Drink before training.",
     preparationHi: "2 चम्मच सत्तू को पानी में नींबू + नमक के साथ मिलाएं। प्रशिक्षण से पहले पीएं।",
+    biharSpecific: true,
   },
   {
     name: "Chana Dal (Split Bengal Gram)",
@@ -286,6 +293,7 @@ export const REGIONAL_FOODS_DB: RegionalFood[] = [
     vegSafe: true,
     preparation: "Dry roast in ghee + rock salt + turmeric. 30g at night before sleep.",
     preparationHi: "घी + सेंधा नमक + हल्दी में सूखा भूनें। सोने से पहले रात में 30 ग्राम।",
+    biharSpecific: true,
   },
   // ── Carbohydrates ──
   {
@@ -298,6 +306,7 @@ export const REGIONAL_FOODS_DB: RegionalFood[] = [
     keyNutrient: "Complex carb, Sattu protein, Calcium (from bati)",
     sportBenefit: "Complete meal: slow carb + protein. Ideal 2hrs before competition.",
     vegSafe: true,
+    biharSpecific: true,
     preparation: "Traditional litti baked in coal/gas. Chokha: roasted brinjal + tomato.",
     preparationHi: "पारंपरिक लिट्टी कोयले/गैस में बेक की जाती है। चोखा: भुनी बैंगन + टमाटर।",
   },
@@ -471,6 +480,7 @@ export const HOME_REMEDIES_DB: HomeRemedy[] = [
     evidenceNote: "High in slowly digestible carbohydrates and plant protein. ICMR-approved traditional food.",
     ageMin: 8,
     districts: ["All"],
+    biharSpecific: true,
   },
   {
     name: "Ashwagandha Milk",
@@ -833,8 +843,10 @@ function getRelevantRegionalFoods(ctx: NutritionContext): RegionalFood[] {
   const season = getCurrentSeason();
   const bihar = isBiharContext(ctx.district);
   return REGIONAL_FOODS_DB.filter(food => {
-    // For non-Bihar athletes, suppress foods that are exclusively tied to Bihar
-    // districts (no "All" tag) so we don't push Sattu/Makhana etc. out of context.
+    // For non-Bihar athletes, suppress (a) foods explicitly tagged as
+    // Bihar-iconic (Sattu, Makhana, Litti) even if "All" is in their
+    // district list, and (b) foods whose district list is entirely Bihar.
+    if (!bihar && food.biharSpecific) return false;
     const isBiharOnlyFood = !food.districts.includes("All")
       && food.districts.every(d => BIHAR_DISTRICTS.has(d));
     if (!bihar && isBiharOnlyFood) return false;
@@ -859,7 +871,9 @@ function getCurrentSeason(): Season {
 // ─── Home remedies filter ────────────────────────────────────────────────
 
 function getRelevantRemedies(ctx: NutritionContext): HomeRemedy[] {
+  const bihar = isBiharContext(ctx.district);
   return HOME_REMEDIES_DB.filter(remedy => {
+    if (!bihar && remedy.biharSpecific) return false;
     const ageOk = ctx.age >= remedy.ageMin;
     const districtOk = remedy.districts.includes("All") || remedy.districts.includes(ctx.district);
     return ageOk && districtOk;

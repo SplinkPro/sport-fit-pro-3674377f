@@ -140,7 +140,10 @@ function ExecutiveDashboard({ athletes, dict }: { athletes: ReturnType<typeof us
     schoolScores[at.school].push(at.compositeScore);
   });
   const schoolData = Object.entries(schoolScores)
-    .map(([name, scores]) => ({ name: name.split(" ").slice(-2).join(" "), avg: Math.round(scores.reduce((s, v) => s + v, 0) / scores.length), count: scores.length }))
+    // Preserve full school name as uploaded — no truncation/normalisation.
+    // Generic suffixes like "Public School" / "Convent School" collide when
+    // trimmed and produce duplicate rows in the leaderboard.
+    .map(([name, scores]) => ({ name, avg: Math.round(scores.reduce((s, v) => s + v, 0) / scores.length), count: scores.length }))
     .sort((a, b) => b.avg - a.avg);
 
   return (
@@ -462,7 +465,7 @@ function AnalystDashboard({ athletes, dict }: { athletes: ReturnType<typeof useA
                 <tr key={at.id} className="border-b last:border-0 hover:bg-muted/30">
                   <td className="py-1.5 pr-3 font-bold text-muted-foreground">{i + 1}</td>
                   <td className="py-1.5 pr-3 font-medium">{at.name}</td>
-                  <td className="py-1.5 pr-3 text-muted-foreground">{at.school.split(" ").slice(-2).join(" ")}</td>
+                  <td className="py-1.5 pr-3 text-muted-foreground truncate max-w-[180px]" title={at.school}>{at.school}</td>
                   <td className="py-1.5 pr-3 text-right font-bold tabular-nums">{(at[selectedMetric] as number)?.toFixed(1)}</td>
                   <td className="py-1.5 text-right">
                     <span className={cn("font-bold tabular-nums", at.compositeScore >= 70 ? "text-green-600" : "text-yellow-600")}>{at.compositeScore}</span>
