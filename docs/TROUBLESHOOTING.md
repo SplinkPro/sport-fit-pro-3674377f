@@ -22,8 +22,8 @@ Stale npm token in `.npmrc`. Remove `.npmrc`, retry `bun install`.
    restart `bun run dev`. Vite only reads env vars at boot.
 
 ### Port 8080 already in use
-Edit `vite.config.ts` → `server.port` or run with a different port:
-`bun run dev --port 5173`.
+Either free the port, or change `server.port` in `vite.config.ts` and
+restart `bun run dev`.
 
 ### Tests fail with "ReferenceError: window is not defined"
 You added a browser-only API to a module that's imported by a test.
@@ -64,8 +64,9 @@ update public.user_roles set role = 'admin' where user_id = '<uuid>';
   been imported via Settings → Import.
 
 ### Imports silently drop rows
-The import wizard rejects rows that fail plausibility gates (e.g. sprint
-times outside 8–25 s). Check the rejection log shown after import.
+The import wizard at `/import` rejects rows that fail plausibility gates
+(e.g. sprint times outside 8–25 s). Check the rejection log shown after
+the import completes.
 
 ### Charts show "No data" for sprint metrics
 Sprint and 800m metrics use an inverted Y-axis (lower is better). If you
