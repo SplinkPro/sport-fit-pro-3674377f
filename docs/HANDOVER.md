@@ -101,11 +101,12 @@ existing admin.
 
 1. Open the production URL — landing page renders.
 2. Sign in with Google — redirected to `/explorer`.
-3. Open Explorer — Bihar demo dataset (41 athletes) loads.
-4. Open one athlete — radar chart, recommendations, and report tabs render.
-5. Open Analytics — National Band distribution chart renders.
-6. Switch language EN → हिं — UI strings translate.
-7. Open Reports → generate one PDF — downloads successfully.
+3. Open Explorer (`/explorer`) — the locked Bihar U14 demo dataset loads.
+4. Open one athlete profile — radar chart, recommendations, and report
+   tabs render.
+5. Open Analytics (`/analytics`) — National Band distribution chart renders.
+6. Switch language EN → हिं in the top header — UI strings translate.
+7. Open Reports (`/reports`) → generate one PDF — downloads successfully.
 
 If any step fails, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).
 
