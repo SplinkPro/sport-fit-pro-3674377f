@@ -60,7 +60,7 @@ See [.env.example](../.env.example) for the full template with comments.
 | `VITE_SUPABASE_PROJECT_ID`        | client `.env`  | yes      |
 | `SUPABASE_SERVICE_ROLE_KEY`       | backend secret | yes      |
 | `SUPABASE_DB_URL`                 | backend secret | yes      |
-| `LOVABLE_API_KEY`                 | backend secret | yes (LLM features) |
+| `LLM_GATEWAY_API_KEY`             | backend secret | yes (LLM features) |
 | `PLAYWRIGHT_BASE_URL`             | CI env         | no       |
 
 ## 6. Production deploy

@@ -92,8 +92,8 @@ intentionally large. It is lazy-loaded — the warning does not affect
 first-paint performance.
 
 ### LLM features (AI Query, summaries) return 500
-- Confirm `LOVABLE_API_KEY` (or your replacement LLM gateway secret) is
-  set in the backend's edge function secrets.
+- Confirm the LLM gateway secret (`LLM_GATEWAY_API_KEY`) is set in the
+  backend's edge function secrets.
 - Check edge function logs: dashboard → Edge Functions → Logs → filter by
   the failing function name.
 
