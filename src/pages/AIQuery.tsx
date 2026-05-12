@@ -589,6 +589,7 @@ const EXAMPLE_QUERIES_EN = [
   "Show SAI elite candidates",
   "Compare male vs female average performance",
   "Find athletes aged 14–16 with composite score above 60",
+  "Best male athletes aged 12",
   "Show national talent pool",
   "Find young talent development pipeline (age ≤ 15)",
   "Show athletes with highest aerobic capacity",
@@ -603,6 +604,7 @@ const EXAMPLE_QUERIES_HI = [
   "साइकिलिंग के लिए सबसे उपयुक्त खिलाड़ी कौन हैं?",
   "उच्च क्षमता वाले खिलाड़ी दिखाएं",
   "पुरुष बनाम महिला प्रदर्शन की तुलना करें",
+  "12 वर्ष के सर्वश्रेष्ठ पुरुष खिलाड़ी",
   "राष्ट्रीय प्रतिभा पूल दिखाएं",
 ];
 
