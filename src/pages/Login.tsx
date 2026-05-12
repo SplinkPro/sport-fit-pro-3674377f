@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Zap, ShieldCheck, Chrome } from "lucide-react";
-// Internal OAuth bridge — exposes signInWithOAuth() for Google sign-in.
-import { lovable as authBridge } from "@/integrations/lovable";
+import { oauth } from "@/integrations/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +24,7 @@ export default function Login() {
   // Handle OAuth return token on hard redirect back to /login
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    // OAuth callback token name is fixed by the auth provider contract.
+    // Token query param name is dictated by the upstream OAuth provider contract.
     if (!params.has("__lovable_token")) return;
 
     let cancelled = false;
@@ -68,7 +67,7 @@ export default function Login() {
   const handleGoogle = async () => {
     setAuthLoading(true);
     try {
-      const result = await authBridge.auth.signInWithOAuth("google", {
+      const result = await oauth.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
         extraParams: { prompt: "select_account" },
       });
