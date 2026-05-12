@@ -17,12 +17,13 @@ Stale npm token in `.npmrc`. Remove `.npmrc`, retry `bun install`.
 1. Open browser devtools → Console.
 2. If you see "Failed to fetch dynamically imported module", hard-refresh
    (Ctrl/Cmd + Shift + R). The app self-recovers from stale chunks.
-3. If you see "Missing Supabase env", check `.env` exists and contains
-   `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+3. If the page still cannot reach the backend, confirm `.env` exists and
+   contains `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, then
+   restart `bun run dev`. Vite only reads env vars at boot.
 
 ### Port 8080 already in use
-Edit `vite.config.ts` → `server.port` or run with a different port:
-`bun run dev --port 5173`.
+Either free the port, or change `server.port` in `vite.config.ts` and
+restart `bun run dev`.
 
 ### Tests fail with "ReferenceError: window is not defined"
 You added a browser-only API to a module that's imported by a test.
@@ -63,8 +64,9 @@ update public.user_roles set role = 'admin' where user_id = '<uuid>';
   been imported via Settings → Import.
 
 ### Imports silently drop rows
-The import wizard rejects rows that fail plausibility gates (e.g. sprint
-times outside 8–25 s). Check the rejection log shown after import.
+The import wizard at `/import` rejects rows that fail plausibility gates
+(e.g. sprint times outside 8–25 s). Check the rejection log shown after
+the import completes.
 
 ### Charts show "No data" for sprint metrics
 Sprint and 800m metrics use an inverted Y-axis (lower is better). If you
@@ -104,9 +106,9 @@ The PDF font does not include Devanagari glyphs. Use a Unicode font
 (e.g. Noto Sans Devanagari) and embed it in the report template.
 
 ### Report shows wrong percentile
-Percentiles are computed from the active benchmark cohort. Verify the
-correct cohort is selected in Settings → Benchmarks (default: Khelo
-India U14).
+Percentiles are computed from the active benchmark cohort (SAI / Khelo
+India / IAP, depending on the metric). Verify the cohort selection in
+`/settings` if the figures look off.
 
 ---
 
