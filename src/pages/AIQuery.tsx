@@ -90,6 +90,8 @@ const HINDI_TO_ENGLISH: [RegExp, string][] = [
   [/उच्च क्षमता/g, "high potential"],
   [/पुरुष|लड़के/g, "male"],
   [/महिला|लड़कियां/g, "female"],
+  [/वर्ष\s*(?:के|का|की)?/g, "year old"],
+  [/साल\s*(?:के|का|की)?/g, "year old"],
   [/सहनशक्ति/g, "endurance"],
   [/800 मीटर|आठ सौ मीटर/g, "800m"],
   [/तुलना/g, "compare"],
