@@ -38,6 +38,28 @@ function parseAgeRange(q: string): [number, number] | null {
   return [lo, hi];
 }
 
+// BUG FIX (client feedback): single-age phrases like "12 year old",
+// "aged 12", "at 12 yo" were silently ignored because only ranges
+// were parsed. The query "best male athletes at 12 year old" now
+// correctly filters to age == 12 instead of returning seniors.
+function parseSingleAge(q: string): number | null {
+  // Order matters — try the most explicit patterns first.
+  const patterns: RegExp[] = [
+    /\b(\d{1,2})\s*(?:-|\s)?\s*(?:year|yr|yrs)s?\s*(?:-|\s)?\s*old\b/i, // "12 year old", "12-year-old", "12 yrs old"
+    /\b(\d{1,2})\s*(?:yo|y\.o\.)\b/i,                                    // "12 yo"
+    /(?:aged?)\s+(\d{1,2})\b(?!\s*[-–to])/i,                             // "aged 12" but not "aged 12-14"
+    /\bat\s+(\d{1,2})\s*(?:y|yr|yrs|year)\b/i,                           // "at 12 years" — must have unit
+    /\bage\s*[:=]?\s*(\d{1,2})\b(?!\s*[-–])/i,                           // "age: 12", "age 12"
+  ];
+  for (const re of patterns) {
+    const m = q.match(re);
+    if (!m) continue;
+    const v = parseInt(m[1], 10);
+    if (v >= 8 && v <= 25) return v;
+  }
+  return null;
+}
+
 function parseScoreThreshold(q: string): number | null {
   const m = q.match(/(?:composite\s+score\s+(?:above|over|>|>=)|score\s*(?:>|>=|above|over))\s*(\d+)/i)
     || q.match(/above\s+(\d{2,3})/i);
@@ -190,6 +212,13 @@ export function queryAthletes(rawQuery: string, athletes: EnrichedAthlete[]): Qu
   } else if (/18\+|eighteen\s*plus|adult/i.test(q)) {
     pool = pool.filter((a) => a.age >= 18);
     filters.push("Age: 18+");
+  } else {
+    // BUG FIX: scalar age ("12 year old", "aged 12") — fall through to single-age.
+    const singleAge = parseSingleAge(q);
+    if (singleAge != null) {
+      pool = pool.filter((a) => a.age === singleAge);
+      filters.push(`Age: ${singleAge}`);
+    }
   }
 
   // ── BMI / body flags ── (check before general sort to allow compound queries)
