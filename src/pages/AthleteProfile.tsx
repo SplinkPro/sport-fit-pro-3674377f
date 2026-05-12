@@ -120,21 +120,51 @@ export default function AthleteProfilePage() {
           </div>
 
           <div className="shrink-0 text-right">
-            <div className="text-3xl font-bold text-primary tabular-nums">{athlete.compositeScore}</div>
-            {/* BUG FIX: label explicitly shows "percentile" — government audience must not
-                read "72" as "72 marks out of 100". It means 72nd percentile vs. cohort. */}
-            <div className="text-xs text-muted-foreground">CAPI Score</div>
-            <div className="text-[10px] text-muted-foreground/70">
-              {athlete.compositeScore}th percentile vs. cohort
-            </div>
-            <div className="text-[10px] text-muted-foreground/60 mt-0.5">
-              Based on {Object.values(athlete.percentiles ?? {}).filter((v) => v != null).length}/5 metrics
-            </div>
-            {athlete.isHighPotential && (
-              <Badge className="mt-1 bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
-                ⭐ High Potential
-              </Badge>
-            )}
+            {/* BUG FIX (client feedback): for a B2G/state talent-ID product the
+                national benchmark must dominate the header. Local CAPI is shown
+                as secondary context so a "Local 98 / National 39" athlete is not
+                misread as nationally elite. The ⭐ High Potential badge is now
+                gated on BOTH local and national thresholds. */}
+            {(() => {
+              const natComposite = athlete.derivedIndices?.nationalComposite ?? null;
+              const natBand = natComposite != null ? getSAIBand(natComposite) : null;
+              const local = athlete.compositeScore;
+              const isTrulyHighPotential = athlete.isHighPotential && natComposite != null && natComposite >= 50 && local >= 70;
+              return (
+                <>
+                  <div className="text-[10px] uppercase tracking-wide text-primary font-semibold flex items-center justify-end gap-1">
+                    <Globe size={10} /> National CAPI (SAI)
+                  </div>
+                  <div className="text-3xl font-bold text-primary tabular-nums leading-none">
+                    {natComposite != null ? Math.round(natComposite) : "—"}
+                  </div>
+                  {natBand && natComposite != null && (
+                    <Badge
+                      className="mt-1 text-[10px]"
+                      style={{
+                        backgroundColor: SAI_BAND_COLORS[natBand] + "20",
+                        color: SAI_BAND_COLORS[natBand],
+                        borderColor: SAI_BAND_COLORS[natBand] + "40",
+                      }}
+                    >
+                      {SAI_BAND_LABELS[natBand]}
+                    </Badge>
+                  )}
+                  <div className="text-[10px] text-muted-foreground mt-2">
+                    Local CAPI <span className="font-semibold text-foreground tabular-nums">{local}</span>
+                    <span className="text-muted-foreground/70"> · within current cohort</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground/60">
+                    Based on {Object.values(athlete.percentiles ?? {}).filter((v) => v != null).length}/5 metrics
+                  </div>
+                  {isTrulyHighPotential && (
+                    <Badge className="mt-1 bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
+                      ⭐ High Potential
+                    </Badge>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
