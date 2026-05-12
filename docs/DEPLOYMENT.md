@@ -60,6 +60,8 @@ server {
 
 ### Self-hosted Docker
 
+Create a `Dockerfile` at the project root:
+
 ```dockerfile
 FROM oven/bun:1 AS build
 WORKDIR /app
@@ -70,8 +72,23 @@ RUN bun run build
 
 FROM nginx:1.27-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY scripts/nginx.conf /etc/nginx/conf.d/default.conf
+# Inline a minimal SPA-fallback config so deep links survive page refresh.
+RUN printf '%s\n' \
+    'server {' \
+    '  listen 80;' \
+    '  root /usr/share/nginx/html;' \
+    '  index index.html;' \
+    '  location / { try_files $uri $uri/ /index.html; }' \
+    '  location /assets/ { expires 1y; add_header Cache-Control "public, immutable"; }' \
+    '}' > /etc/nginx/conf.d/default.conf
 EXPOSE 80
+```
+
+Build and run:
+
+```bash
+docker build -t pratibha-splink .
+docker run --rm -p 8080:80 pratibha-splink
 ```
 
 ## Backend deployment
