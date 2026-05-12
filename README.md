@@ -80,8 +80,17 @@ the migrations under `supabase/`.
 
 ## Documentation
 
+- [Production handover](docs/HANDOVER.md) — what the receiving team needs
+- [Deployment guide](docs/DEPLOYMENT.md) — Nginx, Cloudflare, S3, Docker
+- [Troubleshooting](docs/TROUBLESHOOTING.md) — common issues and fixes
 - [Architecture overview](docs/ARCHITECTURE.md)
 - [Contributing guide](CONTRIBUTING.md)
+
+## Quick start (one command)
+
+```bash
+./scripts/setup.sh
+```
 
 ## License
 
