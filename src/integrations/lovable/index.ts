@@ -1,8 +1,9 @@
-// This file is auto-generated. Do not modify it directly — changes will be overwritten on regeneration.
+// Internal OAuth bridge module. Managed by the platform — do not edit by hand;
+// any local changes will be overwritten on regeneration.
 
 import { createLovableAuth } from "@lovable.dev/cloud-auth-js";
 import { supabase } from "../supabase/client";
-const lovableAuth = createLovableAuth();
+const oauthClient = createLovableAuth();
 
 type SignInOptions = {
   redirect_uri?: string;
@@ -12,7 +13,7 @@ type SignInOptions = {
 export const lovable = {
   auth: {
     signInWithOAuth: async (provider: "google" | "apple" | "microsoft", opts?: SignInOptions) => {
-      const result = await lovableAuth.signInWithOAuth(provider, {
+      const result = await oauthClient.signInWithOAuth(provider, {
         redirect_uri: opts?.redirect_uri,
         extraParams: {
           ...opts?.extraParams,
