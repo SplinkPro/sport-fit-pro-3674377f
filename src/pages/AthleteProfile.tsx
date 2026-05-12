@@ -354,24 +354,24 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
   };
 
   const di = athlete.derivedIndices;
+  // BUG FIX (client feedback): inline advisory when local cohort flatters
+  // an athlete who is actually below the national benchmark. Triggers on
+  // the canonical case (Local ≥ 70 AND National < 40) so users cannot
+  // misread "Excellent" local labels as national-elite performance.
+  const localCAPI = athlete.compositeScore ?? 0;
+  const natComposite = di?.nationalComposite ?? null;
+  const showLocalNationalGap = natComposite != null && natComposite < 40 && localCAPI >= 70;
 
   return (
     <div className="space-y-4">
-      {/* National vs Local comparison banner */}
+      {/* National vs Local comparison banner.
+          Order/weighting deliberately favours National — see header note. */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-muted/40 border rounded-lg p-3 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-muted-foreground font-medium">Local CAPI</div>
-            <div className="text-2xl font-bold tabular-nums text-primary">{athlete.compositeScore}</div>
-            <div className="text-xs text-muted-foreground">vs. this cohort</div>
-          </div>
-          <div className="text-3xl">🏫</div>
-        </div>
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center justify-between">
+        <div className="bg-primary/5 border-2 border-primary/30 rounded-lg p-3 flex items-center justify-between">
           <div>
             <div className="text-xs text-primary font-medium flex items-center gap-1"><Globe size={10} /> National CAPI (SAI)</div>
-            <div className="text-2xl font-bold tabular-nums">{di?.nationalComposite ?? "—"}</div>
-            <div className="text-xs text-muted-foreground">vs. all-India standard</div>
+            <div className="text-3xl font-bold tabular-nums text-primary">{di?.nationalComposite ?? "—"}</div>
+            <div className="text-xs text-muted-foreground">Primary benchmark · vs. all-India SAI standard</div>
           </div>
           <div className="text-right">
             {di?.nationalComposite != null && (() => {
@@ -394,7 +394,27 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
             })()}
           </div>
         </div>
+        <div className="bg-muted/40 border rounded-lg p-3 flex items-center justify-between">
+          <div>
+            <div className="text-xs text-muted-foreground font-medium">Local CAPI</div>
+            <div className="text-2xl font-semibold tabular-nums text-foreground/80">{athlete.compositeScore}</div>
+            <div className="text-xs text-muted-foreground">Contextual · best within current dataset/cohort</div>
+          </div>
+          <div className="text-3xl opacity-70">🏫</div>
+        </div>
       </div>
+      {showLocalNationalGap && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-3 text-xs flex items-start gap-2">
+          <span className="text-base leading-none">⚠️</span>
+          <div>
+            <span className="font-semibold">Locally strong but below national benchmark.</span>{" "}
+            This athlete ranks high inside the current cohort (Local CAPI {localCAPI}) but falls
+            below SAI all-India norms (National CAPI {Math.round(natComposite!)}). Interpret per-metric
+            "Excellent / Above Avg" labels in the local column with caution — use the National column
+            for talent-ID and selection decisions.
+          </div>
+        </div>
+      )}
 
       {/* Raw metrics table with national percentile column */}
       <SectionCard title="Performance vs. Local Cohort & SAI National Standard">
@@ -406,7 +426,8 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
                 <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">Value</th>
                 <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">Local Pct.</th>
                 <th className="text-right py-2 px-2 text-xs font-semibold text-primary">Nat. Pct.</th>
-                <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground">Band</th>
+                <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground/70">Local Band</th>
+                <th className="text-center py-2 px-2 text-xs font-semibold text-primary">Nat. Band</th>
                 <th className="text-left py-2 pl-3 text-xs font-semibold text-muted-foreground">Distribution</th>
               </tr>
             </thead>
@@ -429,7 +450,21 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
                   </td>
                   <td className="py-2 px-2 text-center">
                     {m.band ? (
-                      <BenchmarkBadge band={m.band} label={bandLabel[m.band] ?? m.band} />
+                      <span className="opacity-70"><BenchmarkBadge band={m.band} label={bandLabel[m.band] ?? m.band} /></span>
+                    ) : <span className="text-muted-foreground text-xs">—</span>}
+                  </td>
+                  <td className="py-2 px-2 text-center">
+                    {m.natBand ? (
+                      <Badge
+                        className="text-[10px]"
+                        style={{
+                          backgroundColor: SAI_BAND_COLORS[m.natBand] + "20",
+                          color: SAI_BAND_COLORS[m.natBand],
+                          borderColor: SAI_BAND_COLORS[m.natBand] + "40",
+                        }}
+                      >
+                        {SAI_BAND_LABELS[m.natBand]}
+                      </Badge>
                     ) : <span className="text-muted-foreground text-xs">—</span>}
                   </td>
                   <td className="py-2 pl-3 w-40">
@@ -441,7 +476,8 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
           </table>
         </div>
         <p className="text-[10px] text-muted-foreground mt-2">
-          Nat. Pct. = compared against SAI/NSTC all-India reference norms for {athlete.gender === "M" ? "boys" : "girls"} aged {athlete.age}.
+          <span className="font-semibold text-primary">Nat.</span> = primary benchmark, compared against SAI/NSTC all-India reference norms for {athlete.gender === "M" ? "boys" : "girls"} aged {athlete.age}.
+          <span className="opacity-70"> Local = contextual, percentile inside this dataset only.</span>
         </p>
       </SectionCard>
 
