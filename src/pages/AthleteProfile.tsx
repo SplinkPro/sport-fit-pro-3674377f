@@ -120,21 +120,51 @@ export default function AthleteProfilePage() {
           </div>
 
           <div className="shrink-0 text-right">
-            <div className="text-3xl font-bold text-primary tabular-nums">{athlete.compositeScore}</div>
-            {/* BUG FIX: label explicitly shows "percentile" — government audience must not
-                read "72" as "72 marks out of 100". It means 72nd percentile vs. cohort. */}
-            <div className="text-xs text-muted-foreground">CAPI Score</div>
-            <div className="text-[10px] text-muted-foreground/70">
-              {athlete.compositeScore}th percentile vs. cohort
-            </div>
-            <div className="text-[10px] text-muted-foreground/60 mt-0.5">
-              Based on {Object.values(athlete.percentiles ?? {}).filter((v) => v != null).length}/5 metrics
-            </div>
-            {athlete.isHighPotential && (
-              <Badge className="mt-1 bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
-                ⭐ High Potential
-              </Badge>
-            )}
+            {/* BUG FIX (client feedback): for a B2G/state talent-ID product the
+                national benchmark must dominate the header. Local CAPI is shown
+                as secondary context so a "Local 98 / National 39" athlete is not
+                misread as nationally elite. The ⭐ High Potential badge is now
+                gated on BOTH local and national thresholds. */}
+            {(() => {
+              const natComposite = athlete.derivedIndices?.nationalComposite ?? null;
+              const natBand = natComposite != null ? getSAIBand(natComposite) : null;
+              const local = athlete.compositeScore;
+              const isTrulyHighPotential = athlete.isHighPotential && natComposite != null && natComposite >= 50 && local >= 70;
+              return (
+                <>
+                  <div className="text-[10px] uppercase tracking-wide text-primary font-semibold flex items-center justify-end gap-1">
+                    <Globe size={10} /> National CAPI (SAI)
+                  </div>
+                  <div className="text-3xl font-bold text-primary tabular-nums leading-none">
+                    {natComposite != null ? Math.round(natComposite) : "—"}
+                  </div>
+                  {natBand && natComposite != null && (
+                    <Badge
+                      className="mt-1 text-[10px]"
+                      style={{
+                        backgroundColor: SAI_BAND_COLORS[natBand] + "20",
+                        color: SAI_BAND_COLORS[natBand],
+                        borderColor: SAI_BAND_COLORS[natBand] + "40",
+                      }}
+                    >
+                      {SAI_BAND_LABELS[natBand]}
+                    </Badge>
+                  )}
+                  <div className="text-[10px] text-muted-foreground mt-2">
+                    Local CAPI <span className="font-semibold text-foreground tabular-nums">{local}</span>
+                    <span className="text-muted-foreground/70"> · within current cohort</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground/60">
+                    Based on {Object.values(athlete.percentiles ?? {}).filter((v) => v != null).length}/5 metrics
+                  </div>
+                  {isTrulyHighPotential && (
+                    <Badge className="mt-1 bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
+                      ⭐ High Potential
+                    </Badge>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -324,24 +354,24 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
   };
 
   const di = athlete.derivedIndices;
+  // BUG FIX (client feedback): inline advisory when local cohort flatters
+  // an athlete who is actually below the national benchmark. Triggers on
+  // the canonical case (Local ≥ 70 AND National < 40) so users cannot
+  // misread "Excellent" local labels as national-elite performance.
+  const localCAPI = athlete.compositeScore ?? 0;
+  const natComposite = di?.nationalComposite ?? null;
+  const showLocalNationalGap = natComposite != null && natComposite < 40 && localCAPI >= 70;
 
   return (
     <div className="space-y-4">
-      {/* National vs Local comparison banner */}
+      {/* National vs Local comparison banner.
+          Order/weighting deliberately favours National — see header note. */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-muted/40 border rounded-lg p-3 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-muted-foreground font-medium">Local CAPI</div>
-            <div className="text-2xl font-bold tabular-nums text-primary">{athlete.compositeScore}</div>
-            <div className="text-xs text-muted-foreground">vs. this cohort</div>
-          </div>
-          <div className="text-3xl">🏫</div>
-        </div>
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center justify-between">
+        <div className="bg-primary/5 border-2 border-primary/30 rounded-lg p-3 flex items-center justify-between">
           <div>
             <div className="text-xs text-primary font-medium flex items-center gap-1"><Globe size={10} /> National CAPI (SAI)</div>
-            <div className="text-2xl font-bold tabular-nums">{di?.nationalComposite ?? "—"}</div>
-            <div className="text-xs text-muted-foreground">vs. all-India standard</div>
+            <div className="text-3xl font-bold tabular-nums text-primary">{di?.nationalComposite ?? "—"}</div>
+            <div className="text-xs text-muted-foreground">Primary benchmark · vs. all-India SAI standard</div>
           </div>
           <div className="text-right">
             {di?.nationalComposite != null && (() => {
@@ -364,7 +394,27 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
             })()}
           </div>
         </div>
+        <div className="bg-muted/40 border rounded-lg p-3 flex items-center justify-between">
+          <div>
+            <div className="text-xs text-muted-foreground font-medium">Local CAPI</div>
+            <div className="text-2xl font-semibold tabular-nums text-foreground/80">{athlete.compositeScore}</div>
+            <div className="text-xs text-muted-foreground">Contextual · best within current dataset/cohort</div>
+          </div>
+          <div className="text-3xl opacity-70">🏫</div>
+        </div>
       </div>
+      {showLocalNationalGap && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-3 text-xs flex items-start gap-2">
+          <span className="text-base leading-none">⚠️</span>
+          <div>
+            <span className="font-semibold">Locally strong but below national benchmark.</span>{" "}
+            This athlete ranks high inside the current cohort (Local CAPI {localCAPI}) but falls
+            below SAI all-India norms (National CAPI {Math.round(natComposite!)}). Interpret per-metric
+            "Excellent / Above Avg" labels in the local column with caution — use the National column
+            for talent-ID and selection decisions.
+          </div>
+        </div>
+      )}
 
       {/* Raw metrics table with national percentile column */}
       <SectionCard title="Performance vs. Local Cohort & SAI National Standard">
@@ -376,7 +426,8 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
                 <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">Value</th>
                 <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">Local Pct.</th>
                 <th className="text-right py-2 px-2 text-xs font-semibold text-primary">Nat. Pct.</th>
-                <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground">Band</th>
+                <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground/70">Local Band</th>
+                <th className="text-center py-2 px-2 text-xs font-semibold text-primary">Nat. Band</th>
                 <th className="text-left py-2 pl-3 text-xs font-semibold text-muted-foreground">Distribution</th>
               </tr>
             </thead>
@@ -399,7 +450,21 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
                   </td>
                   <td className="py-2 px-2 text-center">
                     {m.band ? (
-                      <BenchmarkBadge band={m.band} label={bandLabel[m.band] ?? m.band} />
+                      <span className="opacity-70"><BenchmarkBadge band={m.band} label={bandLabel[m.band] ?? m.band} /></span>
+                    ) : <span className="text-muted-foreground text-xs">—</span>}
+                  </td>
+                  <td className="py-2 px-2 text-center">
+                    {m.natBand ? (
+                      <Badge
+                        className="text-[10px]"
+                        style={{
+                          backgroundColor: SAI_BAND_COLORS[m.natBand] + "20",
+                          color: SAI_BAND_COLORS[m.natBand],
+                          borderColor: SAI_BAND_COLORS[m.natBand] + "40",
+                        }}
+                      >
+                        {SAI_BAND_LABELS[m.natBand]}
+                      </Badge>
                     ) : <span className="text-muted-foreground text-xs">—</span>}
                   </td>
                   <td className="py-2 pl-3 w-40">
@@ -411,7 +476,8 @@ function PerformanceTab({ athlete, dict, athletes }: { athlete: EnrichedAthlete;
           </table>
         </div>
         <p className="text-[10px] text-muted-foreground mt-2">
-          Nat. Pct. = compared against SAI/NSTC all-India reference norms for {athlete.gender === "M" ? "boys" : "girls"} aged {athlete.age}.
+          <span className="font-semibold text-primary">Nat.</span> = primary benchmark, compared against SAI/NSTC all-India reference norms for {athlete.gender === "M" ? "boys" : "girls"} aged {athlete.age}.
+          <span className="opacity-70"> Local = contextual, percentile inside this dataset only.</span>
         </p>
       </SectionCard>
 
@@ -1308,10 +1374,10 @@ function ReportsTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnT
     <div class="row"><span class="label">${hi ? "आयु वर्ग" : "Age Band"}</span><span class="value">${ageBand} (Age ${athlete.age})</span></div>
   </div>
   <div class="capi">
-    <div>${hi ? "CAPI स्कोर (पर्सेंटाइल)" : "CAPI Score (percentile)"}</div>
-    <div class="score">${athlete.compositeScore ?? "—"}</div>
-    <div class="sub">${hi ? "साथियों में पर्सेंटाइल रैंक" : "Percentile rank vs same-cohort peers"}</div>
-    <div class="sub" style="margin-top:8px;font-size:11px">National CAPI: ${athlete.derivedIndices?.nationalComposite?.toFixed(0) ?? "—"}</div>
+    <div>${hi ? "राष्ट्रीय CAPI (SAI)" : "National CAPI (SAI · primary)"}</div>
+    <div class="score">${athlete.derivedIndices?.nationalComposite?.toFixed(0) ?? "—"}</div>
+    <div class="sub">${hi ? "अखिल भारतीय SAI मानक के विरुद्ध" : "vs. all-India SAI reference standard"}</div>
+    <div class="sub" style="margin-top:8px;font-size:11px">${hi ? "स्थानीय CAPI" : "Local CAPI"}: ${athlete.compositeScore ?? "—"} ${hi ? "(समूह में संदर्भ)" : "(cohort context)"}</div>
   </div>
 </div>
 <div class="card" style="margin-bottom:16px">
@@ -1391,9 +1457,15 @@ ${flagMessages ? `<div class="flag">⚠️ ${hi ? "डेटा गुणवत�
   };
 
   const handlePrintCoachSummary = () => {
-    const capiTier = (athlete.compositeScore ?? 0) >= 70 ? "🟢 HIGH POTENTIAL — Consider for advanced training programme"
-      : (athlete.compositeScore ?? 0) >= 50 ? "🟡 AVERAGE — Monitor and provide structured coaching"
-      : "🔴 NEEDS DEVELOPMENT — Foundational fitness intervention required";
+    // BUG FIX (client feedback): coach tier must be gated on the National CAPI,
+    // not the local cohort score, so a "Local 98 / National 39" athlete is not
+    // labelled HIGH POTENTIAL on the printed summary.
+    const natComp = athlete.derivedIndices?.nationalComposite ?? null;
+    const capiTier = natComp == null
+      ? "⚪ NATIONAL BENCHMARK PENDING — insufficient data for SAI tier"
+      : natComp >= 70 ? "🟢 HIGH POTENTIAL — Consider for advanced training programme (SAI national tier)"
+      : natComp >= 50 ? "🟡 AVERAGE — Monitor and provide structured coaching (SAI national tier)"
+      : "🔴 NEEDS DEVELOPMENT — Foundational fitness intervention required (SAI national tier)";
     const sportRows = (athlete.sportFit ?? []).slice(0, 3).map(sf => `${sf.sport.nameEn} (${sf.matchScore.toFixed(0)}%)`).join(" · ") || "—";
     const summaryHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
 <title>Coach Summary — ${athlete.name}</title>
@@ -1418,7 +1490,8 @@ ${flagMessages ? `<div class="flag">⚠️ ${hi ? "डेटा गुणवत�
   <tr><td>Vertical Jump</td><td>${athlete.verticalJump?.toFixed(1) ?? "—"} cm</td><td>${athlete.derivedIndices?.nationalPercentiles?.verticalJump?.toFixed(0) ?? "—"}</td></tr>
   <tr><td>Broad Jump</td><td>${athlete.broadJump?.toFixed(0) ?? "—"} cm</td><td>${athlete.derivedIndices?.nationalPercentiles?.broadJump?.toFixed(0) ?? "—"}</td></tr>
   <tr><td>Shuttle Run</td><td>${athlete.shuttleRun?.toFixed(2) ?? "—"} s</td><td>${athlete.derivedIndices?.nationalPercentiles?.shuttleRun?.toFixed(0) ?? "—"}</td></tr>
-  <tr><td><strong>CAPI (Percentile)</strong></td><td colspan="2"><strong>${athlete.compositeScore ?? "—"}th percentile</strong></td></tr>
+  <tr><td><strong>National CAPI (SAI)</strong></td><td colspan="2"><strong>${athlete.derivedIndices?.nationalComposite?.toFixed(0) ?? "—"} — primary benchmark</strong></td></tr>
+  <tr><td>Local CAPI</td><td colspan="2">${athlete.compositeScore ?? "—"}th percentile (current cohort context)</td></tr>
 </table>
 <p><strong>Top Sport Recommendations:</strong> ${sportRows}</p>
 <p><strong>BMI:</strong> ${bmi.toFixed(1)} — ${bmiLabel}</p>
