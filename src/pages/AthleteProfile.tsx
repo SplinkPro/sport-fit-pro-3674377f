@@ -1374,10 +1374,10 @@ function ReportsTab({ athlete, dict }: { athlete: EnrichedAthlete; dict: ReturnT
     <div class="row"><span class="label">${hi ? "आयु वर्ग" : "Age Band"}</span><span class="value">${ageBand} (Age ${athlete.age})</span></div>
   </div>
   <div class="capi">
-    <div>${hi ? "CAPI स्कोर (पर्सेंटाइल)" : "CAPI Score (percentile)"}</div>
-    <div class="score">${athlete.compositeScore ?? "—"}</div>
-    <div class="sub">${hi ? "साथियों में पर्सेंटाइल रैंक" : "Percentile rank vs same-cohort peers"}</div>
-    <div class="sub" style="margin-top:8px;font-size:11px">National CAPI: ${athlete.derivedIndices?.nationalComposite?.toFixed(0) ?? "—"}</div>
+    <div>${hi ? "राष्ट्रीय CAPI (SAI)" : "National CAPI (SAI · primary)"}</div>
+    <div class="score">${athlete.derivedIndices?.nationalComposite?.toFixed(0) ?? "—"}</div>
+    <div class="sub">${hi ? "अखिल भारतीय SAI मानक के विरुद्ध" : "vs. all-India SAI reference standard"}</div>
+    <div class="sub" style="margin-top:8px;font-size:11px">${hi ? "स्थानीय CAPI" : "Local CAPI"}: ${athlete.compositeScore ?? "—"} ${hi ? "(समूह में संदर्भ)" : "(cohort context)"}</div>
   </div>
 </div>
 <div class="card" style="margin-bottom:16px">
@@ -1457,9 +1457,15 @@ ${flagMessages ? `<div class="flag">⚠️ ${hi ? "डेटा गुणवत�
   };
 
   const handlePrintCoachSummary = () => {
-    const capiTier = (athlete.compositeScore ?? 0) >= 70 ? "🟢 HIGH POTENTIAL — Consider for advanced training programme"
-      : (athlete.compositeScore ?? 0) >= 50 ? "🟡 AVERAGE — Monitor and provide structured coaching"
-      : "🔴 NEEDS DEVELOPMENT — Foundational fitness intervention required";
+    // BUG FIX (client feedback): coach tier must be gated on the National CAPI,
+    // not the local cohort score, so a "Local 98 / National 39" athlete is not
+    // labelled HIGH POTENTIAL on the printed summary.
+    const natComp = athlete.derivedIndices?.nationalComposite ?? null;
+    const capiTier = natComp == null
+      ? "⚪ NATIONAL BENCHMARK PENDING — insufficient data for SAI tier"
+      : natComp >= 70 ? "🟢 HIGH POTENTIAL — Consider for advanced training programme (SAI national tier)"
+      : natComp >= 50 ? "🟡 AVERAGE — Monitor and provide structured coaching (SAI national tier)"
+      : "🔴 NEEDS DEVELOPMENT — Foundational fitness intervention required (SAI national tier)";
     const sportRows = (athlete.sportFit ?? []).slice(0, 3).map(sf => `${sf.sport.nameEn} (${sf.matchScore.toFixed(0)}%)`).join(" · ") || "—";
     const summaryHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
 <title>Coach Summary — ${athlete.name}</title>
