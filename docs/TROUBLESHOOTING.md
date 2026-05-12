@@ -106,9 +106,9 @@ The PDF font does not include Devanagari glyphs. Use a Unicode font
 (e.g. Noto Sans Devanagari) and embed it in the report template.
 
 ### Report shows wrong percentile
-Percentiles are computed from the active benchmark cohort. Verify the
-correct cohort is selected in Settings → Benchmarks (default: Khelo
-India U14).
+Percentiles are computed from the active benchmark cohort (SAI / Khelo
+India / IAP, depending on the metric). Verify the cohort selection in
+`/settings` if the figures look off.
 
 ---
 
