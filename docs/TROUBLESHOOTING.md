@@ -17,8 +17,9 @@ Stale npm token in `.npmrc`. Remove `.npmrc`, retry `bun install`.
 1. Open browser devtools → Console.
 2. If you see "Failed to fetch dynamically imported module", hard-refresh
    (Ctrl/Cmd + Shift + R). The app self-recovers from stale chunks.
-3. If you see "Missing Supabase env", check `.env` exists and contains
-   `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+3. If the page still cannot reach the backend, confirm `.env` exists and
+   contains `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, then
+   restart `bun run dev`. Vite only reads env vars at boot.
 
 ### Port 8080 already in use
 Edit `vite.config.ts` → `server.port` or run with a different port:
