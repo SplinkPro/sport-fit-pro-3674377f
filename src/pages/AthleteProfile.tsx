@@ -1490,7 +1490,8 @@ ${flagMessages ? `<div class="flag">⚠️ ${hi ? "डेटा गुणवत�
   <tr><td>Vertical Jump</td><td>${athlete.verticalJump?.toFixed(1) ?? "—"} cm</td><td>${athlete.derivedIndices?.nationalPercentiles?.verticalJump?.toFixed(0) ?? "—"}</td></tr>
   <tr><td>Broad Jump</td><td>${athlete.broadJump?.toFixed(0) ?? "—"} cm</td><td>${athlete.derivedIndices?.nationalPercentiles?.broadJump?.toFixed(0) ?? "—"}</td></tr>
   <tr><td>Shuttle Run</td><td>${athlete.shuttleRun?.toFixed(2) ?? "—"} s</td><td>${athlete.derivedIndices?.nationalPercentiles?.shuttleRun?.toFixed(0) ?? "—"}</td></tr>
-  <tr><td><strong>CAPI (Percentile)</strong></td><td colspan="2"><strong>${athlete.compositeScore ?? "—"}th percentile</strong></td></tr>
+  <tr><td><strong>National CAPI (SAI)</strong></td><td colspan="2"><strong>${athlete.derivedIndices?.nationalComposite?.toFixed(0) ?? "—"} — primary benchmark</strong></td></tr>
+  <tr><td>Local CAPI</td><td colspan="2">${athlete.compositeScore ?? "—"}th percentile (current cohort context)</td></tr>
 </table>
 <p><strong>Top Sport Recommendations:</strong> ${sportRows}</p>
 <p><strong>BMI:</strong> ${bmi.toFixed(1)} — ${bmiLabel}</p>
