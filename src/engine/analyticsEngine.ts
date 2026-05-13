@@ -557,9 +557,15 @@ export function enrichAthletes(athletes: Athlete[]): EnrichedAthlete[] {
     const sportFit      = calcSportFit(athlete, cohortStats);
     const topSport      = sportFit[0]?.sport.nameEn ?? "—";
     const topSportScore = sportFit[0]?.matchScore ?? 0;
-    const isHighPotential = compositeScore >= 70;
     const dimScores     = calcDimensionScores(athlete, cohortStats);
     const derivedIndices = calcDerivedIndices(athlete, cohortStats);
+    // BUG FIX (client feedback): "High Potential" must reflect BOTH cohort
+    // strength AND national positioning so a "Local 98 / National 39" athlete
+    // is not surfaced as elite across Explorer / Reports / Analytics / AI Query.
+    // Gating: local CAPI ≥ 70 AND national CAPI ≥ 50 (SAI "near national talent").
+    const isHighPotential =
+      compositeScore >= 70 &&
+      derivedIndices.nationalComposite >= 50;
 
     return {
       ...athlete,
