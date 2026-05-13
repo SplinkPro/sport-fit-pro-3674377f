@@ -429,11 +429,13 @@ describe("enrichAthletes — full pipeline", () => {
     }
   });
 
-  it("isHighPotential set correctly (threshold: compositeScore >= 70)", () => {
+  it("isHighPotential gated on local >= 70 AND national >= 50", () => {
     const enriched = enrichAthletes(cohort);
     for (const a of enriched) {
-      if (a.compositeScore >= 70) expect(a.isHighPotential).toBe(true);
-      else expect(a.isHighPotential).toBe(false);
+      const expected =
+        a.compositeScore >= 70 &&
+        (a.derivedIndices?.nationalComposite ?? 0) >= 50;
+      expect(a.isHighPotential).toBe(expected);
     }
   });
 
